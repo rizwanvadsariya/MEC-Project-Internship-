@@ -13,10 +13,15 @@ scope. This repository is organized as:
 
 ## Getting started
 
-1. Copy `backend/.env.example` to `backend/.env` and fill in values.
-2. Start local infrastructure: `docker-compose up -d`
-3. Install dependencies in `backend/` and `mobile/`.
-4. See each subfolder for its own setup notes.
+1. Ensure MongoDB Community Server is running locally, or start the included MongoDB container with `docker-compose up -d mongo`.
+2. The local backend configuration in `backend/.env` uses `mongodb://127.0.0.1:27017/smart_me_ecosystem`. For the Docker MongoDB service, use `mongodb://root:changeme@127.0.0.1:27017/smart_me_ecosystem?authSource=admin`. An Atlas URI is also stored as `MONGO_ATLAS_URI`.
+3. Install dependencies with `npm install`.
+4. Start the backend with `npm run dev:backend` or `npm run start --workspace=backend`.
+5. Open MongoDB Compass with the same URI. The backend creates all 16 schema collections after connecting.
+
+To use Atlas, replace `MONGO_URI` in `backend/.env` with the value of `MONGO_ATLAS_URI`, then restart the backend. In Compass, paste the Atlas URI directly into the New Connection field. Ensure the Atlas Network Access rules allow your current IP address.
+
+The API health check is available at `http://localhost:5000/health`.
 
 ## Status
 
