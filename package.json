@@ -1,0 +1,17 @@
+{
+  "name": "smart-provincial-me-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Smart Provincial M&E Management Ecosystem - SIMS, PMS, Finance Dashboard, and Variance Engine",
+  "workspaces": [
+    "backend",
+    "mobile",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "infra:up": "docker-compose up -d",
+    "infra:down": "docker-compose down"
+  }
+}

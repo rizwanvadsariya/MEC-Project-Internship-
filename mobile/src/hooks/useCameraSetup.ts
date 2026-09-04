@@ -1,0 +1,1 @@
+// Hardware camera permissions & device
