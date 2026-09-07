@@ -1,1 +1,0 @@
-// op-sqlite instance initialization
