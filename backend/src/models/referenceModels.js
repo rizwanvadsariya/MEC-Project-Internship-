@@ -1,41 +1,59 @@
 const mongoose = require("mongoose");
 
-function simpleReferenceModel(name, collection, fields) {
-  const schema = new mongoose.Schema(fields, { timestamps: true, collection });
-  schema.index({ name: 1 }, { unique: true });
-  return mongoose.models[name] || mongoose.model(name, schema);
-}
+// -- departments -------------------------------------------------------------
+// The ~45 government departments from the ADP index. The book uses "Sector"
+// and "Department" interchangeably at this level, so there is no separate
+// Sector collection. There is also no Division layer in the source data.
+const departmentSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, unique: true, trim: true },
+    adpSerialNo: Number,
+    type: {
+      type: String,
+      required: true,
+      enum: ["department", "block_allocation"],
+      default: "department",
+    },
+  },
+  { timestamps: true, collection: "departments" },
+);
+departmentSchema.index({ name: 1 }, { unique: true });
 
-const Sector = simpleReferenceModel("Sector", "sectors", {
-  name: { type: String, required: true, trim: true },
-  code: String,
-});
+// -- subSectors ------------------------------------------------------------
+const subSectorSchema = new mongoose.Schema(
+  {
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Department", required: true },
+    name: { type: String, required: true, trim: true },
+  },
+  { timestamps: true, collection: "subSectors" },
+);
+subSectorSchema.index({ departmentId: 1, name: 1 }, { unique: true });
 
-const Department = simpleReferenceModel("Department", "departments", {
-  name: { type: String, required: true, trim: true },
-  code: String,
-  sectorId: { type: mongoose.Schema.Types.ObjectId, ref: "Sector" },
-});
+// -- districts ----------------------------------------------------------------
+const districtSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, unique: true, trim: true },
+  },
+  { timestamps: true, collection: "districts" },
+);
+districtSchema.index({ name: 1 }, { unique: true });
 
-const Division = simpleReferenceModel("Division", "divisions", {
-  name: { type: String, required: true, trim: true },
-  code: String,
-});
+// -- contractors ------------------------------------------------------------
+const contractorSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    licenseNumber: String,
+    contactPerson: String,
+    phone: String,
+    email: String,
+    address: String,
+  },
+  { timestamps: true, collection: "contractors" },
+);
 
-const District = simpleReferenceModel("District", "districts", {
-  name: { type: String, required: true, trim: true },
-  code: String,
-  divisionId: { type: mongoose.Schema.Types.ObjectId, ref: "Division", required: true },
-});
-District.schema.index({ name: 1, divisionId: 1 }, { unique: true });
+const Department = mongoose.models.Department || mongoose.model("Department", departmentSchema);
+const SubSector = mongoose.models.SubSector || mongoose.model("SubSector", subSectorSchema);
+const District = mongoose.models.District || mongoose.model("District", districtSchema);
+const Contractor = mongoose.models.Contractor || mongoose.model("Contractor", contractorSchema);
 
-const Contractor = simpleReferenceModel("Contractor", "contractors", {
-  name: { type: String, required: true, trim: true },
-  licenseNumber: String,
-  contactPerson: String,
-  phone: String,
-  email: String,
-  address: String,
-});
-
-module.exports = { Sector, Department, Division, District, Contractor };
+module.exports = { Department, SubSector, District, Contractor };
