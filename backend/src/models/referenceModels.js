@@ -17,7 +17,6 @@ const departmentSchema = new mongoose.Schema(
   },
   { timestamps: true, collection: "departments" },
 );
-departmentSchema.index({ name: 1 }, { unique: true });
 
 // -- subSectors ------------------------------------------------------------
 const subSectorSchema = new mongoose.Schema(
@@ -36,7 +35,6 @@ const districtSchema = new mongoose.Schema(
   },
   { timestamps: true, collection: "districts" },
 );
-districtSchema.index({ name: 1 }, { unique: true });
 
 // -- contractors ------------------------------------------------------------
 const contractorSchema = new mongoose.Schema(
