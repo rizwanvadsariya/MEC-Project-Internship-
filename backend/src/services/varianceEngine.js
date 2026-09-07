@@ -1,1 +1,0 @@
-// Financial % vs. Physical % calculation
