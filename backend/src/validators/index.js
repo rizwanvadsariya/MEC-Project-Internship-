@@ -10,8 +10,11 @@ const createScheme = (req) => {
 	const b = req.body;
 	const err = requireFields(b, ["uid", "name", "departmentId", "subSectorId", "estimatedCost", "schemeCategory", "adpApproval"]);
 	if (err) return { error: err };
-	if (!/^[A-Z0-9]+-PP-\d{2}-\d{3,}$/i.test(b.uid)) {
-		return { error: 'uid must match the ADP format, e.g. "AGRWM-PP-22-0012"' };
+	// ADP UID formats seen in the book: AGRWM-PP-22-0012 (4-part),
+	// SGAFH-FP-24-0001 (foreign-project segment), LPDJD-26-0001 (compressed
+	// 3-part 2026 batch), WSDIM-PP-19-0452-A (amendment suffix).
+	if (!/^[A-Z]{3,7}-(?:[A-Z0-9]{2}-)?\d{2}-\d{3,4}(?:-[A-Z])?$/i.test(b.uid)) {
+		return { error: 'uid must match an ADP format, e.g. "AGRWM-PP-22-0012"' };
 	}
 	return { value: b };
 };

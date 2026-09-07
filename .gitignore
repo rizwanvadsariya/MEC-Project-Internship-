@@ -1,3 +1,9 @@
 node_modules/
 backend/.env
 .env
+
+# Large source PDF and local extraction artifacts (regenerate with
+# backend/src/seeders/cache_words.py + parseAdpLedger.py)
+Download.pdf
+scratch/
+scratch_adp.txt
