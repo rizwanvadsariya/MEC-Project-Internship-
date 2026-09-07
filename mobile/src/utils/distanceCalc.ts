@@ -1,1 +1,0 @@
-// Haversine geodesic math
