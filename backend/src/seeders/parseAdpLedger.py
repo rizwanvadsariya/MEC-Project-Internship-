@@ -208,6 +208,30 @@ def main():
                     departments.setdefault(dept, len(departments) + 1)
 
         data_idx = [i for i, k in enumerate(kinds) if k == "data"]
+
+        def has_uid_prefix(row):
+            return any(COL_UID[0] <= x < COL_UID[1] and tk.endswith("-")
+                       and re.match(r"^[A-Z]{3,7}-", tk) for x, tk in row)
+
+        def has_uid_tail(row):
+            return any(COL_UID[0] <= x < COL_UID[1]
+                       and re.match(r"^(?:[A-Z0-9]{2}-)*\d{3,4}(?:-[A-Z])?$", tk) and any(c.isdigit() for c in tk)
+                       for x, tk in row)
+
+        prefix_rows = [i for i, (_, r) in enumerate(rr) if has_uid_prefix(r)]
+        tail_rows = [i for i, (_, r) in enumerate(rr) if has_uid_tail(r)]
+
+        _NOTE_RE = re.compile(
+            r"(\)\s*\.?$|\bC\s*:\s*[\d,]|\bR\s*:\s*[\d,]|\bRev\s*:|Total\s*Cost|GoS'?\s*Share|"
+            r"Farmers?'?\s*Share|Share\s*:\s*Rs|\bRs\.?\s*[\d,]+\s*M\)|\(Total\s*:|"
+            r"\(Revised\b|Revised\s+on\b|Revised\s+Date|w\.e\.f|\bSDG\s*#)")
+
+        def looks_like_note(txt):
+            """A trailing cost / PC-I / revision note line (belongs to the scheme
+            whose name it follows, never the start of a new scheme name)."""
+            t = txt.strip()
+            return bool(t) and (t[0] in "(&" or t[0].islower() or bool(_NOTE_RE.search(t)))
+
         prev_i = -1
         for di in data_idx:
             # update sub-sector / category from rows since previous data row
@@ -234,6 +258,7 @@ def main():
                         subsectors.setdefault((dept, subsec), None)
 
             top, drow = rr[di]
+            prev_di = prev_i  # previous scheme's data-row index (before we advance)
             # window rows: from prev data row (exclusive) to this one, + up to 2 after
             wrows = [rr[j] for j in range(prev_i + 1, di + 1)]
             after = []
@@ -316,40 +341,56 @@ def main():
             tgt = next((t for x, t in drow if COL_TGT[0] <= x < COL_TGT[1] and TGTTOK.match(t)), None) \
                 or next((t for x, t in drow if TGTTOK.match(t)), None)
 
-            # Name window: start at (a little above) this scheme's own UID-prefix
-            # row, so a previous scheme's trailing "(C:.. + R:..)" note that sits
-            # just below its data row is not prepended to this name.
-            pfx_pos = None
-            for idx, (_, r) in enumerate(wrows_all):
-                if any(COL_UID[0] <= x < COL_UID[1] and tk.endswith("-")
-                       and re.match(r"^[A-Z]{3,7}-", tk) for x, tk in r):
-                    pfx_pos = idx
-            name_rows = wrows_all[max(0, pfx_pos - 3):] if pfx_pos is not None else wrows_all
+            # --- Name: capture the full wrapped name block verbatim -----------
+            # The block runs from just after the PREVIOUS scheme's UID-tail row
+            # (skipping any closing "(C:.. + R:..)" note lines it owns) down to
+            # this scheme's data row plus its own trailing name/tail lines.
+            # Core name block = [this scheme's UID-prefix row .. this scheme's
+            # UID-tail row]. The book brackets the wrapped name between them.
+            pfx_k = max((i for i in prefix_rows if prev_di < i <= di), default=di)
+            tail_k = min((i for i in tail_rows if i >= di), default=di)
+            NB = lambda j: band(rr[j][1], COL_NAME[0], COL_NAME[1])
+
+            name_start, name_end = pfx_k, tail_k + 1
+            # extend UP: name line(s) printed above the prefix row (not the
+            # previous scheme's trailing note, not a heading/marker)
+            # The real stops are: the previous scheme's data row (prev_di), its
+            # UID-tail row (has_uid_tail), its closing cost/PC note
+            # (looks_like_note), or a heading/marker. Those bracket this scheme's
+            # name cleanly, so the row / y-distance caps can be generous for the
+            # long enumerated school-list names.
+            j, top_j = pfx_k - 1, rr[pfx_k][0]
+            while (j > prev_di and pfx_k - j <= 16 and top_j - rr[j][0] <= 200
+                   and kinds[j] in ("text", "blank")
+                   and not has_uid_prefix(rr[j][1]) and not has_uid_tail(rr[j][1])):
+                nb = NB(j)
+                if nb.strip() and looks_like_note(nb):
+                    break
+                if nb.strip():
+                    name_start, top_j = j, rr[j][0]
+                j -= 1
+            # extend DOWN: this scheme's own trailing cost / revision note lines
+            for j in range(tail_k + 1, min(tail_k + 4, len(rr))):
+                if kinds[j] in ("data", "marker", "subtotal", "header", "depthdr") or has_uid_prefix(rr[j][1]):
+                    break
+                nb = NB(j)
+                if nb.strip() and not looks_like_note(nb) and not has_uid_tail(rr[j][1]):
+                    break
+                name_end = j + 1
+            name_rows = [rr[j] for j in range(name_start, name_end)]
+
             name = " ".join(band(r, COL_NAME[0], COL_NAME[1]) for _, r in name_rows)
             name = UID_4.sub(" ", name)
             name = UID_3.sub(" ", name)
             name = re.sub(r"\b[A-Z]{3,6}-(?:[A-Z0-9]{2}-)*", " ", name)
             name = re.sub(r"\b(?:[A-Z0-9]{2}-)?\d{2}-\d{3,4}\b", " ", name)
             name = re.sub(r"\b(Approved|Un-|U/R)\b", " ", name)
-            name = re.sub(r"\bTotal\s+[A-Z].*", " ", name)
-            # strip column-header text that leaks in when a name spans a page break
+            name = re.sub(r"\bTotal\s+[A-Z][A-Za-z].*", " ", name)
             name = re.sub(r"Sector\s*/\s*Sub-sector\s*/?Name of Scheme", " ", name)
             name = re.sub(r"\bQR Code\b", " ", name)
-            name = re.sub(r"^\s*\d{1,2}\s+(?=[A-Z(])", " ", name)  # stray column-legend digit
-            # Drop leading fragments (cost-split notes, [Ref#], SDG tags, section
-            # markers, sub-sector heading echoes) that wrap in above the real
-            # name: trim to the first strong action-noun the name starts with.
             name = re.sub(r"\((?:On-Going Schemes|Unapproved Schemes Carried Forward)\)", " ", name)
-            name = re.sub(r"\s+", " ", name).strip(" ,.-()")
-            ACTION = (r"Construction|Establishment|Up-?gradation|Rehabilitation|Improvement|"
-                      r"Provision|Providing|Installation|Strengthening|Procurement|Purchase|"
-                      r"Development|Extension|Reconstruction|Renovation|Widening|Supply|Setting|"
-                      r"Repair|Uplift|Capacity Building|Upgrading|Revamping|Restoration|"
-                      r"Preservation|Expansion|Modernization|Modernisation|Completion|Feasibility")
-            m = re.search(r"\b(" + ACTION + r")\b", name)
-            if m and m.start() <= 120:
-                name = name[m.start():]
-            name = name.strip(" ,.-()")
+            name = re.sub(r"^\s*\d{1,2}\s+(?=[A-Z(])", " ", name)  # stray column-legend digit
+            name = re.sub(r"\s+", " ", name).strip(" ,.-")
             if len(name) < 5:
                 name = ""
 
