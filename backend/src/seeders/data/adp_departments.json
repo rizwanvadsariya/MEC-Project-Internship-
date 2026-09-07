@@ -1,0 +1,232 @@
+[
+ {
+  "name": "AGRICULTURE, SUPPLY & PRICES",
+  "adpSerialNo": 1,
+  "type": "department"
+ },
+ {
+  "name": "AUQAF, RELIGIOUS AFFAIRS, ZAKAT & USHR",
+  "adpSerialNo": 2,
+  "type": "department"
+ },
+ {
+  "name": "BOARD OF REVENUE",
+  "adpSerialNo": 3,
+  "type": "department"
+ },
+ {
+  "name": "CULTURE, TOURISM, ANTIQUITIES & ARCHIVES",
+  "adpSerialNo": 4,
+  "type": "department"
+ },
+ {
+  "name": "EDUCATION SECTOR",
+  "adpSerialNo": 5,
+  "type": "department"
+ },
+ {
+  "name": "ENERGY",
+  "adpSerialNo": 6,
+  "type": "department"
+ },
+ {
+  "name": "ENVIRONMENT, CLIMATE CHANGE & COASTAL DEVELOPMENT",
+  "adpSerialNo": 7,
+  "type": "department"
+ },
+ {
+  "name": "EXCISE, TAXATION & NARCOTICS CONTROL",
+  "adpSerialNo": 8,
+  "type": "department"
+ },
+ {
+  "name": "FINANCE",
+  "adpSerialNo": 9,
+  "type": "department"
+ },
+ {
+  "name": "FOOD",
+  "adpSerialNo": 10,
+  "type": "department"
+ },
+ {
+  "name": "FOREST & WILDLIFE",
+  "adpSerialNo": 11,
+  "type": "department"
+ },
+ {
+  "name": "HEALTH",
+  "adpSerialNo": 12,
+  "type": "department"
+ },
+ {
+  "name": "HOME",
+  "adpSerialNo": 13,
+  "type": "department"
+ },
+ {
+  "name": "HUMAN RIGHTS",
+  "adpSerialNo": 14,
+  "type": "department"
+ },
+ {
+  "name": "HUMAN SETTLEMENT, SPATIAL DEVELOPMENT & SOCIAL HOUSING",
+  "adpSerialNo": 15,
+  "type": "department"
+ },
+ {
+  "name": "INDUSTRIES & COMMERCE",
+  "adpSerialNo": 16,
+  "type": "department"
+ },
+ {
+  "name": "INFORMATION",
+  "adpSerialNo": 17,
+  "type": "department"
+ },
+ {
+  "name": "IRRIGATION",
+  "adpSerialNo": 18,
+  "type": "department"
+ },
+ {
+  "name": "LABOUR & HUMAN RESOURCES",
+  "adpSerialNo": 19,
+  "type": "department"
+ },
+ {
+  "name": "LAW, P.A AND PROSECUTION",
+  "adpSerialNo": 20,
+  "type": "department"
+ },
+ {
+  "name": "LIVESTOCK & FISHERIES",
+  "adpSerialNo": 21,
+  "type": "department"
+ },
+ {
+  "name": "LOCAL GOVERNMENT, HOUSING & TOWN PLANNING",
+  "adpSerialNo": 22,
+  "type": "department"
+ },
+ {
+  "name": "MATCHING ALLOCATIONS",
+  "adpSerialNo": 23,
+  "type": "department"
+ },
+ {
+  "name": "MEGA PROJECTS FOR KARACHI CITY",
+  "adpSerialNo": 24,
+  "type": "department"
+ },
+ {
+  "name": "MINES & MINERAL DEVELOPMENT",
+  "adpSerialNo": 25,
+  "type": "department"
+ },
+ {
+  "name": "MINORITIES AFFAIRS",
+  "adpSerialNo": 26,
+  "type": "department"
+ },
+ {
+  "name": "PLANNING & DEVELOPMENT",
+  "adpSerialNo": 27,
+  "type": "department"
+ },
+ {
+  "name": "POPULATION WELFARE",
+  "adpSerialNo": 28,
+  "type": "department"
+ },
+ {
+  "name": "PROVINCIAL ASSEMBLY",
+  "adpSerialNo": 29,
+  "type": "department"
+ },
+ {
+  "name": "PROVINCIAL OMBUDSMAN",
+  "adpSerialNo": 30,
+  "type": "department"
+ },
+ {
+  "name": "PUBLIC HEALTH ENGINEERING & RURAL DEVELOPMENT",
+  "adpSerialNo": 31,
+  "type": "department"
+ },
+ {
+  "name": "REHABILITATION (PDMA)",
+  "adpSerialNo": 32,
+  "type": "department"
+ },
+ {
+  "name": "SCIENCE & INFORMATION TECHNOLOGY",
+  "adpSerialNo": 33,
+  "type": "department"
+ },
+ {
+  "name": "SERVICES, GENERAL ADMINISTRATION & COORDINATION",
+  "adpSerialNo": 34,
+  "type": "department"
+ },
+ {
+  "name": "SINDH PUBLIC SERVICE COMMISSION",
+  "adpSerialNo": 35,
+  "type": "department"
+ },
+ {
+  "name": "SINDH REVENUE BOARD",
+  "adpSerialNo": 36,
+  "type": "department"
+ },
+ {
+  "name": "SOCIAL PROTECTION",
+  "adpSerialNo": 37,
+  "type": "department"
+ },
+ {
+  "name": "SOCIAL WELFARE",
+  "adpSerialNo": 38,
+  "type": "department"
+ },
+ {
+  "name": "SOCIO-ECONOMIC UPLIFT OF KACHA AREAS",
+  "adpSerialNo": 39,
+  "type": "department"
+ },
+ {
+  "name": "SPECIAL INITIATIVES FOR BACKWARD DISTRICTS",
+  "adpSerialNo": 40,
+  "type": "department"
+ },
+ {
+  "name": "SPORTS & YOUTH AFFAIRS",
+  "adpSerialNo": 41,
+  "type": "department"
+ },
+ {
+  "name": "THAR COAL INFRASTRUCTURE DEVELOPMENT",
+  "adpSerialNo": 42,
+  "type": "department"
+ },
+ {
+  "name": "TRAINING, MANAGEMENT & RESEARCH",
+  "adpSerialNo": 43,
+  "type": "department"
+ },
+ {
+  "name": "TRANSPORT AND MASS TRANSIT",
+  "adpSerialNo": 44,
+  "type": "department"
+ },
+ {
+  "name": "WOMEN DEVELOPMENT",
+  "adpSerialNo": 45,
+  "type": "department"
+ },
+ {
+  "name": "WORKS & SERVICES",
+  "adpSerialNo": 46,
+  "type": "department"
+ }
+]
