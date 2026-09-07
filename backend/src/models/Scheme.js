@@ -67,7 +67,6 @@ const schemeSchema = new mongoose.Schema(
 	{ timestamps: true, collection: "schemes" },
 );
 
-schemeSchema.index({ uid: 1 }, { unique: true });
 schemeSchema.index({ departmentId: 1, subSectorId: 1 });
 schemeSchema.index({ districtIds: 1 });
 schemeSchema.index({ "adpApproval.status": 1 });
