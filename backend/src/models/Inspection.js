@@ -9,11 +9,12 @@ const milestoneUpdateSchema = new mongoose.Schema({
 	remarks: String,
 }, { _id: false });
 
+// An MEO progress report, conducted as a member of a scheme's active team.
 const inspectionSchema = new mongoose.Schema(
 	{
-		assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: "InspectionAssignment", required: true, unique: true },
 		schemeId: { type: mongoose.Schema.Types.ObjectId, ref: "Scheme", required: true },
-		inspectorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+		teamId: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
+		meoId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 		inspectionDate: { type: Date, required: true },
 		gpsAtInspection: { type: pointSchema, required: true },
 		distanceFromSchemeMeters: { type: Number, required: true, min: 0 },
@@ -32,7 +33,8 @@ const inspectionSchema = new mongoose.Schema(
 );
 
 inspectionSchema.index({ schemeId: 1, inspectionDate: -1 });
-inspectionSchema.index({ inspectorId: 1 });
+inspectionSchema.index({ meoId: 1 });
+inspectionSchema.index({ teamId: 1 });
 inspectionSchema.index({ gpsAtInspection: "2dsphere" });
 
 module.exports = mongoose.models.Inspection || mongoose.model("Inspection", inspectionSchema);

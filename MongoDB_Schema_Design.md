@@ -2,55 +2,63 @@
 
 **Stack:** MongoDB · Express.js · React Native · Node.js (MERN)
 **ODM:** Mongoose (recommended)
-**Scope:** SIMS · PMS · Finance Dashboard · Variance Engine
+**Source of truth for scheme data:** *Public Sector Development Programme (ADP) 2026-2027, Volume V* — Government of Sindh, P&D Department (1,856 pages, 45 departments, 3,715 schemes). Every field in Section 2.4-2.5 below is extracted directly from that document's scheme ledger, not invented.
 
 ---
 
-## 1. Overview
+## 0. What changed from the previous draft, and why
 
-This document defines the MongoDB collection schemas for the Smart Provincial M&E Management Ecosystem. Each collection is presented with its purpose, field-level schema table, a Mongoose-style schema definition, recommended indexes, and its relationships to other collections.
+This revision replaces the earlier generic SIMS schema with one grounded in the actual government ADP book, plus your updated approval/execution workflow. Three structural changes:
 
-### 1.1 Collection List
+1. **Real financial fields, not invented ones.** The ADP book tracks a scheme's finances as a rolling, fiscal-year time series (estimated cost, prior actual expenditure, revised allocation, throw-forward, next-year allocation - each split Capital/Revenue and with an FPA / Foreign Project Assistance component). This replaces the earlier generic `financialTransactions` collection with `adpFinancialRecords`, shaped exactly like the book's own columns.
+2. **Department = Sector.** The book does not distinguish "department" from "sector" - there is one flat list of 45 departments (e.g. HEALTH, IRRIGATION), each broken into sub-sectors (e.g. Health has none further; Education splits into College Education, DEPD, School Education & Literacy, STEVTA, Universities and Boards). There is also no "Division" layer in the source data - only District(s), or "Sindh" for a province-wide scheme. The earlier sectors/departments/divisions split is retired in favor of departments -> subSectors -> schemes, and districts is now a many-to-many list per scheme.
+3. **Two separate approval concepts, not one.** The ADP book's status (approved/unapproved, with a date) is the provincial government's PC-I/ADP approval of the scheme itself - a historical fact from the book, not something your app changes. Your new workflow - Regional Director submits the scheme for monitoring, Director General approves/rejects, then team assembly, then MEO inspection - is a separate, internal M&E approval lifecycle layered on top. These are modeled as two independent fields/collections so they're never confused: `schemes.adpApproval` (read from the book) vs. `schemeMonitoringApprovals` (your workflow, Section 3.2).
 
-| # | Collection | Purpose |
-|---|-----------|---------|
-| 1 | `users` | System users and their role (P&D/MEC Central, Line Department Head, Regional Director, FMO) |
-| 2 | `sectors` | Sector classification (Health, Education, Roads, Energy, etc.) |
-| 3 | `departments` | Executing/owning department for a scheme |
-| 4 | `divisions` | Administrative division |
-| 5 | `districts` | Administrative district (belongs to a division) |
-| 6 | `contractors` | Executing agencies / contractors |
-| 7 | `schemes` | Central scheme/project record (SIMS core) |
-| 8 | `schemeDocuments` | PC-I, approvals, drawings, and other scheme documents |
-| 9 | `inspectionAssignments` | Dispatch record linking a scheme, an FMO, and a deadline |
-| 10 | `inspections` | A completed/in-progress field inspection |
-| 11 | `inspectionPhotos` | Watermarked evidence photographs |
-| 12 | `issues` | Structured issue/observation reports |
-| 13 | `financialTransactions` | Allocation, release, and expenditure records |
-| 14 | `varianceRecords` | Computed variance index/classification, time-series per scheme |
-| 15 | `notifications` | System-generated notifications and alerts |
-| 16 | `auditLogs` | Activity/audit trail across the system |
+Role name change throughout: **FMO becomes MEO** (Monitoring & Evaluation Officer), and a new **Director General (DG)** role sits above Regional Director for monitoring-approval authority.
 
-> **Note:** User **roles** are modeled as an enum field on `users` rather than a separate collection, since the system has a small, fixed set of four roles (Section 6 of the project proposal). If fine-grained, per-permission access control is introduced later, a dedicated `roles`/`permissions` collection can be added without disrupting this schema.
+---
 
-### 1.2 Entity Relationship Overview
+## 1. Collection List
+
+| # | Collection | Origin | Purpose |
+|---|-----------|--------|---------|
+| 1 | departments | ADP book | The 45 government departments |
+| 2 | subSectors | ADP book | Sub-sector breakdown within a department |
+| 3 | districts | ADP book | Sindh districts referenced by scheme location |
+| 4 | schemes | ADP book | The central scheme record, one per UID |
+| 5 | adpFinancialRecords | ADP book | Yearly financial figures per scheme (time series, one per ADP edition) |
+| 6 | contractors | Operational | Executing agencies / contractors |
+| 7 | users | Operational | System users incl. new director_general and renamed meo roles |
+| 8 | schemeMonitoringApprovals | New workflow | RD to DG submit/approve/reject history per scheme |
+| 9 | teams | New workflow | Dynamic monitoring team assembled by an RD per scheme (1+ MEOs, RD optional member) |
+| 10 | schemeDocuments | Operational | PC-I, technical sanction, drawings, revisions |
+| 11 | inspections | Operational | MEO progress-report submissions (GPS, milestones, evidence) |
+| 12 | inspectionPhotos | Operational | Watermarked evidence photographs |
+| 13 | issues | Operational | Structured issue/observation reports |
+| 14 | varianceRecords | Operational | Computed variance: ADP financial % vs. verified physical % |
+| 15 | notifications | Operational | Notifications and alerts |
+| 16 | auditLogs | Operational | Activity/audit trail |
+
+### 1.1 Entity Relationship Overview
 
 ```mermaid
 erDiagram
-    USERS ||--o{ INSPECTION_ASSIGNMENTS : "assigned to (FMO)"
-    USERS ||--o{ INSPECTIONS : "performs"
+    DEPARTMENTS ||--o{ SUB_SECTORS : has
+    DEPARTMENTS ||--o{ SCHEMES : owns
+    SUB_SECTORS ||--o{ SCHEMES : classifies
+    SCHEMES }o--o{ DISTRICTS : "located in"
+    SCHEMES ||--o{ ADP_FINANCIAL_RECORDS : "has yearly"
     SCHEMES ||--o{ SCHEME_DOCUMENTS : has
-    SCHEMES ||--o{ INSPECTION_ASSIGNMENTS : has
-    SCHEMES ||--o{ FINANCIAL_TRANSACTIONS : has
+    SCHEMES ||--o{ SCHEME_MONITORING_APPROVALS : "submitted for"
+    SCHEMES ||--o| TEAMS : "monitored by"
     SCHEMES ||--o{ VARIANCE_RECORDS : has
     SCHEMES ||--o{ ISSUES : has
-    SCHEMES }o--|| SECTORS : "belongs to"
-    SCHEMES }o--|| DEPARTMENTS : "belongs to"
-    SCHEMES }o--|| DISTRICTS : "belongs to"
-    SCHEMES }o--|| DIVISIONS : "belongs to"
     SCHEMES }o--|| CONTRACTORS : "executed by"
-    DISTRICTS }o--|| DIVISIONS : "belongs to"
-    INSPECTION_ASSIGNMENTS ||--o| INSPECTIONS : produces
+    USERS ||--o{ SCHEME_MONITORING_APPROVALS : "submits / decides"
+    USERS ||--o{ TEAMS : "assembles (as Regional Director)"
+    TEAMS ||--o{ USERS : "includes (as MEO members)"
+    TEAMS ||--o{ INSPECTIONS : produces
+    USERS ||--o{ INSPECTIONS : "performs (MEO)"
     INSPECTIONS ||--o{ INSPECTION_PHOTOS : has
     INSPECTIONS ||--o{ ISSUES : "may raise"
     USERS ||--o{ NOTIFICATIONS : receives
@@ -59,25 +67,262 @@ erDiagram
 
 ---
 
-## 2. Collection Schemas
+## 2. ADP-Sourced Collections
 
-### 2.1 `users`
+### 2.1 departments
 
-**Purpose:** Stores all system users and their role, which drives role-based access control (RBAC) across the mobile application.
+**Purpose:** The 45 government departments from the ADP index (plus special block allocations). This is a flat list - the book uses "Sector" and "Department" interchangeably at this level.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | Full name of the user |
-| `email` | String | ✔ | Unique login email |
-| `passwordHash` | String | ✔ | Bcrypt/argon2 hashed password |
-| `role` | String (enum) | ✔ | `pd_mec_central` \| `line_department_head` \| `regional_director` \| `fmo` |
-| `departmentId` | ObjectId (ref `departments`) | — | Applicable to `line_department_head` |
-| `divisionId` | ObjectId (ref `divisions`) | — | Applicable to `regional_director` / `fmo` |
-| `phone` | String | — | Contact number |
-| `isActive` | Boolean | ✔ | Default `true`; used to deactivate accounts |
-| `lastLoginAt` | Date | — | Updated on each successful login |
-| `createdAt` / `updatedAt` | Date | auto | Mongoose timestamps |
+| _id | ObjectId | auto | Primary key |
+| name | String | yes | Exact department name, e.g. "AGRICULTURE, SUPPLY & PRICES", "HEALTH", "IRRIGATION" |
+| adpSerialNo | Number | no | The book's own S.No for this department (1-45; changes rarely) |
+| type | String enum | yes | department \| block_allocation - the book carries 5 special province-wide block allocations (e.g. Allocation for Divisional Headquarters, Special Initiatives for Backward Districts) alongside the 45 line departments |
+| createdAt | Date | auto | - |
+
+```js
+const departmentSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+  adpSerialNo: Number,
+  type: { type: String, required: true, enum: ["department", "block_allocation"], default: "department" },
+}, { timestamps: true });
+
+departmentSchema.index({ name: 1 }, { unique: true });
+```
+
+**Indexes:** name (unique)
+
+**Reference - the 45 departments as listed in the ADP index** (for seeding): Agriculture Supply & Prices; Auqaf, Religious Affairs, Zakat & Ushr; Board of Revenue; Culture, Tourism, Antiquities & Archives; Education Sector; Energy; Environment, Climate Change & Coastal Development; Excise, Taxation & Narcotics Control; Finance; Food; Forest & Wildlife; Governor's Secretariat; Health; Home; Human Rights; Human Settlement, Spatial Development & Social Housing; Industries & Commerce; Information; Irrigation; Labour & Human Resources; Law, P.A and Prosecution; Livestock & Fisheries; Local Government, Housing & Town Planning; Matching Allocations; Mega Projects for Karachi City; Mines & Mineral Development; Minorities Affairs; Planning & Development; Population Welfare; Provincial Assembly; Provincial Ombudsman; Public Health Engineering & Rural Development; Rehabilitation (PDMA); Science & Information Technology; Services, General Administration & Coordination; Sindh Public Service Commission; Sindh Revenue Board; Social Protection; Social Welfare; Sports & Youth Affairs; Thar Coal Infrastructure Development; Training, Management & Research; Transport and Mass Transit; Women Development; Works & Services.
+
+---
+
+### 2.2 subSectors
+
+**Purpose:** Second-level grouping within a department (e.g. Agriculture splits into Agriculture Research, Agriculture Water Management, Agriculture Extension, Agriculture Marketing; Education splits into College Education, DEPD, School Education & Literacy, STEVTA, Universities and Boards). Every scheme in the book sits under exactly one sub-sector, and the book prints sub-sector subtotal rows.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| _id | ObjectId | auto | Primary key |
+| departmentId | ObjectId (ref departments) | yes | Parent department |
+| name | String | yes | e.g. "Agriculture Water Management" |
+| createdAt | Date | auto | - |
+
+```js
+const subSectorSchema = new Schema({
+  departmentId: { type: Schema.Types.ObjectId, ref: "Department", required: true },
+  name: { type: String, required: true },
+}, { timestamps: true });
+
+subSectorSchema.index({ departmentId: 1, name: 1 }, { unique: true });
+```
+
+**Indexes:** compound { departmentId, name } (unique)
+
+---
+
+### 2.3 districts
+
+**Purpose:** Sindh districts as they appear in the "Location of Scheme/District" column. A scheme may list one district, several, or the whole province.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| _id | ObjectId | auto | Primary key |
+| name | String | yes | e.g. "Ghotki", "Shaheed Benazirabad", "Tando Muhammad Khan" |
+| createdAt | Date | auto | - |
+
+```js
+const districtSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+}, { timestamps: true });
+```
+
+**Indexes:** name (unique)
+
+> Note: The book has no "Division" administrative layer - only District, or the literal value "Sindh" meaning province-wide. Model province-wide schemes with `schemes.provinceWide = true` and an empty `districtIds`, rather than inventing a fake "Sindh district".
+
+---
+
+### 2.4 schemes - Central Scheme Registry
+
+**Purpose:** One document per scheme UID - the book's primary record. Fields map directly to the 19-column scheme ledger (Gen.Sr.No, UID, QR Code, Sector/Sub-sector/Name, Location/District, Status/Date of Approval, Target Completion, Estimated Cost - plus the financial columns which live in adpFinancialRecords, Section 2.5).
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| _id | ObjectId | auto | Primary key |
+| uid | String | yes | The book's unique scheme ID, e.g. "AGRAR-PP-25-0002" - unique across the whole ADP. Format convention: sub-sector-code - PP - YY - sequence |
+| genSerialNo | Number | no | Current "Gen.Sr.No" in the latest ADP edition (changes edition to edition; historical values live on adpFinancialRecords) |
+| name | String | yes | Full scheme name/description exactly as printed (can be long, often includes cost-sharing notes in parentheses) |
+| departmentId | ObjectId (ref departments) | yes | - |
+| subSectorId | ObjectId (ref subSectors) | yes | - |
+| districtIds | Array of ObjectId (ref districts) | no | One or more districts; empty if provinceWide |
+| provinceWide | Boolean | yes | true when location is printed as "Sindh" |
+| adpApproval | Object | yes | { status, approvalDate, underRevision } - see below. This is the government's PC-I/ADP approval, read from the book, distinct from the internal monitoring approval in Section 3.2 |
+| schemeCategory | String enum | yes | on_going \| unapproved_carried_forward - which subtotal section of the book the scheme is printed under |
+| targetCompletionDate | Date | no | Parsed from the book's month-year label, e.g. "Jun-27" becomes 2027-06-01 |
+| estimatedCost | Number | yes | Current total approved/estimated project cost, Rs. million (col. 8; latest value, history in adpFinancialRecords) |
+| qrCodeUrl | String | no | Reserved for the ledger's QR Code column - present as a column heading in the book but not populated with data in the current edition; kept for forward compatibility |
+| sourceEdition | Object | no | { adpVolume: "Volume V", fiscalYear: "2026-2027", pageFrom, pageTo } - provenance back to the printed book |
+| physicalProgressPercent | Number | yes | Cached, weighted; recalculated on each MEO inspection (not from the ADP book, this is the M&E side) |
+| varianceIndex / varianceClassification | Number / String enum | no | Cached latest variance - see Section 3.9 |
+| milestones | Array of Object | no | Embedded weighted milestone list, defined by the M&E team once a scheme is approved for monitoring - not part of the ADP book |
+| contractorId | ObjectId (ref contractors) | no | - |
+| createdBy | ObjectId (ref users) | yes | - |
+| createdAt / updatedAt | Date | auto | - |
+
+**Embedded adpApproval sub-document:**
+
+| Field | Type | Description |
+|---|---|---|
+| status | String enum | approved \| unapproved |
+| approvalDate | Date | Null when status = unapproved |
+| underRevision | Boolean | The book's "U/R" marker - the scheme's cost/scope was revised after initial approval |
+
+**Embedded milestones[] sub-document:**
+
+| Field | Type | Description |
+|---|---|---|
+| milestoneId | ObjectId | Unique ID within the array |
+| name | String | e.g. "Earthwork", "Sub-base", "Structure" |
+| weightPercent | Number | Contribution weight toward overall physical progress (weights total 100) |
+| targetDate | Date | - |
+| currentCompletionPercent | Number | Latest recorded completion (0-100) |
+| lastUpdatedByInspectionId | ObjectId (ref inspections) | - |
+| remarks | String | - |
+
+```js
+const milestoneSubSchema = new Schema({
+  name: { type: String, required: true },
+  weightPercent: { type: Number, required: true, min: 0, max: 100 },
+  targetDate: Date,
+  currentCompletionPercent: { type: Number, default: 0, min: 0, max: 100 },
+  lastUpdatedByInspectionId: { type: Schema.Types.ObjectId, ref: "Inspection" },
+  remarks: String,
+}, { _id: true });
+
+const schemeSchema = new Schema({
+  uid: { type: String, required: true, unique: true },
+  genSerialNo: Number,
+  name: { type: String, required: true },
+  departmentId: { type: Schema.Types.ObjectId, ref: "Department", required: true },
+  subSectorId: { type: Schema.Types.ObjectId, ref: "SubSector", required: true },
+  districtIds: [{ type: Schema.Types.ObjectId, ref: "District" }],
+  provinceWide: { type: Boolean, default: false },
+  adpApproval: {
+    status: { type: String, required: true, enum: ["approved", "unapproved"] },
+    approvalDate: Date,
+    underRevision: { type: Boolean, default: false },
+  },
+  schemeCategory: {
+    type: String,
+    required: true,
+    enum: ["on_going", "unapproved_carried_forward"],
+  },
+  targetCompletionDate: Date,
+  estimatedCost: { type: Number, required: true },
+  qrCodeUrl: String,
+  sourceEdition: {
+    adpVolume: String,
+    fiscalYear: String,
+    pageFrom: Number,
+    pageTo: Number,
+  },
+  physicalProgressPercent: { type: Number, default: 0 },
+  varianceIndex: Number,
+  varianceClassification: { type: String, enum: ["normal", "yellow", "red"] },
+  milestones: [milestoneSubSchema],
+  contractorId: { type: Schema.Types.ObjectId, ref: "Contractor" },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
+
+schemeSchema.index({ uid: 1 }, { unique: true });
+schemeSchema.index({ departmentId: 1, subSectorId: 1 });
+schemeSchema.index({ districtIds: 1 });
+schemeSchema.index({ "adpApproval.status": 1 });
+schemeSchema.index({ varianceClassification: 1 });
+```
+
+**Indexes:** uid (unique) - compound { departmentId, subSectorId } - districtIds (multikey) - adpApproval.status - varianceClassification
+
+---
+
+### 2.5 adpFinancialRecords - Yearly Financial Ledger (time series)
+
+**Purpose:** The book's financial columns (9 through 19) are inherently a rolling fiscal-year time series - every new ADP edition shifts the year labels forward by one. Rather than hardcoding "2025-2026" / "2026-2027" as field names (which would break next edition), each field is named for what it represents, and the actual fiscal year strings are stored as data. One document per scheme per ADP edition.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| adpFiscalYear | String | yes | The edition this record is from, e.g. "2026-2027" |
+| genSerialNoThisEdition | Number | no | The Gen.Sr.No as printed in this edition (col. 1) |
+| estimatedCost | Number | yes | Total estimated/approved cost as of this edition, Rs. million (col. 8) |
+| priorActualExpenditure | Number | yes | Cumulative actual expenditure up to the end of the year before the allocation year, e.g. "upto June'25" (col. 9) |
+| priorActualExpenditureAsOf | Date | no | e.g. 2025-06-30 |
+| revisedAllocation | Object | yes | { total, fpa } for the outgoing/current fiscal year, e.g. 2025-2026 (cols. 10-11) |
+| revisedAllocationFiscalYear | String | yes | e.g. "2025-2026" |
+| estimatedExpenditureThroughAllocationYear | Number | yes | Estimated expenditure through June of the outgoing FY (col. 12) |
+| throwForward | Number | yes | Unspent balance carried into the new fiscal year (col. 13) |
+| throwForwardAsOf | Date | no | e.g. 2026-07-01 |
+| nextYearAllocation | Object | yes | { capital, revenue, total, fpa } for the new fiscal year, e.g. 2026-2027 (cols. 14-17) |
+| nextYearAllocationFiscalYear | String | yes | e.g. "2026-2027" |
+| financialProgressPercent | Object | yes | { throughOutgoingFYJune, throughNextFYJune } - the book's two progress percentages (cols. 18-19) |
+| createdAt | Date | auto | - |
+
+```js
+const adpFinancialRecordSchema = new Schema({
+  schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
+  adpFiscalYear: { type: String, required: true },
+  genSerialNoThisEdition: Number,
+  estimatedCost: { type: Number, required: true },
+  priorActualExpenditure: { type: Number, required: true },
+  priorActualExpenditureAsOf: Date,
+  revisedAllocation: {
+    total: { type: Number, required: true },
+    fpa: { type: Number, default: 0 },
+  },
+  revisedAllocationFiscalYear: { type: String, required: true },
+  estimatedExpenditureThroughAllocationYear: { type: Number, required: true },
+  throwForward: { type: Number, required: true },
+  throwForwardAsOf: Date,
+  nextYearAllocation: {
+    capital: { type: Number, required: true },
+    revenue: { type: Number, required: true },
+    total: { type: Number, required: true },
+    fpa: { type: Number, default: 0 },
+  },
+  nextYearAllocationFiscalYear: { type: String, required: true },
+  financialProgressPercent: {
+    throughOutgoingFYJune: Number,
+    throughNextFYJune: Number,
+  },
+}, { timestamps: true });
+
+adpFinancialRecordSchema.index({ schemeId: 1, adpFiscalYear: 1 }, { unique: true });
+```
+
+**Indexes:** compound { schemeId, adpFiscalYear } (unique - one record per scheme per edition)
+
+> Worked example, from the book itself (scheme AGRWM-PP-22-0012, Construction of Water Storage Reservoirs): estimatedCost 1,320.000; priorActualExpenditure 107.291; revisedAllocation { total: 250.000, fpa: 0 } for FY 2025-2026; estimatedExpenditureThroughAllocationYear 357.291; throwForward 962.709; nextYearAllocation { capital: 0, revenue: 284.141, total: 284.141, fpa: 0 } for FY 2026-2027; financialProgressPercent { throughOutgoingFYJune: 27.1, throughNextFYJune: 48.6 }.
+
+---
+
+## 3. Operational Collections (the M&E workflow)
+
+### 3.1 users
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| _id | ObjectId | auto | Primary key |
+| name | String | yes | - |
+| email | String | yes | Unique login email |
+| passwordHash | String | yes | - |
+| role | String enum | yes | pd_mec_central \| director_general \| line_department_head \| regional_director \| meo |
+| departmentId | ObjectId (ref departments) | no | Applicable to line_department_head |
+| region | String | no | Applicable to regional_director / meo - the book has no formal "division" layer, so region is a free-form label rather than a ref; more than one regional_director may share the same region |
+| isActive | Boolean | yes | Default true |
+| lastLoginAt | Date | no | - |
+| createdAt / updatedAt | Date | auto | - |
 
 ```js
 const userSchema = new Schema({
@@ -87,11 +332,10 @@ const userSchema = new Schema({
   role: {
     type: String,
     required: true,
-    enum: ["pd_mec_central", "line_department_head", "regional_director", "fmo"],
+    enum: ["pd_mec_central", "director_general", "line_department_head", "regional_director", "meo"],
   },
   departmentId: { type: Schema.Types.ObjectId, ref: "Department" },
-  divisionId: { type: Schema.Types.ObjectId, ref: "Division" },
-  phone: String,
+  region: String,
   isActive: { type: Boolean, default: true },
   lastLoginAt: Date,
 }, { timestamps: true });
@@ -100,118 +344,116 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 ```
 
-**Indexes:** `email` (unique) · `role`
+**Indexes:** email (unique) - role
 
 ---
 
-### 2.2 `sectors`
+### 3.2 schemeMonitoringApprovals - Regional Director to Director General workflow
 
-**Purpose:** Sector classification of schemes (Health, Education, Roads & Bridges, Energy, Public Health Engineering, etc.).
+**Purpose:** This is the heart of the new flow. Every submit/reject/resubmit cycle for a scheme's monitoring is one document - a full audit trail of the approval loop, independent of the scheme's ADP/PC-I approval (Section 2.4).
+
+Flow: Regional Director edits scheme (draft), then submits, status becomes pending, then Director General reviews - either rejected (with a required reason, and the Regional Director revises and resubmits, creating a new document that points back via revisionOf) or approved (the scheme is unlocked for team assembly).
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | e.g., "Health", "Roads & Bridges" |
-| `code` | String | — | Short code, e.g., `HLT`, `RDS` |
-| `createdAt` | Date | auto | — |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| submittedBy | ObjectId (ref users) | yes | The Regional Director |
+| submittedAt | Date | yes | - |
+| decidedBy | ObjectId (ref users) | no | The Director General; null while pending |
+| decidedAt | Date | no | - |
+| status | String enum | yes | pending \| approved \| rejected |
+| rejectionReason | String | no | Required when status = rejected |
+| revisionOf | ObjectId (ref schemeMonitoringApprovals) | no | Points to the prior rejected cycle this submission revises, chaining the full history |
+| snapshotAtSubmission | Object (Mixed) | no | Optional snapshot of the scheme's editable fields at submission time, for showing the DG exactly what changed since the last rejection |
 
 ```js
-const sectorSchema = new Schema({
-  name: { type: String, required: true, unique: true },
-  code: String,
+const schemeMonitoringApprovalSchema = new Schema({
+  schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
+  submittedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  submittedAt: { type: Date, required: true, default: Date.now },
+  decidedBy: { type: Schema.Types.ObjectId, ref: "User" },
+  decidedAt: Date,
+  status: { type: String, required: true, enum: ["pending", "approved", "rejected"], default: "pending" },
+  rejectionReason: String,
+  revisionOf: { type: Schema.Types.ObjectId, ref: "SchemeMonitoringApproval" },
+  snapshotAtSubmission: Schema.Types.Mixed,
 }, { timestamps: true });
+
+schemeMonitoringApprovalSchema.index({ schemeId: 1, submittedAt: -1 });
+schemeMonitoringApprovalSchema.index({ status: 1 });
 ```
 
-**Indexes:** `name` (unique)
+**Indexes:** compound { schemeId, submittedAt: -1 } (approval history in order) - status (DG's pending-review queue)
+
+**Derived scheme-level state:** rather than duplicating a status enum on schemes itself (which could drift out of sync), the application reads a scheme's current monitoring-approval state as the status of its most recent schemeMonitoringApprovals document for that scheme, sorted by submittedAt descending. A scheme is editable by its Regional Director only when that latest status is rejected or when no submission exists yet (still draft).
 
 ---
 
-### 2.3 `departments`
+### 3.3 teams - Dynamic monitoring team per scheme
 
-**Purpose:** Owning/executing department for a scheme (e.g., Health Department, Works & Services Department).
+**Purpose:** Once a scheme is approved for monitoring, its Regional Director assembles a team: any number of MEOs, and optionally the Regional Director as a member. Fully dynamic - team size is not fixed, and a region can have multiple Regional Directors each running their own teams.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | Department name |
-| `code` | String | — | Short code |
-| `sectorId` | ObjectId (ref `sectors`) | — | Primary associated sector |
-| `createdAt` | Date | auto | — |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | One active team per scheme at a time (enforced via the partial unique index below) |
+| assembledBy | ObjectId (ref users) | yes | The Regional Director who created this team |
+| members | Array of Object | yes | See embedded sub-document below - one or more MEOs, and optionally the RD |
+| status | String enum | yes | active \| disbanded - lets an RD reshuffle a team without losing history of who did what |
+| createdAt / updatedAt | Date | auto | - |
+
+**Embedded members[] sub-document:**
+
+| Field | Type | Description |
+|---|---|---|
+| userId | ObjectId (ref users) | The MEO, or the Regional Director if they added themselves |
+| roleInTeam | String enum | meo \| regional_director - the member's capacity on this team, independent of their system-wide role |
+| addedAt | Date | - |
+| removedAt | Date | Null while still an active member; set when reshuffled out without disbanding the whole team |
 
 ```js
-const departmentSchema = new Schema({
-  name: { type: String, required: true, unique: true },
-  code: String,
-  sectorId: { type: Schema.Types.ObjectId, ref: "Sector" },
+const teamMemberSubSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  roleInTeam: { type: String, required: true, enum: ["meo", "regional_director"] },
+  addedAt: { type: Date, default: Date.now },
+  removedAt: Date,
+}, { _id: false });
+
+const teamSchema = new Schema({
+  schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
+  assembledBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  members: { type: [teamMemberSubSchema], validate: v => v.length > 0 },
+  status: { type: String, required: true, enum: ["active", "disbanded"], default: "active" },
 }, { timestamps: true });
+
+teamSchema.index({ schemeId: 1, status: 1 });
+teamSchema.index({ "members.userId": 1 });
+// Only one ACTIVE team per scheme - partial unique index
+teamSchema.index(
+  { schemeId: 1 },
+  { unique: true, partialFilterExpression: { status: "active" } }
+);
 ```
 
-**Indexes:** `name` (unique) · `sectorId`
+**Indexes:** compound { schemeId, status } - multikey members.userId (an MEO's "which teams am I on" query) - partial-unique { schemeId } where status is active (guarantees exactly one active team per scheme at a time)
+
+**Inspection eligibility rule:** an MEO may only create an inspections document for a scheme if their userId appears in that scheme's active team's members[] with removedAt equal to null - enforced in the API layer, not just the UI.
 
 ---
 
-### 2.4 `divisions`
-
-**Purpose:** Top-level administrative division (e.g., Hyderabad Division, Karachi Division).
+### 3.4 contractors
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | Division name |
-| `code` | String | — | Short code |
-| `createdAt` | Date | auto | — |
-
-```js
-const divisionSchema = new Schema({
-  name: { type: String, required: true, unique: true },
-  code: String,
-}, { timestamps: true });
-```
-
-**Indexes:** `name` (unique)
-
----
-
-### 2.5 `districts`
-
-**Purpose:** District-level administrative classification, nested under a division.
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | District name |
-| `code` | String | — | Short code |
-| `divisionId` | ObjectId (ref `divisions`) | ✔ | Parent division |
-| `createdAt` | Date | auto | — |
-
-```js
-const districtSchema = new Schema({
-  name: { type: String, required: true },
-  code: String,
-  divisionId: { type: Schema.Types.ObjectId, ref: "Division", required: true },
-}, { timestamps: true });
-
-districtSchema.index({ divisionId: 1 });
-```
-
-**Indexes:** `divisionId` · compound `{ name: 1, divisionId: 1 }` (unique)
-
----
-
-### 2.6 `contractors`
-
-**Purpose:** Executing agencies / contractors assigned to schemes.
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `name` | String | ✔ | Contractor / firm name |
-| `licenseNumber` | String | — | Registration/license number |
-| `contactPerson` | String | — | Primary contact name |
-| `phone` | String | — | Contact number |
-| `email` | String | — | Contact email |
-| `address` | String | — | Registered address |
-| `createdAt` | Date | auto | — |
+| _id | ObjectId | auto | Primary key |
+| name | String | yes | - |
+| licenseNumber | String | no | - |
+| contactPerson | String | no | - |
+| phone | String | no | - |
+| email | String | no | - |
+| address | String | no | - |
+| createdAt | Date | auto | - |
 
 ```js
 const contractorSchema = new Schema({
@@ -224,135 +466,21 @@ const contractorSchema = new Schema({
 }, { timestamps: true });
 ```
 
-**Indexes:** `name`
-
 ---
 
-### 2.7 `schemes` — Central Scheme/Project Record (SIMS core)
-
-**Purpose:** The authoritative, centralized record for every development scheme. Milestones are embedded (small, bounded, always read together with the scheme); documents, inspections, finance, and variance are referenced from their own collections.
+### 3.5 schemeDocuments
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | String | ✔ | Unique human-readable ID, e.g. `SCH-2026-00123` |
-| `name` | String | ✔ | Scheme name |
-| `sectorId` | ObjectId (ref `sectors`) | ✔ | — |
-| `departmentId` | ObjectId (ref `departments`) | ✔ | — |
-| `districtId` | ObjectId (ref `districts`) | ✔ | — |
-| `divisionId` | ObjectId (ref `divisions`) | ✔ | — |
-| `cityArea` | String | — | City/area within the district |
-| `executingAgency` | String | — | Name of executing agency (if not a registered contractor) |
-| `contractorId` | ObjectId (ref `contractors`) | — | — |
-| `supervisingEngineer` | Object | — | `{ name, designation, contact }` embedded |
-| `approvedCost` | Number | ✔ | Approved budget (PKR) |
-| `startDate` | Date | — | Actual/planned start date |
-| `expectedCompletionDate` | Date | — | — |
-| `currentStatus` | String (enum) | ✔ | `planned` \| `ongoing` \| `completed` \| `delayed` \| `halted` |
-| `projectHealth` | String (enum) | ✔ | `satisfactory` \| `delayed` \| `halted_abandoned` |
-| `location` | GeoJSON Point | ✔ | `{ type: "Point", coordinates: [lng, lat] }` |
-| `boundary` | GeoJSON Polygon | — | Site boundary, if surveyed |
-| `milestones` | Array\<Object\> | — | Embedded weighted milestone list (see below) |
-| `physicalProgressPercent` | Number | ✔ | Cached, weighted; recalculated on each inspection |
-| `financialProgressPercent` | Number | ✔ | Cached; recalculated on each financial transaction |
-| `varianceIndex` | Number | — | Cached latest variance (financial % − physical %) |
-| `varianceClassification` | String (enum) | — | `normal` \| `yellow` \| `red` |
-| `createdBy` | ObjectId (ref `users`) | ✔ | — |
-| `createdAt` / `updatedAt` | Date | auto | — |
-
-**Embedded `milestones[]` sub-document:**
-
-| Field | Type | Description |
-|---|---|---|
-| `milestoneId` | ObjectId | Unique ID within the array (used by inspections to reference this milestone) |
-| `name` | String | e.g., "Earthwork", "Sub-base", "Structure" |
-| `weightPercent` | Number | Contribution weight toward overall physical progress (weights across a scheme total 100) |
-| `targetDate` | Date | Planned completion date for this milestone |
-| `currentCompletionPercent` | Number | Latest recorded completion (0–100) |
-| `lastUpdatedByInspectionId` | ObjectId (ref `inspections`) | Traceability to the inspection that last updated this milestone |
-| `remarks` | String | Latest inspector remarks on this milestone |
-
-```js
-const milestoneSubSchema = new Schema({
-  name: { type: String, required: true },
-  weightPercent: { type: Number, required: true, min: 0, max: 100 },
-  targetDate: Date,
-  currentCompletionPercent: { type: Number, default: 0, min: 0, max: 100 },
-  lastUpdatedByInspectionId: { type: Schema.Types.ObjectId, ref: "Inspection" },
-  remarks: String,
-}, { _id: true }); // _id serves as milestoneId
-
-const schemeSchema = new Schema({
-  schemeId: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  sectorId: { type: Schema.Types.ObjectId, ref: "Sector", required: true },
-  departmentId: { type: Schema.Types.ObjectId, ref: "Department", required: true },
-  districtId: { type: Schema.Types.ObjectId, ref: "District", required: true },
-  divisionId: { type: Schema.Types.ObjectId, ref: "Division", required: true },
-  cityArea: String,
-  executingAgency: String,
-  contractorId: { type: Schema.Types.ObjectId, ref: "Contractor" },
-  supervisingEngineer: {
-    name: String,
-    designation: String,
-    contact: String,
-  },
-  approvedCost: { type: Number, required: true },
-  startDate: Date,
-  expectedCompletionDate: Date,
-  currentStatus: {
-    type: String,
-    required: true,
-    enum: ["planned", "ongoing", "completed", "delayed", "halted"],
-    default: "planned",
-  },
-  projectHealth: {
-    type: String,
-    enum: ["satisfactory", "delayed", "halted_abandoned"],
-    default: "satisfactory",
-  },
-  location: {
-    type: { type: String, enum: ["Point"], default: "Point" },
-    coordinates: { type: [Number], required: true }, // [lng, lat]
-  },
-  boundary: {
-    type: { type: String, enum: ["Polygon"] },
-    coordinates: [[[Number]]],
-  },
-  milestones: [milestoneSubSchema],
-  physicalProgressPercent: { type: Number, default: 0 },
-  financialProgressPercent: { type: Number, default: 0 },
-  varianceIndex: Number,
-  varianceClassification: { type: String, enum: ["normal", "yellow", "red"] },
-  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
-
-schemeSchema.index({ schemeId: 1 }, { unique: true });
-schemeSchema.index({ location: "2dsphere" });
-schemeSchema.index({ boundary: "2dsphere" });
-schemeSchema.index({ sectorId: 1, districtId: 1, divisionId: 1, currentStatus: 1 });
-schemeSchema.index({ varianceClassification: 1 });
-```
-
-**Indexes:** `schemeId` (unique) · `location` (2dsphere — powers geofence distance queries and the GIS map) · `boundary` (2dsphere) · compound `{ sectorId, districtId, divisionId, currentStatus }` (dashboard filtering) · `varianceClassification` (red-flag queries)
-
----
-
-### 2.8 `schemeDocuments`
-
-**Purpose:** PC-I, administrative approvals, technical sanctions, drawings, and revision documents. Kept as a separate, referenced collection (not embedded) since the number of documents per scheme is unbounded and grows over time.
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | — |
-| `documentType` | String (enum) | ✔ | `pc1` \| `administrative_approval` \| `technical_sanction` \| `engineering_drawing` \| `revised_timeline` \| `revision_request` \| `other` |
-| `title` | String | — | Display title |
-| `fileUrl` | String | ✔ | Object storage URL/key |
-| `fileType` | String | — | MIME type |
-| `version` | Number | ✔ | Default `1`; incremented on revision |
-| `uploadedBy` | ObjectId (ref `users`) | ✔ | — |
-| `uploadedAt` | Date | ✔ | — |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| documentType | String enum | yes | pc1 \| administrative_approval \| technical_sanction \| engineering_drawing \| revised_timeline \| revision_request \| other |
+| title | String | no | - |
+| fileUrl | String | yes | Object storage URL/key |
+| fileType | String | no | MIME type |
+| version | Number | yes | Default 1 |
+| uploadedBy | ObjectId (ref users) | yes | - |
+| uploadedAt | Date | yes | - |
 
 ```js
 const schemeDocumentSchema = new Schema({
@@ -374,84 +502,32 @@ const schemeDocumentSchema = new Schema({
 schemeDocumentSchema.index({ schemeId: 1, documentType: 1 });
 ```
 
-**Indexes:** compound `{ schemeId, documentType }`
+**Indexes:** compound { schemeId, documentType }
 
 ---
 
-### 2.9 `inspectionAssignments`
+### 3.6 inspections - MEO progress report
 
-**Purpose:** Dispatch record created by a Regional/Divisional Director, linking a scheme to an FMO with a deadline.
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | — |
-| `assignedTo` | ObjectId (ref `users`) | ✔ | FMO |
-| `assignedBy` | ObjectId (ref `users`) | ✔ | Regional/Divisional Director |
-| `deadline` | Date | ✔ | — |
-| `status` | String (enum) | ✔ | `assigned` \| `en_route` \| `inspected` \| `report_submitted` \| `reviewed` |
-| `priority` | String (enum) | — | `normal` \| `high` \| `urgent` |
-| `notes` | String | — | Dispatch instructions |
-| `createdAt` / `updatedAt` | Date | auto | — |
-
-```js
-const inspectionAssignmentSchema = new Schema({
-  schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
-  assignedTo: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  assignedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  deadline: { type: Date, required: true },
-  status: {
-    type: String,
-    required: true,
-    enum: ["assigned", "en_route", "inspected", "report_submitted", "reviewed"],
-    default: "assigned",
-  },
-  priority: { type: String, enum: ["normal", "high", "urgent"], default: "normal" },
-  notes: String,
-}, { timestamps: true });
-
-inspectionAssignmentSchema.index({ schemeId: 1 });
-inspectionAssignmentSchema.index({ assignedTo: 1, status: 1 });
-inspectionAssignmentSchema.index({ deadline: 1 });
-```
-
-**Indexes:** `schemeId` · compound `{ assignedTo, status }` (FMO "My Tasks" screen) · `deadline` (overdue notifications)
-
----
-
-### 2.10 `inspections`
-
-**Purpose:** A conducted field inspection, including GPS verification outcome and milestone progress updates. Represents the FMO's submitted report.
+**Purpose:** Unchanged in substance from the original proposal (GPS/geofence verification, milestone progress, evidence, remarks) - only the actor is now an MEO acting as a member of a scheme's team, rather than a directly-assigned FMO.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `assignmentId` | ObjectId (ref `inspectionAssignments`) | ✔ | — |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | Denormalized for fast querying |
-| `inspectorId` | ObjectId (ref `users`) | ✔ | FMO who conducted the inspection |
-| `inspectionDate` | Date | ✔ | — |
-| `gpsAtInspection` | GeoJSON Point | ✔ | FMO's live location at inspection time |
-| `distanceFromSchemeMeters` | Number | ✔ | Calculated distance to scheme's registered location |
-| `geofencePassed` | Boolean | ✔ | Whether the officer was within the configured radius |
-| `mockLocationSuspected` | Boolean | ✔ | Default `false`; flagged by anti-spoofing check |
-| `milestoneUpdates` | Array\<Object\> | — | Embedded snapshot of milestone progress recorded this visit (see below) |
-| `overallPhysicalProgressPercent` | Number | ✔ | Weighted result computed at submission |
-| `observations` | String | — | Free-text field notes |
-| `recommendations` | String | — | Inspector recommendations |
-| `resultingHealthClassification` | String (enum) | — | `satisfactory` \| `delayed` \| `halted_abandoned` |
-| `submittedAt` | Date | ✔ | — |
-| `syncedFromOffline` | Boolean | ✔ | Default `false` |
-| `offlineCapturedAt` | Date | — | Original capture time if submitted via offline sync |
-
-**Embedded `milestoneUpdates[]` sub-document** (snapshots `milestoneName`/`weightPercent` at time of inspection so historical reports remain accurate even if the scheme's milestone definitions change later):
-
-| Field | Type | Description |
-|---|---|---|
-| `milestoneId` | ObjectId | References the milestone's `_id` within `schemes.milestones` |
-| `milestoneName` | String | Snapshot of the milestone name at inspection time |
-| `weightPercent` | Number | Snapshot of the milestone weight at inspection time |
-| `completionPercent` | Number | Completion recorded during this inspection |
-| `remarks` | String | Inspector remarks for this milestone |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| teamId | ObjectId (ref teams) | yes | The active team this inspection was conducted under |
+| meoId | ObjectId (ref users) | yes | The MEO who conducted the inspection |
+| inspectionDate | Date | yes | - |
+| gpsAtInspection | GeoJSON Point | yes | { type: "Point", coordinates: [lng, lat] } |
+| distanceFromSchemeMeters | Number | yes | - |
+| geofencePassed | Boolean | yes | - |
+| mockLocationSuspected | Boolean | yes | Default false |
+| milestoneUpdates | Array of Object | no | Snapshot of milestone progress recorded this visit (milestoneId, milestoneName, weightPercent, completionPercent, remarks) |
+| overallPhysicalProgressPercent | Number | yes | Weighted result computed at submission |
+| observations / recommendations | String | no | - |
+| resultingHealthClassification | String enum | no | satisfactory \| delayed \| halted_abandoned |
+| submittedAt | Date | yes | - |
+| syncedFromOffline | Boolean | yes | Default false |
+| offlineCapturedAt | Date | no | - |
 
 ```js
 const milestoneUpdateSubSchema = new Schema({
@@ -463,9 +539,9 @@ const milestoneUpdateSubSchema = new Schema({
 }, { _id: false });
 
 const inspectionSchema = new Schema({
-  assignmentId: { type: Schema.Types.ObjectId, ref: "InspectionAssignment", required: true },
   schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
-  inspectorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  teamId: { type: Schema.Types.ObjectId, ref: "Team", required: true },
+  meoId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   inspectionDate: { type: Date, required: true },
   gpsAtInspection: {
     type: { type: String, enum: ["Point"], default: "Point" },
@@ -488,29 +564,27 @@ const inspectionSchema = new Schema({
 }, { timestamps: true });
 
 inspectionSchema.index({ schemeId: 1, inspectionDate: -1 });
-inspectionSchema.index({ inspectorId: 1 });
-inspectionSchema.index({ assignmentId: 1 }, { unique: true });
+inspectionSchema.index({ meoId: 1 });
+inspectionSchema.index({ teamId: 1 });
 inspectionSchema.index({ gpsAtInspection: "2dsphere" });
 ```
 
-**Indexes:** compound `{ schemeId, inspectionDate: -1 }` (inspection history) · `inspectorId` · `assignmentId` (unique — one inspection per assignment) · `gpsAtInspection` (2dsphere)
+**Indexes:** compound { schemeId, inspectionDate: -1 } - meoId - teamId - gpsAtInspection (2dsphere)
 
 ---
 
-### 2.11 `inspectionPhotos`
-
-**Purpose:** Watermarked evidence photographs captured during an inspection. Kept as a separate, referenced collection since the count per inspection is unbounded.
+### 3.7 inspectionPhotos
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `inspectionId` | ObjectId (ref `inspections`) | ✔ | — |
-| `fileUrl` | String | ✔ | Object storage URL/key |
-| `thumbnailUrl` | String | — | — |
-| `capturedAt` | Date | ✔ | — |
-| `gps` | GeoJSON Point | ✔ | Location at time of capture |
-| `watermarkData` | Object | ✔ | `{ schemeId, schemeName, latitude, longitude, timestamp, inspectorId }` embedded — the exact data burned into the image |
-| `checksumSha256` | String | ✔ | Integrity hash captured at time of upload |
+| _id | ObjectId | auto | Primary key |
+| inspectionId | ObjectId (ref inspections) | yes | - |
+| fileUrl | String | yes | - |
+| thumbnailUrl | String | no | - |
+| capturedAt | Date | yes | - |
+| gps | GeoJSON Point | yes | - |
+| watermarkData | Object | yes | { schemeUid, schemeName, latitude, longitude, timestamp, meoId } |
+| checksumSha256 | String | yes | - |
 
 ```js
 const inspectionPhotoSchema = new Schema({
@@ -523,12 +597,12 @@ const inspectionPhotoSchema = new Schema({
     coordinates: { type: [Number], required: true },
   },
   watermarkData: {
-    schemeId: String,
+    schemeUid: String,
     schemeName: String,
     latitude: Number,
     longitude: Number,
     timestamp: Date,
-    inspectorId: String,
+    meoId: String,
   },
   checksumSha256: { type: String, required: true },
 }, { timestamps: true });
@@ -536,26 +610,22 @@ const inspectionPhotoSchema = new Schema({
 inspectionPhotoSchema.index({ inspectionId: 1 });
 ```
 
-**Indexes:** `inspectionId`
-
 ---
 
-### 2.12 `issues`
-
-**Purpose:** Structured issue/observation reports raised during an inspection or independently against a scheme (e.g., contractor delay, land dispute).
+### 3.8 issues
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | — |
-| `inspectionId` | ObjectId (ref `inspections`) | — | Nullable — issue may be raised outside an inspection |
-| `raisedBy` | ObjectId (ref `users`) | ✔ | — |
-| `category` | String (enum) | ✔ | `contractor_delay` \| `funding_delay` \| `land_legal` \| `material_shortage` \| `quality_concern` \| `other` |
-| `description` | String | ✔ | — |
-| `severity` | String (enum) | ✔ | `low` \| `medium` \| `high` \| `critical` |
-| `status` | String (enum) | ✔ | `open` \| `under_review` \| `resolved` \| `escalated` |
-| `resolutionNotes` | String | — | — |
-| `resolvedAt` | Date | — | — |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| inspectionId | ObjectId (ref inspections) | no | Nullable |
+| raisedBy | ObjectId (ref users) | yes | - |
+| category | String enum | yes | contractor_delay \| funding_delay \| land_legal \| material_shortage \| quality_concern \| other |
+| description | String | yes | - |
+| severity | String enum | yes | low \| medium \| high \| critical |
+| status | String enum | yes | open \| under_review \| resolved \| escalated |
+| resolutionNotes | String | no | - |
+| resolvedAt | Date | no | - |
 
 ```js
 const issueSchema = new Schema({
@@ -578,64 +648,29 @@ issueSchema.index({ schemeId: 1, status: 1 });
 issueSchema.index({ severity: 1 });
 ```
 
-**Indexes:** compound `{ schemeId, status }` · `severity`
-
 ---
 
-### 2.13 `financialTransactions`
+### 3.9 varianceRecords
 
-**Purpose:** Records financial allocation, release, and expenditure events per scheme. Modeled as a single collection distinguished by a `type` field (rather than three separate collections), which is idiomatic in MongoDB and simplifies per-scheme financial aggregation.
+**Purpose:** Compares the ADP book's financial position for a scheme against verified physical progress from inspections. Financial % is read from the scheme's latest adpFinancialRecords document, not recomputed here.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | — |
-| `type` | String (enum) | ✔ | `allocation` \| `release` \| `expenditure` |
-| `fiscalYear` | String | ✔ | e.g., `"2025-26"` |
-| `amount` | Number | ✔ | PKR |
-| `date` | Date | ✔ | — |
-| `reference` | String | — | Voucher/reference number |
-| `recordedBy` | ObjectId (ref `users`) | ✔ | — |
-| `notes` | String | — | — |
-
-```js
-const financialTransactionSchema = new Schema({
-  schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
-  type: { type: String, required: true, enum: ["allocation", "release", "expenditure"] },
-  fiscalYear: { type: String, required: true },
-  amount: { type: Number, required: true },
-  date: { type: Date, required: true },
-  reference: String,
-  recordedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  notes: String,
-}, { timestamps: true });
-
-financialTransactionSchema.index({ schemeId: 1, type: 1, fiscalYear: 1 });
-```
-
-**Indexes:** compound `{ schemeId, type, fiscalYear }`
-
----
-
-### 2.14 `varianceRecords`
-
-**Purpose:** Time-series record of the computed Variance Index for each scheme, preserving history so trends can be reviewed over time (rather than only the latest cached value on `schemes`).
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `schemeId` | ObjectId (ref `schemes`) | ✔ | — |
-| `calculatedAt` | Date | ✔ | — |
-| `financialExpenditurePercent` | Number | ✔ | — |
-| `physicalProgressPercent` | Number | ✔ | — |
-| `varianceIndex` | Number | ✔ | `financialExpenditurePercent − physicalProgressPercent` |
-| `classification` | String (enum) | ✔ | `normal` \| `yellow` \| `red` |
-| `triggeredAlert` | Boolean | ✔ | Whether this record generated a notification |
+| _id | ObjectId | auto | Primary key |
+| schemeId | ObjectId (ref schemes) | yes | - |
+| calculatedAt | Date | yes | - |
+| sourceAdpFinancialRecordId | ObjectId (ref adpFinancialRecords) | yes | Which fiscal-year record the financial % was read from |
+| financialExpenditurePercent | Number | yes | Derived, e.g. estimatedExpenditureThroughAllocationYear divided by estimatedCost times 100 |
+| physicalProgressPercent | Number | yes | From the scheme's latest inspection |
+| varianceIndex | Number | yes | financialExpenditurePercent minus physicalProgressPercent |
+| classification | String enum | yes | normal \| yellow \| red |
+| triggeredAlert | Boolean | yes | - |
 
 ```js
 const varianceRecordSchema = new Schema({
   schemeId: { type: Schema.Types.ObjectId, ref: "Scheme", required: true },
   calculatedAt: { type: Date, required: true, default: Date.now },
+  sourceAdpFinancialRecordId: { type: Schema.Types.ObjectId, ref: "AdpFinancialRecord", required: true },
   financialExpenditurePercent: { type: Number, required: true },
   physicalProgressPercent: { type: Number, required: true },
   varianceIndex: { type: Number, required: true },
@@ -647,38 +682,34 @@ varianceRecordSchema.index({ schemeId: 1, calculatedAt: -1 });
 varianceRecordSchema.index({ classification: 1 });
 ```
 
-**Indexes:** compound `{ schemeId, calculatedAt: -1 }` · `classification` (red-flag dashboard queries)
-
 ---
 
-### 2.15 `notifications`
-
-**Purpose:** Serves both routine notifications (new assignment, deadline reminders) and management alerts (Red Flag variance, escalations), distinguished by `type` and `priority`.
+### 3.10 notifications
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `recipientId` | ObjectId (ref `users`) | — | Targeted recipient (nullable for role-broadcast) |
-| `recipientRole` | String (enum) | — | Used for role-wide broadcasts instead of `recipientId` |
-| `type` | String (enum) | ✔ | `inspection_assigned` \| `deadline_upcoming` \| `deadline_overdue` \| `report_submitted` \| `project_delayed` \| `high_variance` \| `issue_escalated` \| `management_action` |
-| `schemeId` | ObjectId (ref `schemes`) | — | — |
-| `title` | String | ✔ | — |
-| `message` | String | ✔ | — |
-| `isRead` | Boolean | ✔ | Default `false` |
-| `priority` | String (enum) | ✔ | `info` \| `warning` \| `critical` |
+| _id | ObjectId | auto | Primary key |
+| recipientId | ObjectId (ref users) | no | Nullable for role-broadcast |
+| recipientRole | String enum | no | Same enum as users.role |
+| type | String enum | yes | monitoring_submitted \| monitoring_approved \| monitoring_rejected \| team_member_added \| team_member_removed \| report_submitted \| project_delayed \| high_variance \| issue_escalated |
+| schemeId | ObjectId (ref schemes) | no | - |
+| title / message | String | yes | - |
+| isRead | Boolean | yes | Default false |
+| priority | String enum | yes | info \| warning \| critical |
 
 ```js
 const notificationSchema = new Schema({
   recipientId: { type: Schema.Types.ObjectId, ref: "User" },
   recipientRole: {
     type: String,
-    enum: ["pd_mec_central", "line_department_head", "regional_director", "fmo"],
+    enum: ["pd_mec_central", "director_general", "line_department_head", "regional_director", "meo"],
   },
   type: {
     type: String,
     required: true,
-    enum: ["inspection_assigned", "deadline_upcoming", "deadline_overdue", "report_submitted",
-           "project_delayed", "high_variance", "issue_escalated", "management_action"],
+    enum: ["monitoring_submitted", "monitoring_approved", "monitoring_rejected",
+           "team_member_added", "team_member_removed", "report_submitted",
+           "project_delayed", "high_variance", "issue_escalated"],
   },
   schemeId: { type: Schema.Types.ObjectId, ref: "Scheme" },
   title: { type: String, required: true },
@@ -691,24 +722,20 @@ notificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ type: 1 });
 ```
 
-**Indexes:** compound `{ recipientId, isRead, createdAt: -1 }` (notification inbox) · `type`
-
 ---
 
-### 2.16 `auditLogs`
-
-**Purpose:** Immutable activity trail for accountability — records who did what, to which entity, and when.
+### 3.11 auditLogs
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | auto | Primary key |
-| `userId` | ObjectId (ref `users`) | ✔ | Acting user |
-| `action` | String | ✔ | e.g., `scheme_created`, `inspection_assigned`, `inspection_submitted`, `document_uploaded`, `variance_reviewed` |
-| `entityType` | String | ✔ | e.g., `Scheme`, `Inspection`, `FinancialTransaction` |
-| `entityId` | ObjectId | ✔ | ID of the affected document |
-| `changes` | Object (Mixed) | — | Before/after snapshot or diff |
-| `ipAddress` | String | — | — |
-| `timestamp` | Date | ✔ | Default `now` |
+| _id | ObjectId | auto | Primary key |
+| userId | ObjectId (ref users) | yes | - |
+| action | String | yes | e.g. scheme_submitted_for_monitoring, monitoring_approved, monitoring_rejected, team_assembled, team_member_added, inspection_submitted |
+| entityType | String | yes | e.g. Scheme, SchemeMonitoringApproval, Team, Inspection |
+| entityId | ObjectId | yes | - |
+| changes | Object (Mixed) | no | Before/after snapshot or diff |
+| ipAddress | String | no | - |
+| timestamp | Date | yes | Default now |
 
 ```js
 const auditLogSchema = new Schema({
@@ -726,41 +753,64 @@ auditLogSchema.index({ userId: 1 });
 auditLogSchema.index({ timestamp: -1 });
 ```
 
-**Indexes:** compound `{ entityType, entityId }` · `userId` · `timestamp` (descending, for recent-activity queries)
+---
 
-> **Note:** `auditLogs` intentionally has no `timestamps: true` option since it already carries its own `timestamp` field and is designed to be append-only.
+## 4. Complete Workflow, Mapped to Collections
+
+```
+1. Regional Director creates/edits a Scheme                 -> schemes (draft; no schemeMonitoringApprovals doc yet)
+2. Regional Director submits for monitoring approval        -> schemeMonitoringApprovals { status: "pending" }
+                                                                 + notifications -> director_general
+3. Director General reviews
+     - Rejects                                               -> schemeMonitoringApprovals { status: "rejected", rejectionReason }
+                                                                 + notifications -> regional_director
+       Regional Director revises the Scheme, resubmits       -> new schemeMonitoringApprovals { revisionOf: <previous> }
+       (loop back to step 3)
+     - Approves                                               -> schemeMonitoringApprovals { status: "approved" }
+                                                                 + notifications -> regional_director
+4. Regional Director assembles a Team (1+ MEOs,
+   optionally self)                                           -> teams { status: "active", members: [...] }
+                                                                 + notifications -> each added MEO
+5. An MEO on the active team visits the site and
+   submits a progress report (GPS verify, camera,
+   milestones, remarks/issues, submit)                        -> inspections, inspectionPhotos, issues
+                                                                 + scheme.milestones / physicalProgressPercent updated
+6. Variance Engine compares latest adpFinancialRecords
+   against latest inspection's physical progress               -> varianceRecords
+                                                                 + notifications (if red flag) -> pd_mec_central, dept head
+```
 
 ---
 
-## 3. Design Decisions
+## 5. Design Decisions
 
-**Embedding vs. Referencing**
-- **Embedded:** `schemes.milestones[]` (small, bounded, always read with the scheme) and `inspections.milestoneUpdates[]` (a historical snapshot that must not change even if the scheme's milestone list changes later).
-- **Referenced:** `schemeDocuments`, `inspectionPhotos`, `issues`, `financialTransactions`, `varianceRecords`, `notifications`, and `auditLogs` — all can grow without bound over a scheme's lifetime, which is an anti-pattern for embedding in MongoDB.
+**Real data first.** departments, subSectors, districts, schemes, and adpFinancialRecords are modeled to mirror the ADP book's own columns exactly, so the initial data load can be a near-literal import of the 3,715-scheme ledger with no field remapping guesswork.
 
-**Denormalization for Read Performance**
-- `schemeId` is duplicated onto `inspections` (in addition to `assignmentId`) so inspection history can be queried directly without an intermediate lookup.
-- `schemes.physicalProgressPercent`, `financialProgressPercent`, `varianceIndex`, and `varianceClassification` are cached on the scheme document itself and recalculated whenever a new inspection, financial transaction, or variance calculation occurs — this keeps dashboard and map queries fast (no on-the-fly aggregation across collections for every request), at the cost of updating these fields via application logic whenever the underlying data changes.
+**Two approvals, two collections, never merged.** schemes.adpApproval (government PC-I approval, historical/read-mostly) and schemeMonitoringApprovals (your RD-to-DG monitoring workflow, active/write-heavy) are kept fully separate - merging them would make it impossible to tell "the government approved this scheme's budget in 2023" apart from "the DG approved this scheme for monitoring last week."
 
-**Geospatial Support**
-- `schemes.location` and `schemes.boundary` use GeoJSON with `2dsphere` indexes, enabling `$geoNear` / `$nearSphere` queries — this is how the geofence check (distance between an FMO's live GPS and the registered scheme location) and the GIS map's radius/bounding-box filters are implemented.
-- `inspections.gpsAtInspection` also carries a `2dsphere` index to support historical location audits if ever required.
+**Approval status is derived, not duplicated.** Rather than a monitoringStatus field on schemes that could drift out of sync with its approval history, the current state is always read as the latest schemeMonitoringApprovals document for that scheme (queried by schemeId, sorted by submittedAt descending). This makes the approval history the single source of truth.
 
-**Financial Data Model**
-- `financialTransactions` uses a single collection with a `type` enum (`allocation` / `release` / `expenditure`) rather than three separate collections. Per-scheme totals for each type are obtained via a simple aggregation (`$match` on `schemeId` + `type`, then `$sum`), which is both simpler to maintain and more idiomatic in MongoDB than three near-identical collections.
+**Teams are dynamic and reshuffleable.** teams.members[] is an array (not a fixed 1:1 assignment) precisely because a team may have one or many MEOs, and status active/disbanded plus per-member removedAt lets a Regional Director change team composition mid-scheme without losing the record of who did what and when. The partial-unique index on schemeId (only for status active) guarantees a scheme never has two active teams at once, while still allowing full history of past disbanded teams.
 
-**Immutability**
-- `inspections`, `inspectionPhotos`, `varianceRecords`, and `auditLogs` are treated as append-only / immutable once created, preserving the integrity of the monitoring and audit trail.
+**Financial data is a time series, not a snapshot.** adpFinancialRecords stores one document per scheme per ADP edition rather than overwriting fields on schemes each year - this preserves every past year's allocation/expenditure figures exactly as published, which is essential for an official government financial record and for computing multi-year variance trends.
+
+**Embedding vs. referencing** follows the same rule as before: schemes.milestones[] and inspections.milestoneUpdates[] are embedded (small, bounded, or a point-in-time snapshot); everything that grows unboundedly over a scheme's life (documents, financial records, inspections, photos, issues, approvals, notifications, audit logs) is a separate referenced collection.
+
+**Geospatial support** is unchanged: inspections.gpsAtInspection carries a 2dsphere index for geofence-distance queries. (schemes itself does not carry a single GPS point in the ADP book - district-level location only - so a dedicated scheme coordinate/boundary would need to be captured separately by the M&E team if a precise GIS pin is required; flag this if the map feature needs it, since it isn't in the source data.)
 
 ---
 
-## 4. Suggested Additional Indexes for Dashboard Queries
+## 6. Suggested Indexes for Common Queries
 
 | Query Pattern | Recommended Index |
 |---|---|
-| Executive dashboard filters (sector/district/division/status) | `schemes: { sectorId, districtId, divisionId, currentStatus }` (already listed above) |
-| Red-flag / high-variance scheme list | `schemes: { varianceClassification }` and `varianceRecords: { classification }` |
-| FMO "My Tasks" list | `inspectionAssignments: { assignedTo, status }` |
-| Scheme inspection history | `inspections: { schemeId, inspectionDate: -1 }` |
-| Notification inbox | `notifications: { recipientId, isRead, createdAt: -1 }` |
-| GIS map / geofence proximity queries | `schemes: { location: "2dsphere" }` |
+| Look up a scheme by its official UID | schemes: { uid } (unique) |
+| Browse schemes by department/sub-sector | schemes: { departmentId, subSectorId } |
+| Filter schemes by district | schemes: { districtIds } (multikey) |
+| DG's pending-approval queue | schemeMonitoringApprovals: { status } |
+| A scheme's full approval history | schemeMonitoringApprovals: { schemeId, submittedAt: -1 } |
+| Which schemes is this MEO on a team for | teams: { members.userId } |
+| A scheme's current active team | teams: { schemeId, status } (plus partial unique) |
+| A scheme's financial history across editions | adpFinancialRecords: { schemeId, adpFiscalYear } (unique) |
+| Red-flag / high-variance scheme list | schemes: { varianceClassification }, varianceRecords: { classification } |
+| Notification inbox | notifications: { recipientId, isRead, createdAt: -1 } |
