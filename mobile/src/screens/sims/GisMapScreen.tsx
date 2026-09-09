@@ -1,1 +1,0 @@
-// Mapbox provincial cluster map

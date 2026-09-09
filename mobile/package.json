@@ -1,11 +1,17 @@
 {
-  "name": "@sme/mobile",
+  "name": "mec-mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "React Native (bare workflow) role-adaptive mobile app for the Smart Provincial M&E Ecosystem",
+  "description": "Smart Provincial M&E Ecosystem — React Native (Expo) client.",
+  "main": "index.js",
   "scripts": {
-    "start": "react-native start",
-    "android": "react-native run-android",
-    "ios": "react-native run-ios"
-  }
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {}
 }
