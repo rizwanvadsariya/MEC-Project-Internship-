@@ -1,1 +1,0 @@
-// FreeRASP root/tamper validation

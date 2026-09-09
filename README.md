@@ -1,28 +1,53 @@
-# Smart Provincial M&E Management Ecosystem
+# Smart Provincial M&E Management Ecosystem — Monorepo
 
-A unified digital platform for scheme information management (SIMS), field
-monitoring (PMS), and financial oversight, connected by a Variance Engine
-that cross-checks financial expenditure against verified physical progress.
+Mobile-first monitoring platform for the Sindh Secretariat: RD assembles a field
+team -> DG approves -> MEO visits the scheme site and files a form + photos +
+issues -> the team and division leadership see the record (read-only).
 
-See the project proposal document for full background, objectives, and
-scope. This repository is organized as:
+Full context: [`PRD.md`](./PRD.md) · [`schema.md`](./schema.md) ·
+[`architecture.md`](./architecture.md) · [`phases.md`](./phases.md) ·
+[`Memory.md`](./Memory.md) (current status).
 
-- `shared/`  — TypeScript types and constants shared between backend and mobile
-- `backend/` — Node.js + Express REST API, MongoDB, Redis, S3-compatible storage
-- `mobile/`  — React Native (bare workflow) role-adaptive mobile application
+## Repository layout
 
-## Getting started
+```
+backend/    Express API (PERN). Layered routes -> controllers -> services -> repositories.
+            Also: db/migrations (schema + RLS), db/seeds (ADP import), tests.
+mobile/     React Native (Expo, TS) client for all four roles.
+shared/     Constants shared by both (role names, enums) to avoid drift.
+docs/       Index into the planning docs at the repo root.
+.github/    CI: lint + typecheck + tests gate every deploy.
+```
 
-1. Ensure MongoDB Community Server is running locally, or start the included MongoDB container with `docker-compose up -d mongo`.
-2. The local backend configuration in `backend/.env` uses `mongodb://127.0.0.1:27017/smart_me_ecosystem`. For the Docker MongoDB service, use `mongodb://root:changeme@127.0.0.1:27017/smart_me_ecosystem?authSource=admin`. An Atlas URI is also stored as `MONGO_ATLAS_URI`.
-3. Install dependencies with `npm install`.
-4. Start the backend with `npm run dev:backend` or `npm run start --workspace=backend`.
-5. Open MongoDB Compass with the same URI. The backend creates all 16 schema collections after connecting.
+Each package has its own README with the folder-by-folder breakdown:
+[`backend/README.md`](./backend/README.md) · [`mobile/README.md`](./mobile/README.md).
 
-To use Atlas, replace `MONGO_URI` in `backend/.env` with the value of `MONGO_ATLAS_URI`, then restart the backend. In Compass, paste the Atlas URI directly into the New Connection field. Ensure the Atlas Network Access rules allow your current IP address.
+## Stack
 
-The API health check is available at `http://localhost:5000/health`.
+| Layer | Choice |
+|---|---|
+| Database / Auth / Storage | PostgreSQL, Auth, Storage — Supabase |
+| Backend API | Node.js + Express (hosted on Render) |
+| Mobile client | React Native + Expo (TypeScript) |
+| Frontend hosting | Vercel |
 
-## Status
+## First run
 
-Scaffolding stage — folder structure and stub files only, no implementation yet.
+```bash
+# 1. Backend
+cd backend && cp .env.example .env   # fill Supabase URL + service role key + DATABASE_URL
+npm install && npm run migrate
+npm run seed:adp -- --file ./db/seeds/adp/<ledger>.json
+npm run seed:templates && npm run seed:accounts
+npm run dev
+
+# 2. Mobile (separate terminal)
+cd mobile && cp .env.example .env    # set API_BASE_URL + SUPABASE anon key
+npm install && npm start
+```
+
+## Build order
+
+Follow the dependency-ordered sequence in [`phases.md`](./phases.md). Critical
+path to a demoable loop: schema -> auth -> scheme browser -> team assembly ->
+DG approval -> site visit -> form/photos/issues -> view access -> dashboards.

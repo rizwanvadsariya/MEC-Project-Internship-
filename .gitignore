@@ -1,9 +1,36 @@
+# ---- Node ----
 node_modules/
-backend/.env
-.env
+npm-debug.log*
+yarn-error.log*
+.pnp.*
 
-# Large source PDF and local extraction artifacts (regenerate with
-# backend/src/seeders/cache_words.py + parseAdpLedger.py)
-Download.pdf
-scratch/
-scratch_adp.txt
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Builds / caches ----
+dist/
+build/
+coverage/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# ---- Mobile native ----
+mobile/android/
+mobile/ios/
+*.keystore
+*.p8
+*.mobileprovision
+
+# ---- ADP source data (raw booklet exports) ----
+backend/db/seeds/adp/*
+!backend/db/seeds/adp/.gitkeep
+!backend/db/seeds/adp/README.md
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

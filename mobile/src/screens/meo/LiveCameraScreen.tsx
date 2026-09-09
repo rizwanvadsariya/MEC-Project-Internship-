@@ -1,1 +1,0 @@
-// VisionCamera (no gallery)

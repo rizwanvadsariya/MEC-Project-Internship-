@@ -1,1 +1,0 @@
-// Red Flag carousel & freeze

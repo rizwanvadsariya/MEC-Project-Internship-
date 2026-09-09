@@ -1,0 +1,7 @@
+/**
+ * Scheme browser controller (read-only).
+ * Parse/shape the request, call the matching service, format the response via
+ * lib/ApiResponse. No SQL, no business rules — those live in services/.
+ */
+'use strict';
+module.exports = {};

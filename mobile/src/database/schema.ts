@@ -1,1 +1,0 @@
-// Local SQLite DDL definitions
