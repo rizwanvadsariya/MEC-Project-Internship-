@@ -1,0 +1,17 @@
+{
+  "name": "mec-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Smart Provincial M&E Ecosystem — React Native (Expo) client.",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

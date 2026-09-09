@@ -1,0 +1,7 @@
+'use strict';
+module.exports = Object.freeze({
+  REGIONAL_DIRECTOR: 'REGIONAL_DIRECTOR',
+  DIRECTOR_GENERAL: 'DIRECTOR_GENERAL',
+  MEO: 'MEO',
+  SUPPORT_USER: 'SUPPORT_USER',
+});
