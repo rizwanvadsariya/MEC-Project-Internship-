@@ -13,7 +13,11 @@ const ApiError = require('../lib/ApiError');
 module.exports = function errorHandler(err, req, res, next) {
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
-      error: { message: err.message, ...(err.details ? { details: err.details } : {}) },
+      error: {
+        message: err.message,
+        ...(err.code ? { code: err.code } : {}),
+        ...(err.details ? { details: err.details } : {}),
+      },
     });
   }
 

@@ -37,7 +37,7 @@ Each package has its own README with the folder-by-folder breakdown:
 # 1. Backend
 cd backend && cp .env.example .env   # fill Supabase URL + service role key + DATABASE_URL
 npm install && npm run migrate
-npm run seed:adp -- --file ./db/seeds/adp/<ledger>.json
+npm run seed:adp   # loads adp-database-seed-csv/*.csv at the repo root
 npm run seed:templates && npm run seed:accounts
 npm run dev
 

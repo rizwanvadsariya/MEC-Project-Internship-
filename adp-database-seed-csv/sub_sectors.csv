@@ -1,0 +1,113 @@
+id,department_id,name
+1,1,Agriculture Extension
+2,1,Agriculture Marketing
+3,1,Agriculture Mechanization
+4,1,Agriculture Research
+5,1,Agriculture Water Management
+6,1,"Supply, Prices, Weights & Measures"
+7,1,Training & Research
+8,2,"Auqaf, R.A. Zakat & Ushr"
+9,3,Buildings
+10,3,I. T. SCHEMES
+11,4,Antiquities
+12,4,Archives
+13,4,Culture
+14,4,Tourism
+15,5,Cadet Colleges
+16,5,DEPD
+17,5,Elementary Education
+18,5,Miscellaneous Education
+19,5,Secondary Education
+20,5,Sindh Education Foundation
+21,5,Teacher Education
+22,5,STEVTA
+23,5,UNIVERSITIES AND BOARDS
+24,6,ENERGY
+25,7,Coastal Development
+26,7,ENVIRONMENT
+27,8,Buildings
+28,8,I. T. SCHEMES
+29,9,Buildings
+30,9,I. T. SCHEMES
+31,9,PPP Unit
+32,10,Food Security
+33,11,Forest
+34,11,Wildlife
+35,12,Buildings
+36,13,Foreign Aided Projects
+37,13,Medical Education
+38,13,Other Hospitals
+39,13,Teaching Hospitals
+40,14,Police
+41,14,Prisons
+42,15,Human Rights
+43,16,"Human Settlement, Spatial Development & Social"
+44,17,Directorate of Industries
+45,17,Printing & Stationery
+46,17,S.I.T.E Limited
+47,17,Sindh Small Industries Corporation
+48,18,Information
+49,19,Drainage Reclamation & Tubewells
+50,19,Lining Main Canal
+51,19,Open Canals
+52,19,Small Dams Projects
+53,19,Survey & Investigation
+54,20,Labour & Human Resources
+55,21,Judicial
+56,22,Animal Husbandry
+57,22,Fisheries
+58,23,Buildings
+59,23,Community Support Schemes
+60,23,Cummunity Services
+61,23,Education
+62,23,ENVIRONMENT
+63,23,Health
+64,23,Housing & Town Planning
+65,23,"Hyderabad Package (Total Cost Rs. 2000 million,"
+66,23,I. T. SCHEMES
+67,23,Livestock & Fisheries
+68,23,Roads
+69,23,Sindh Solid Waste Management
+70,23,Water Supply & Sanitation
+71,24,"AGRICULTURE, SUPPLY & PRICES"
+72,24,FOREST & WILDLIFE
+73,24,IRRIGATION
+74,24,School Education & Literacy
+75,24,WORKS & SERVICES
+76,25,"LOCAL GOVERNMENT, HOUSING & TOWN"
+77,26,Mines & Mineral
+78,27,Minorities Affairs
+79,28,Bureau of Statistics
+80,28,Monitoring & Evaluation Cell
+81,28,"Poverty Reduction, Urban Planning & RGCs"
+82,28,Statistical & Economic Research
+83,29,Population Welfare
+84,30,Govt. Office Building
+85,31,Provincial Ombudsman
+86,32,Drainage
+87,32,Sindh Based Schemes
+88,32,Water Supply & Sanitation
+89,32,Communication
+90,32,Housing and Community Amenities
+91,33,Rehabilitation
+92,34,I.T
+93,35,Buildings
+94,35,I.T
+95,36,Sindh Public Service Commission
+96,37,Sindh Revenue Board
+97,38,Social Protection
+98,39,Social Welfare
+99,49,HOME
+100,50,Special Initiative for Backward Districts
+101,40,Sports
+102,40,Youth Affairs
+103,41,Thar Coal
+104,42,Buildings
+105,43,Transport and Mass Transit
+106,44,Women Development
+107,45,Bridge
+108,45,Buildings
+109,45,Construction
+110,45,Foreign Aided Projects
+111,45,General
+112,45,Improvement

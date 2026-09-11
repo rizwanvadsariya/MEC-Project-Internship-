@@ -24,11 +24,6 @@ mobile/ios/
 *.p8
 *.mobileprovision
 
-# ---- ADP source data (raw booklet exports) ----
-backend/db/seeds/adp/*
-!backend/db/seeds/adp/.gitkeep
-!backend/db/seeds/adp/README.md
-
 # ---- OS / editor ----
 .DS_Store
 Thumbs.db
