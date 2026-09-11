@@ -1,0 +1,31 @@
+id,division_id,name
+1,1,Karachi Central (Nazimabad)
+2,1,Karachi East (Gulshan)
+3,1,Karachi South (Karachi)
+4,1,Karachi West (Orangi)
+5,1,Malir
+6,1,Keamari
+7,1,Korangi
+8,2,Badin
+9,2,Dadu
+10,2,Hyderabad
+11,2,Jamshoro
+12,2,Matiari
+13,2,Sujawal
+14,2,Tando Allahyar
+15,2,Tando Muhammad Khan
+16,2,Thatta
+17,3,Ghotki
+18,3,Khairpur
+19,3,Sukkur
+20,4,Jacobabad
+21,4,Kashmore
+22,4,Larkana
+23,4,Qambar Shahdadkot
+24,4,Shikarpur
+25,5,Mirpur Khas
+26,5,Sanghar
+27,5,Tharparkar
+28,5,Umerkot
+29,6,Naushahro Feroze
+30,6,Shaheed Benazirabad

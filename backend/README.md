@@ -30,7 +30,7 @@ cp .env.example .env      # then see "Connecting Supabase" below
 npm install
 npm run check:db          # verify the Postgres + Supabase connection
 npm run migrate           # apply db/migrations/*
-npm run seed:adp -- --file ./db/seeds/adp/<ledger>.json
+npm run seed:adp   # loads ../adp-database-seed-csv/*.csv (12 reference tables)
 npm run seed:templates && npm run seed:accounts
 npm run dev
 ```

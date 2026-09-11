@@ -1,0 +1,11 @@
+id,name,type
+1,Government of Sindh (GoS),Provincial
+2,Government of Pakistan (GoP),Federal
+3,World Bank,Multilateral
+4,Asian Development Bank (ADB),Multilateral
+5,JICA,Bilateral
+6,AIIB,Multilateral
+7,Green Climate Fund (GCF),Multilateral
+8,Islamic Development Bank (IsDB),Multilateral
+9,IDA,Multilateral
+10,Farmer/Beneficiary Share,Beneficiary

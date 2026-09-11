@@ -8,8 +8,8 @@
 const router = require('express').Router();
 
 router.use('/health', require('./routes/health.routes'));
+router.use('/auth', require('./routes/auth.routes'));
 
-// router.use('/auth', require('./routes/auth.routes'));
 // router.use('/schemes', require('./routes/schemes.routes'));
 // router.use('/teams', require('./routes/teams.routes'));
 // ...
