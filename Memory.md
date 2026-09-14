@@ -3,7 +3,7 @@
 ## Smart Provincial M&E Management Ecosystem
 
 **Last updated:** September 11, 2026
-**Current stage:** Phase 0 in progress. Monorepo scaffold created; Supabase provisioned and **connected to the backend**; full schema applied; **real ADP booklet data (3,712 schemes) loaded into Supabase**; and **Supabase Auth is now implemented and verified end-to-end** — all 10 hardening points, 4 test accounts (RD/DG/MEO/Support), login/provisioning/deactivation/lockout/sessions/forgot-password all tested live. Next: RLS.
+**Current stage:** Phase 0 is essentially complete. Monorepo scaffold created; Supabase provisioned and **connected to the backend**; full schema applied; **real ADP booklet data (3,712 schemes) loaded into Supabase**; **Supabase Auth implemented and verified end-to-end** (all 10 hardening points); and **RLS policies are now live and verified** — division scoping, team-membership scoping, and role-based write restrictions all pass 22/22 direct-Postgres tests. Next: Step 5 (React Native app shell), then Phase 1 features.
 
 > Repo note: history was rewritten on `Main` (co-author trailers stripped) after PR #1 merged; `Main` is now the repo's only branch — the old `feature/adp-schema-and-monitoring-workflow` branch is deleted. Nothing about that affects project status below.
 
@@ -18,9 +18,8 @@ Per the build sequence in `phases.md`, Phase 0 is underway:
 - **Step 1 (schema) — DONE.** All 26 domain tables + `audit_log`, 7 enums, 37 FKs and every index from `schema.md` §7 are applied to the live Supabase project via migrations `0001`–`0003`. Migration `0004` additionally extended `departments`, `schemes`, and `financial_year_allocations` with columns the real ADP CSVs carry that the original design didn't anticipate (see Key decisions #14).
 - **Step 2 (ADP import) — DONE.** `backend/db/seeds/importAdpBooklet.js` loaded all 12 reference tables from `adp-database-seed-csv/*.csv` (committed at the repo root): 6 divisions, 30 districts, 50 departments, 112 sub-sectors, 10 funding sources, 17 SDG goals, **3,712 schemes**, 3,730 scheme-district links, 52 funding splits, 873 SDG tags (24 exact-duplicate rows deduped), 313 revision-history rows, 3,712 financial-year-allocation rows. Verified by direct query + spot-checked joins. Re-running the script is safe (it truncates and reloads the 12 reference tables in one transaction).
 - **Step 3 (Auth) — DONE.** Full auth stack implemented and verified live — see "Supabase Auth setup" below for the complete breakdown.
-- **Step 4 (API skeleton) — PARTIAL.** Monorepo scaffold exists (`backend/`, `mobile/`, `shared/`, `docs/`, `.github/`). Backend boots, connects to Supabase, and serves `GET /api/v1/health` (live DB round-trip). The `auth` slice of routes/controllers/services/repositories/middleware is real; every other resource (schemes, teams, approvals, ...) is still a documented stub.
-- **Step 5 (RN app shell) — NOT STARTED.**
-- **RLS — deliberately deferred** to a later migration. Auth now resolves `auth.uid()` → `users` role/division (needed for RLS join logic), so this is unblocked, just not yet built. Backend currently connects as the `postgres` pooler role, which bypasses RLS, so the API is the only enforcement layer for now.
+- **Step 4 (API skeleton + RLS) — DONE.** Monorepo scaffold exists (`backend/`, `mobile/`, `shared/`, `docs/`, `.github/`). Backend boots, connects to Supabase, serves `GET /api/v1/health`. The `auth` slice of routes/controllers/services/repositories/middleware is real; every other resource (schemes, teams, approvals, ...) is still a documented stub — building those is Phase 1, not Phase 0. **RLS policies (migrations `0006`+`0007`) are live** — see "Row-Level Security" below.
+- **Step 5 (RN app shell) — NOT STARTED.** Next up.
 
 ## Supabase Auth setup (Phase 0 Step 3) — IMPLEMENTED and verified live
 
@@ -48,6 +47,32 @@ Re-verified independently in a second, later pass (fresh server boot, all 10 poi
 
 **Not built:** the mobile MFA-enrollment screen (blocks turning on point #7), real email delivery for invites/resets (no SMTP configured — Supabase's default sending may or may not be sufficient at volume), and a real alert channel for point #8's "notify on DG/RD lockout" (currently just a `LOGIN_LOCKED` audit_log row with `highValueAccount: true` — no email/Slack/push wired up).
 
+## Row-Level Security (Phase 0 Step 4) — IMPLEMENTED and verified live
+
+**Discovery before writing any policy:** RLS was already enabled on all 27 tables (`relrowsecurity = true` everywhere, cause unknown — likely a Supabase project default) but had **zero policies**, meaning every table was already fully deny-all for `authenticated`/`anon` and reachable only through the backend's RLS-bypassing `postgres` connection. Writing policies didn't have to "turn on" protection — it had to make the app's per-user rules real instead of a blanket lock the backend happens to tunnel under.
+
+**What was built (migrations `0006`, `0007`):**
+- `REVOKE ALL ... FROM anon` — this app has no unauthenticated use case; `anon` gets no policies anywhere either.
+- SECURITY DEFINER helper functions (`auth_user_role()`, `auth_user_division_id()`, `can_view_scheme()`, `can_view_site_visit()`, `is_lead_meo_for_site_visit()`, `is_member_of_team()`, `is_lead_meo_of_team()`, `team_scheme_id()`, `team_created_by()`) — these read `users`/`visit_teams`/`visit_team_members` as the function owner, bypassing the caller's own RLS, which is both the standard Supabase pattern for "who am I" checks and (as it turned out) load-bearing for avoiding recursion.
+- **Schemes + everything keyed off a scheme** (`scheme_districts`, `scheme_funding`, `scheme_sdg`, `revision_history`, `financial_year_allocations`): visible only if in the caller's own division (RD/DG/MEO), or fully open for `SUPPORT_USER`.
+- **`users`**: own row, or (RD/DG) anyone in the same division.
+- **`visit_teams`/`visit_team_members`**: RD creates/edits within their own division; RD/DG see everything in-division; MEO/Support see only teams they're a member of.
+- **`team_approval_requests`**: the submitting RD, or the DG of that scheme's division; append-only (no delete policy).
+- **`site_visits`**: same division/membership split; the team's `LEAD_MEO` can update status/timestamps.
+- **`visit_forms`/`visit_photos`/`issue_reports`/`issue_report_photos`**: read = same visibility as the parent site visit; write = the `LEAD_MEO` only.
+- **`comments`**: open read (not yet scoped per-entity — a known simplification, see below); insert blocked for `SUPPORT_USER`.
+- **`notifications`**: strictly own rows.
+- Pure reference lookups (`divisions`, `districts`, `departments`, `sub_sectors`, `funding_sources`, `sdg_goals`, `form_templates`, `form_template_fields`): open read, no write policy anywhere (import/admin stays `postgres`-only).
+- `audit_log`, `schema_migrations`: no policies at all — stay fully deny-all by design.
+
+**Bug caught and fixed by testing:** `0006`'s `visit_teams` policy queried `visit_team_members` directly, and `visit_team_members`'s policy queried `visit_teams` directly — each subquery re-triggers the other table's RLS, so Postgres threw `infinite recursion detected in policy for relation "visit_teams"` the moment a real query touched either table. Fixed in `0007` by routing every cross-table check through the SECURITY DEFINER helpers instead of raw subqueries — those bypass RLS internally, breaking the cycle. Lesson: **any RLS policy whose subquery touches a table that itself has RLS is a recursion risk if that table's policy queries back** — wrap cross-table reads in SECURITY DEFINER functions from the start next time, don't wait to hit the recursion error.
+
+**Verification:** a from-scratch Postgres test (`SET ROLE authenticated` + `SET request.jwt.claims` to simulate each of the 4 seeded users, real fixture rows for a team/visit in Karachi vs. one in Jacobabad, all in rolled-back transactions) — **22/22 checks passed**: division isolation both directions (schemes, users, teams, site visits), team-membership scoping for MEO/Support, `LEAD_MEO`-only writes to `visit_forms` (a non-lead RD's insert attempt threw the expected RLS violation), `SUPPORT_USER` blocked from posting a comment while RD could, and `anon` getting zero rows from `schemes`. Confirmed afterward that the app itself (connects as `postgres`, bypasses RLS) was completely unaffected — `/health` and login still worked identically post-migration.
+
+**Known simplification, not yet tightened:** `comments` SELECT is open to any authenticated user rather than scoped per `commentable_type`/`commentable_id` — doing that properly needs a per-type join (comments on a scheme vs. a team vs. a site visit each resolve visibility differently) that wasn't built yet. Revisit before comments ship as a real feature.
+
+**Not yet done:** the `backend/tests/integration/rls/*.test.js` stub files still hold only their one-line descriptions — the real verification above was a standalone script, not wired into Jest (Jest itself isn't installed in `backend/` yet). Converting the script into real Jest specs is a small, separate follow-up.
+
 ## Artifacts produced so far
 
 | File                         | What it is                                                                                                                                                                         |
@@ -68,7 +93,7 @@ Re-verified independently in a second, later pass (fresh server boot, all 10 poi
 | `backend/.env` | Filled with the live project: `SUPABASE_URL` (ref `fcneocvlbgmasatfpvrd`), service-role secret key, JWKS URL, `DATABASE_URL`/`DIRECT_URL` via the Supavisor pooler (`aws-0-ap-northeast-1`, ports 6543 / 5432, password URL-encoded). Git-ignored. |
 | `backend/scripts/check-db.js` | `npm run check:db` — Postgres + Supabase Storage connectivity check. Passes. |
 | `backend/scripts/migrate.js` | `npm run migrate` / `migrate:status` — applies `db/migrations/*.sql` in order via `DIRECT_URL`, tracks in `schema_migrations`. Migrations are immutable once applied. |
-| `backend/db/migrations/0001–0005` | `0001` reference tables, `0002` operational tables + enums + `updated_at` triggers, `0003` indexes, `0004` extends `departments`/`schemes`/`financial_year_allocations` to match the real ADP CSV columns, `0005` adds `users.failed_login_count`/`locked_until` (login lockout). All applied to Supabase. |
+| `backend/db/migrations/0001–0007` | `0001` reference tables, `0002` operational tables + enums + `updated_at` triggers, `0003` indexes, `0004` extends `departments`/`schemes`/`financial_year_allocations` to match the real ADP CSV columns, `0005` adds `users.failed_login_count`/`locked_until` (login lockout), `0006` RLS policies, `0007` fixes RLS recursion. All applied to Supabase. |
 | `backend/src/{middleware,repositories,services,controllers,validators}` auth slice | Full Supabase Auth implementation — see "Supabase Auth setup" above. Verified against the live project with real login/provision/deactivate/lockout/session/reset-password calls. |
 | `adp-database-seed-csv/` (repo root) | 12 CSVs, one per reference table, exported from the government ADP ledger — the source of truth `importAdpBooklet.js` reads. Committed to the repo (not git-ignored). |
 | `backend/db/seeds/importAdpBooklet.js` | `npm run seed:adp` — real implementation (was a stub). Truncates + reloads the 12 reference tables in one transaction, preserves the CSVs' own ids (`OVERRIDING SYSTEM VALUE` + sequence resync), dedupes the 24 exact-duplicate `scheme_sdg` rows. |
@@ -94,6 +119,10 @@ Mobile app code and the React Native shell do not exist yet (stubs only).
 15. **Known minor data-quality note (non-blocking):** `departments.scheme_count` (booklet's own claimed count) sums to 3,715 across departments vs. 3,712 actual scheme rows — a small discrepancy in the source ledger, not an import bug (every FK/referential check passed with zero orphans).
 16. **Login is a backend route, not a direct Supabase client call** — changed during Auth implementation specifically so failed-login attempts are visible to the backend for lockout tracking (point #8). See "Supabase Auth setup" above.
 17. **`z.coerce.boolean()` is unsafe for env vars** — it turns the string `"false"` into `true`. Fixed via a proper string-aware preprocessor (`boolFromEnv` in `config/index.js`); apply the same pattern to any future boolean env var.
+18. **RLS was already enabled on every table with zero policies before we wrote any** — origin unknown, likely a Supabase project default. Meant enabling RLS wasn't part of this work, only writing the actual policies.
+19. **`anon` gets no RLS policies anywhere and had its default grants revoked** — this app has no unauthenticated use case (mobile always authenticates via Supabase Auth first).
+20. **Cross-table RLS policies must go through SECURITY DEFINER helper functions, never raw subqueries on another RLS-protected table** — a raw two-way subquery between `visit_teams` and `visit_team_members` caused a live "infinite recursion detected in policy" error, fixed in migration `0007`. Apply this rule from the start on any future cross-table policy.
+21. **`comments` visibility is intentionally left open-read for now** (not scoped per `commentable_type`/`commentable_id`) — a real per-entity join wasn't built; only the `SUPPORT_USER` posting restriction is enforced. Revisit before comments ships as a feature.
 
 ## Open / unresolved questions
 
@@ -111,13 +140,17 @@ Carried forward from `PRD.md` §12 — none of these are answered yet:
 - [x] Express/Node API skeleton scaffolded (layered dirs + working `app.js`/`server.js`/`/health`)
 - [x] Write `db/seeds/importAdpBooklet.js` and run the one-time ADP import (all 12 reference tables loaded from `adp-database-seed-csv/`)
 - [x] Set up Supabase Auth per the full design in "Supabase Auth setup" above (all 10 hardening points implemented and verified live)
-- [ ] Add an RLS-policies migration + tests in `backend/tests/integration/rls/` (now unblocked — auth resolves `auth.uid()` → role/division)
+- [x] Add RLS policies scoped by division (migrations `0006`+`0007`) — 22/22 direct-Postgres verification checks passed
+- [ ] Wire the RLS verification script into real Jest specs in `backend/tests/integration/rls/` (Jest isn't installed in `backend/` yet)
+- [ ] Tighten `comments` SELECT to be scoped per `commentable_type`/`commentable_id` instead of open-read (noted simplification)
 - [ ] Flesh out the remaining backend routes/controllers/services/repositories (start with the scheme browser — auth is done)
 - [ ] Build the React Native app shell (navigation, role-based routing, login screen only — no signup screen needed, see decision on Option A)
 - [ ] Mobile MFA-enrollment screen — needed before `MFA_ENFORCEMENT_ENABLED` can safely flip to `true`
 - [ ] Real email delivery for invite/reset links (SMTP not configured) and a real alert channel for DG/RD lockouts (currently audit_log-only)
 - [ ] Housekeeping: two root READMEs still exist (`README.md` monorepo guide + `README (1).md` product front-door) — decide whether to merge
-- [ ] Commit + push the ADP import work AND the auth implementation (migrations `0004`/`0005`, `importAdpBooklet.js`, `adp-database-seed-csv/`, the whole auth slice, doc fixes) — not yet committed as of this update
+- [x] Commit + push the ADP import work AND the auth implementation — landed on branch `Build_database` (commit `b75f7a0`), pushed, PR opened against `Main`
+- [ ] Commit + push the RLS migrations (`0006`, `0007`) — still uncommitted on `Build_database` as of this update; add to the same PR before merging
+- [ ] Stray note: `mobile/package-lock.json` is untracked and `mobile/package.json` was modified on the `Main` branch (from an `npm install` run there) — unrelated to this work, currently stashed; resolve before it's forgotten
 
 ## Team
 
