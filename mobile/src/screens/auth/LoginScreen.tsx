@@ -12,8 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../../auth/useAuth';
-import { ApiClientError } from '../../api/client';
-import { apiBaseUrl } from '../../api/client';
+import { ApiClientError, apiBaseUrl } from '../../api/client';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();

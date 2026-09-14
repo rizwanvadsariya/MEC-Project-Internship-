@@ -40,7 +40,7 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-  } catch (networkErr) {
+  } catch {
     // Fetch itself failed — no response at all (host unreachable, wrong IP,
     // firewall, etc.). Surface a clear message instead of a cryptic "Network
     // request failed" so it's obvious what to check.
