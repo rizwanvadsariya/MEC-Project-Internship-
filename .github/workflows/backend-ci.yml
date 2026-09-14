@@ -8,17 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: mec_test
-        ports: ["5433:5432"]
-        options: >-
-          --health-cmd pg_isready --health-interval 10s
-          --health-timeout 5s --health-retries 5
     defaults:
       run:
         working-directory: backend
@@ -29,6 +18,13 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm audit --audit-level=high
-      - run: npm run migrate
-      - run: npm run check:rls
       - run: npm test
+
+# `migrate` / `check:rls` are deliberately NOT run here yet: the schema's
+# `users.id references auth.users(id)` only exists on a real Supabase project
+# (schema.md §4.1) — a plain `postgres:16` service container can't satisfy it,
+# and there's no CI-provisioned Supabase instance (e.g. a preview branch) to
+# migrate against instead. Re-add once one of those exists. Until then `npm
+# test` only runs the `test.todo` placeholders in tests/ — see Memory.md
+# "Row-Level Security" for the real, manually-run verification against the
+# live project.

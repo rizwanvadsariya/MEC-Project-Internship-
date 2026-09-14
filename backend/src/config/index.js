@@ -69,7 +69,7 @@ const placeholders = Object.entries(process.env)
   .map(([k]) => k);
 
 if (placeholders.length) {
-  // eslint-disable-next-line no-console
+   
   console.error(
     `\n[config] These backend/.env values are still placeholders:\n` +
       placeholders.map((k) => `  - ${k}`).join('\n') +
@@ -81,7 +81,7 @@ if (placeholders.length) {
 
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
-  // eslint-disable-next-line no-console
+   
   console.error('[config] Invalid environment:\n', parsed.error.flatten().fieldErrors);
   process.exit(1);
 }
