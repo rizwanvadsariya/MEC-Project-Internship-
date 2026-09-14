@@ -5,5 +5,14 @@
  */
 'use strict';
 const router = require('express').Router();
-// TODO: define routes
+const authenticate = require('../../../middleware/authenticate');
+const authorize = require('../../../middleware/authorize');
+const validate = require('../../../middleware/validate');
+const controller = require('../../../controllers/schemes.controller');
+const schema = require('../../../validators/schemes.schema');
+
+router.get('/filters', authenticate, authorize(), controller.filterOptions);
+router.get('/', authenticate, authorize(), validate(schema.query), controller.list);
+router.get('/:id', authenticate, authorize(), validate(schema.idParam), controller.getById);
+
 module.exports = router;

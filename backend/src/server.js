@@ -18,7 +18,7 @@ async function start() {
     process.exit(1);
   }
 
-  const server = app.listen(config.PORT, () => {
+  const server = app.listen(config.PORT, '0.0.0.0', () => {
     logger.info(`API listening on http://localhost:${config.PORT}/api/v1`);
   });
 

@@ -10,6 +10,8 @@
  * back to localhost, which works for the iOS simulator / Android emulator
  * but NOT a physical device over Wi-Fi (see mobile/README.md).
  */
+require('dotenv').config();
+
 module.exports = {
   expo: {
     name: 'M&E Monitoring',
@@ -17,7 +19,7 @@ module.exports = {
     scheme: 'mec',
     version: '0.1.0',
     orientation: 'portrait',
-    plugins: ['expo-secure-store'],
+    plugins: ['expo-secure-store', 'expo-font'],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:4000/api/v1',
     },

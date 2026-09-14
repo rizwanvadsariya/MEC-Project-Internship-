@@ -27,7 +27,9 @@ type RequestOptions = {
   token?: string | null;
 };
 
-export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+type ApiEnvelope<T> = { data: T; meta?: Record<string, unknown> };
+
+async function requestEnvelope<T>(path: string, opts: RequestOptions = {}): Promise<ApiEnvelope<T>> {
   const { method = 'GET', body, token } = opts;
 
   let res: Response;
@@ -57,7 +59,16 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
     throw new ApiClientError(res.status, message, json?.error?.code, json?.error?.details);
   }
 
-  return json?.data as T;
+  return json as ApiEnvelope<T>;
+}
+
+export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const json = await requestEnvelope<T>(path, opts);
+  return json.data;
+}
+
+export async function apiRequestWithMeta<T>(path: string, opts: RequestOptions = {}) {
+  return requestEnvelope<T>(path, opts);
 }
 
 export const apiBaseUrl = BASE_URL;

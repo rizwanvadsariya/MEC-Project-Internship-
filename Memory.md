@@ -2,8 +2,8 @@
 
 ## Smart Provincial M&E Management Ecosystem
 
-**Last updated:** September 14, 2026
-**Current stage:** Phase 0 is fully complete, including every follow-up item that was previously left open. All 5 steps built (schema, ADP import, Auth, API skeleton + RLS, RN app shell), plus: RLS is now real Jest tests (not `test.todo`), `comments` is scoped per-entity (not open-read), MFA is fully implemented and verified end-to-end (enroll → challenge → verify → new aal2 session, both backend and a mobile self-service screen), the mobile API URL is env-driven instead of hardcoded, and the two root READMEs are merged into one. On top of that, the mobile UI now matches `ui-implementation.md` (see "Mobile UI theme" below). Next: Phase 1 features (scheme browser, team assembly, ...).
+**Last updated:** September 15, 2026
+**Current stage:** Phase 0 is fully complete. Phase 1 Steps 6–9 are now implemented: role-based empty-state dashboards, a read-only province-wide scheme browser, RD team assembly, and the DG approval queue with rejection/resubmission. The live reject → resubmit → approve loop was verified, including exactly one site visit creation on approval. The next Phase 1 work is site-visit creation/display and the visit workflow.
 
 ## Mobile UI theme (per `ui-implementation.md`) — IMPLEMENTED
 
@@ -23,7 +23,7 @@
   3. **React Native's built-in `Animated` API** (from `'react-native'` core, no separate package) — what's actually shipped now. Zero native modules beyond what every RN app already has, zero babel plugin, so it can't be the reason something fails to render. All of the login screen's motion (crossfade, Ken Burns zoom, card/brand entrance, button press) is built on it. **`babel.config.js` was deleted again** (back to the project's original zero-custom-babel-config state) and `react-native-reanimated`/`react-native-worklets` uninstalled.
 - **Tooling snags hit and fixed along the way:** `StyleSheet.absoluteFillObject` doesn't exist in this RN version's TS types (use an explicit `{position:'absolute', top:0,...}` object; `StyleSheet.absoluteFill` itself is still fine directly in a style array). `eslint-plugin-react-hooks`'s newer React-Compiler-style rules fought both animation approaches: `react-hooks/immutability` flagged Reanimated's sanctioned `sharedValue.value = x` as an error (moot now that Reanimated is gone), and `react-hooks/refs` flagged the standard `useRef(new Animated.Value(x)).current` pattern as "cannot access ref value during render" — fixed by using `useState(() => new Animated.Value(x))[0]` instead, which creates the same stable one-time instance without ever touching `.current`. No lint-disable comments needed in the end.
 - **Verified:** `tsc --noEmit` and `eslint .` both clean; `npx expo export --platform android` compiled with exit code 0 at every stage (1546 modules initially → 1204 after dropping moti → 1283 after adding vector-icons/blur → 923 after dropping reanimated/worklets), correctly picking up the login images and icon fonts as bundled assets every time. Note: `expo export` only proves the bundle *compiles*, not that it renders — both the moti crash and the suspected reanimated issue could only have surfaced at runtime in Expo Go, which this sandbox can't run. If images still don't display after a `npx expo start -c` + full reload, the bug is somewhere neither `tsc`/`eslint`/`export` can see and needs an actual error message/screenshot from the user to diagnose further.
-- The other Phase-1 screens (`SchemeBrowserScreen`, `ApprovalQueueScreen`, etc.) are still untouched 2-line stubs, not yet mounted in any navigator — nothing to theme there until they're actually built.
+- Phase 1 screens now implemented include `SchemeBrowserScreen`, `TeamAssemblyScreen`, `ApprovalQueueScreen`, and the role-based `RoleHomeScreen` dashboards. Remaining Phase 1 screens (site visits, forms, photos, issues, and dashboards) are still stubs or not yet mounted.
 - Not committed — working tree only, on branch `phase0-cleanup`.
 
 > Repo note: PR #1 (`feature/adp-schema-and-monitoring-workflow`), PR #2 (`Build_database`), and PR #3 (`Login_Screen_Implementation`) are all merged into `Main`. Current work is on branch `phase0-cleanup` (not yet pushed as of this update).
@@ -34,12 +34,12 @@
 
 ## Where we actually are
 
-Per the build sequence in `phases.md`, Phase 0 is underway:
+Per the build sequence in `phases.md`, Phase 0 is complete; the following records document the foundation that Phase 1 builds on:
 
 - **Step 1 (schema) — DONE.** All 26 domain tables + `audit_log`, 7 enums, 37 FKs and every index from `schema.md` §7 are applied to the live Supabase project via migrations `0001`–`0003`. Migration `0004` additionally extended `departments`, `schemes`, and `financial_year_allocations` with columns the real ADP CSVs carry that the original design didn't anticipate (see Key decisions #14).
 - **Step 2 (ADP import) — DONE.** `backend/db/seeds/importAdpBooklet.js` loaded all 12 reference tables from `adp-database-seed-csv/*.csv` (committed at the repo root): 6 divisions, 30 districts, 50 departments, 112 sub-sectors, 10 funding sources, 17 SDG goals, **3,712 schemes**, 3,730 scheme-district links, 52 funding splits, 873 SDG tags (24 exact-duplicate rows deduped), 313 revision-history rows, 3,712 financial-year-allocation rows. Verified by direct query + spot-checked joins. Re-running the script is safe (it truncates and reloads the 12 reference tables in one transaction).
 - **Step 3 (Auth) — DONE.** Full auth stack implemented and verified live — see "Supabase Auth setup" below for the complete breakdown.
-- **Step 4 (API skeleton + RLS) — DONE.** Monorepo scaffold exists (`backend/`, `mobile/`, `shared/`, `docs/`, `.github/`). Backend boots, connects to Supabase, serves `GET /api/v1/health`. The `auth` slice of routes/controllers/services/repositories/middleware is real; every other resource (schemes, teams, approvals, ...) is still a documented stub — building those is Phase 1, not Phase 0. **RLS policies (migrations `0006`+`0007`) are live** — see "Row-Level Security" below.
+- **Step 4 (API skeleton + RLS) — DONE.** Monorepo scaffold exists (`backend/`, `mobile/`, `shared/`, `docs/`, `.github/`). Backend boots, connects to Supabase, serves `GET /api/v1/health`. Auth, schemes, teams, and approvals now have real API slices; later resources remain Phase 1 work. **RLS policies (migrations `0006`+`0007`) are live** — see "Row-Level Security" below.
 - **Step 5 (RN app shell) — DONE.** See "React Native app shell" below.
 
 ## Supabase Auth setup (Phase 0 Step 3) — IMPLEMENTED and verified live
@@ -103,7 +103,7 @@ Option A's consequence (no self-service signup) means this is just: navigation, 
 - `src/api/client.ts` — fetch wrapper reading the base URL from `app.json`'s `expo.extra.apiBaseUrl`, attaches the bearer token, parses the backend's `{data}`/`{error}` envelope into typed results or a thrown `ApiClientError` (message + code).
 - `src/auth/{AuthProvider,useAuth,secureStorage}` — calls the real `POST /auth/login` + `GET /auth/me`, session stored via `expo-secure-store`, re-validated on app launch (a dead/expired session is dropped silently rather than shown as an error).
 - `src/screens/auth/LoginScreen.tsx` — real form; surfaces the backend's actual error messages (`INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `ACCOUNT_DEACTIVATED`, `MFA_REQUIRED`, etc.) rather than a generic failure.
-- `src/navigation/RootNavigator.tsx` — branches: loading → spinner; unauthenticated → `AuthNavigator` (Login only); authenticated → the matching role navigator (RD/DG/MEO/Support), each currently rendering a shared `RoleHomeScreen` stub (profile + logout) — this is the literal "role-based routing stub" the phase asks for; Phase 1 replaces each with the real screens already stubbed under `src/screens/{regionalDirector,directorGeneral,meo,supportUser}`.
+- `src/navigation/RootNavigator.tsx` — branches: loading → spinner; unauthenticated → `AuthNavigator` (Login only); authenticated → the matching role navigator (RD/DG/MEO/Support). Phase 1 now mounts the scheme browser for all roles, team assembly for RD, and the approval queue for DG.
 
 **Dependency recovery, not a fresh install:** the user had already run a partial `expo install` (SDK 57, `expo` + `expo-secure-store`) directly in `mobile/` before this work started; that `package.json` got set aside by an earlier `git stash` during a branch switch and was recovered rather than reinstalling from scratch, then extended with `@react-navigation/native` + `native-stack`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `expo-constants` — all resolved via `npx expo install` so versions are guaranteed SDK-57-compatible rather than guessed.
 
@@ -153,7 +153,7 @@ None of this was caused by the app-shell or RLS code itself — it's the CI work
 
 | Artifact | What it is |
 | --- | --- |
-| Monorepo scaffold | `backend/` (Express, layered `routes→controllers→services→repositories` + `middleware/`, `db/migrations`, `db/seeds`, `tests/`), `mobile/` (React Native + Expo, TS, role-partitioned `screens/`), `shared/` (role/enum constants), `docs/`, `.github/workflows/` (CI). Most files are documented stubs. |
+| Monorepo scaffold | `backend/` (Express, layered `routes→controllers→services→repositories` + `middleware/`, `db/migrations`, `db/seeds`, `tests/`), `mobile/` (React Native + Expo, TS, role-partitioned `screens/`), `shared/` (role/enum constants), `docs/`, `.github/workflows/` (CI). Remaining stubs are limited to later Phase 1–4 resources. |
 | `backend/src/config/` | Real wiring: `index.js` (env + zod validation, fails fast on placeholders), `database.js` (`pg` pool on the Supabase transaction pooler), `supabase.js` (service-role client). |
 | `backend/.env` | Filled with the live project: `SUPABASE_URL` (ref `fcneocvlbgmasatfpvrd`), service-role secret key, JWKS URL, `DATABASE_URL`/`DIRECT_URL` via the Supavisor pooler (`aws-0-ap-northeast-1`, ports 6543 / 5432, password URL-encoded). Git-ignored. |
 | `backend/scripts/check-db.js` | `npm run check:db` — Postgres + Supabase Storage connectivity check. Passes. |
@@ -205,7 +205,47 @@ Carried forward from `PRD.md` §12 — none of these are answered yet:
 2. **Frontend deployment shape** — does "frontend on Vercel" mean a separate web-based admin dashboard (React, not Native) alongside the mobile app, or a React Native Web build? These imply different codebases and role coverage.
 3. **Support-user comment restriction** — confirmed as view-only for now; flagged to revisit once the app is in pilot use.
 
-## Next steps (Phase 0, per `phases.md`)
+## Phase 1 implementation status
+
+### Step 6 — Role-based home screens — IMPLEMENTED
+
+`mobile/src/screens/common/RoleHomeScreen.tsx` now renders role-specific empty-state dashboards for RD, DG, MEO, and Support users. Each dashboard has tailored metrics, copy, profile context, security settings, logout, and a role-appropriate next-workspace link.
+
+### Step 7 — Scheme browser — IMPLEMENTED
+
+The backend exposes authenticated read-only scheme endpoints:
+
+- `GET /api/v1/schemes`
+- `GET /api/v1/schemes/:id`
+- `GET /api/v1/schemes/filters`
+
+The browser supports UID/name search, division, district, department, sub-sector, and status filters, plus cursor pagination. Scheme browsing is intentionally province-wide so a valid UID search is not hidden by the logged-in user's division; explicit division filtering remains available. The mobile client handles the API envelope metadata correctly for pagination.
+
+### Step 8 — RD team assembly — IMPLEMENTED
+
+The RD flow exposes active MEOs in the RD's division, creates a draft team for a scheme, requires exactly one lead MEO, allows supporting MEOs, and submits the team for DG approval. Routes:
+
+- `GET /api/v1/teams/eligible-members`
+- `POST /api/v1/teams`
+- `POST /api/v1/teams/:id/submit`
+- `POST /api/v1/teams/:id/resubmit`
+
+The mobile `TeamAssemblyScreen` is mounted in the Regional Director navigator and is opened from each scheme card.
+
+### Step 9 — DG approval queue — IMPLEMENTED
+
+The DG can view pending teams and approve or reject with remarks. Rejection requires remarks and changes the team to `REJECTED`; RD resubmission increments the version and creates a new approval-history row. Approval changes the team to `APPROVED` and creates exactly one site visit. The queue and decision queries are explicitly division-scoped in the backend.
+
+Routes:
+
+- `GET /api/v1/approvals`
+- `POST /api/v1/approvals/:teamId/decision`
+
+The mobile `ApprovalQueueScreen` is mounted in the Director General navigator. Push/in-app notifications are not part of this step; they remain Phase 2 Step 17.
+
+**Live verification:** a temporary real Supabase workflow passed submit → reject with remarks → RD resubmit → approve, produced two approval-history rows and exactly one site visit, then cleaned all temporary rows.
+
+## Next steps (Phase 1, per `phases.md`)
 
 - [x] Provision the Supabase project
 - [x] Apply the full schema to Supabase (migrations `0001`–`0003`: tables, enums, indexes)
@@ -221,7 +261,14 @@ Carried forward from `PRD.md` §12 — none of these are answered yet:
 - [x] MFA backend proxy routes + a mobile self-service enrollment screen (`SecuritySettingsScreen.tsx`) — full round trip verified live against Supabase
 - [x] Mobile API URL is now env-driven (`app.config.js` + `API_BASE_URL`), not hardcoded to one machine's LAN IP
 - [x] Housekeeping: the two root READMEs are merged into one `README.md` (`README (1).md` deleted)
-- [ ] Flesh out the remaining backend routes/controllers/services/repositories for Phase 1 (start with the scheme browser — auth is done)
+- [x] Implement role-based home screens / empty-state dashboards (Step 6)
+- [x] Implement read-only scheme browser with search/filter/pagination (Step 7)
+- [x] Implement RD team assembly with lead and supporting MEOs (Step 8)
+- [x] Implement DG approval queue, rejection remarks, and RD resubmission loop (Step 9)
+- [ ] Implement site-visit auto-creation/display and the remaining Phase 1 visit workflow (Step 10 onward)
+- [ ] Flesh out remaining backend routes/controllers/services/repositories for Phase 1
+- [ ] Add RD team-status/history screen so submitted, rejected, and approved requests are visible in the mobile app
+- [ ] Add Phase 2 notification infrastructure for approval and visit events (not part of current Phase 1 scope)
 - [ ] Real email delivery for invite/reset links (SMTP not configured) and a real alert channel for DG/RD lockouts (currently audit_log-only) — both blocked on third-party service credentials only the user can provide
 - [ ] A real way to run backend migrations/integration tests in CI (fake `auth.users` in the CI Postgres, or a Supabase preview-branch instance) — deferred, see "CI fixes" above; the real Supabase-backed RLS tests above are a workable middle ground for local dev in the meantime
 - [ ] Convert the RLS standalone-script-turned-Jest-tests' remaining 9 `test.todo`s (route/service level) into real `supertest`-driven specs

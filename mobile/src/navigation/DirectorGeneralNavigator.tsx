@@ -4,6 +4,8 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleHomeScreen from '../screens/common/RoleHomeScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
+import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
+import ApprovalQueueScreen from '../screens/directorGeneral/ApprovalQueueScreen';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -13,6 +15,8 @@ export default function DirectorGeneralNavigator() {
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="DgHome" component={RoleHomeScreen} options={{ title: 'Director General' }} />
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
+      <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
+      <Stack.Screen name="ApprovalQueue" component={ApprovalQueueScreen} options={{ title: 'Approval queue' }} />
     </Stack.Navigator>
   );
 }
