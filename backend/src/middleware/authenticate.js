@@ -1,8 +1,10 @@
 /**
  * Verify the Supabase JWT from the Authorization header against Supabase's
  * JWKS before any handler runs (architecture.md §4.1). Attaches:
- *   req.authClaims — the raw verified JWT payload (sub, email, aal, ...)
- *   req.user       — { id, email } convenience shape
+ *   req.authClaims  — the raw verified JWT payload (sub, email, aal, ...)
+ *   req.user        — { id, email } convenience shape
+ *   req.accessToken — the raw bearer token, needed to act as this user
+ *                     against Supabase directly (MFA enroll/challenge/verify)
  *
  * Does NOT touch the database — that's authorize.js's job (RBAC + is_active +
  * MFA-assurance checks), kept as a separate step so a route that only needs
@@ -36,5 +38,6 @@ module.exports = asyncHandler(async function authenticate(req, _res, next) {
 
   req.authClaims = payload;
   req.user = { id: payload.sub, email: payload.email };
+  req.accessToken = token;
   next();
 });

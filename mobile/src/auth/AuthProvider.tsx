@@ -14,6 +14,9 @@ type AuthContextValue = {
   accessToken: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Swap in a new session (e.g. the aal2 session MFA verify returns) without
+   *  a full re-login. */
+  updateSession: (session: { access_token: string; refresh_token: string }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -60,7 +63,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null);
   };
 
-  const value = useMemo(() => ({ isLoading, user, accessToken, signIn, signOut }), [isLoading, user, accessToken]);
+  const updateSession = async (session: { access_token: string; refresh_token: string }) => {
+    if (!user) return;
+    await saveSession({ accessToken: session.access_token, refreshToken: session.refresh_token, userId: user.id, email: user.email });
+    setAccessToken(session.access_token);
+  };
+
+  const value = useMemo(
+    () => ({ isLoading, user, accessToken, signIn, signOut, updateSession }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- signIn/signOut/updateSession close over `user`, which is already a dep
+    [isLoading, user, accessToken],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

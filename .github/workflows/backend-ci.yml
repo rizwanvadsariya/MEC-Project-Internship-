@@ -20,11 +20,14 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm test
 
-# `migrate` / `check:rls` are deliberately NOT run here yet: the schema's
+# `migrate` / `check:rls` are deliberately NOT run here: the schema's
 # `users.id references auth.users(id)` only exists on a real Supabase project
 # (schema.md §4.1) — a plain `postgres:16` service container can't satisfy it,
 # and there's no CI-provisioned Supabase instance (e.g. a preview branch) to
-# migrate against instead. Re-add once one of those exists. Until then `npm
-# test` only runs the `test.todo` placeholders in tests/ — see Memory.md
-# "Row-Level Security" for the real, manually-run verification against the
-# live project.
+# migrate against instead. Re-add once one of those exists.
+#
+# `npm test` now includes real RLS integration tests (tests/integration/rls/)
+# that run against the real Supabase project's 4 seeded test accounts — they
+# have nothing to connect to here (no backend/.env, no secrets configured)
+# and self-skip cleanly rather than fail (tests/globalSetup.js). They DO run
+# for real whenever a dev with a working .env runs `npm test` locally.

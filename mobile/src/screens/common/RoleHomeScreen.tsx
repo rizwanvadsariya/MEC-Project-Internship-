@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../auth/useAuth';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -17,6 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function RoleHomeScreen() {
   const { user, signOut } = useAuth();
+  const navigation = useNavigation<{ navigate: (screen: string) => void }>();
   if (!user) return null;
 
   return (
@@ -32,6 +34,9 @@ export default function RoleHomeScreen() {
       <Text style={styles.note}>
         This is the Phase 0 role-routing stub — {ROLE_LABELS[user.role] ?? user.role} features land in Phase 1.
       </Text>
+      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Security')}>
+        <Text style={styles.securityButtonText}>Security settings</Text>
+      </Pressable>
       <Pressable style={styles.logout} onPress={signOut}>
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
@@ -57,6 +62,8 @@ const styles = StyleSheet.create({
   rowLabel: { color: '#94a3b8', fontSize: 13 },
   rowValue: { color: '#fff', fontSize: 13, fontWeight: '600' },
   note: { color: '#64748b', fontSize: 12, marginTop: 20, lineHeight: 18 },
+  securityButton: { marginTop: 16, backgroundColor: '#1f2937', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  securityButtonText: { color: '#cbd5e1', fontWeight: '600' },
   logout: { marginTop: 'auto', backgroundColor: '#1f2937', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   logoutText: { color: '#f87171', fontWeight: '600' },
 });

@@ -43,4 +43,42 @@ const revokeSession = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, result);
 });
 
-module.exports = { login, forgotPassword, me, provisionUser, deactivateUser, listSessions, revokeSession };
+const mfaEnroll = asyncHandler(async (req, res) => {
+  const data = await authService.mfaEnroll(req.accessToken, req.authUser.id);
+  ApiResponse.ok(res, data);
+});
+
+const mfaChallenge = asyncHandler(async (req, res) => {
+  const data = await authService.mfaChallenge(req.accessToken, req.body.factorId);
+  ApiResponse.ok(res, data);
+});
+
+const mfaVerify = asyncHandler(async (req, res) => {
+  const session = await authService.mfaVerify(req.accessToken, req.authUser.id, req.body);
+  ApiResponse.ok(res, { session });
+});
+
+const mfaListFactors = asyncHandler(async (req, res) => {
+  const data = await authService.mfaListFactors(req.accessToken);
+  ApiResponse.ok(res, data);
+});
+
+const mfaUnenroll = asyncHandler(async (req, res) => {
+  await authService.mfaUnenroll(req.accessToken, req.authUser.id, req.params.factorId);
+  ApiResponse.ok(res, { message: 'MFA factor removed' });
+});
+
+module.exports = {
+  login,
+  forgotPassword,
+  me,
+  provisionUser,
+  deactivateUser,
+  listSessions,
+  revokeSession,
+  mfaEnroll,
+  mfaChallenge,
+  mfaVerify,
+  mfaListFactors,
+  mfaUnenroll,
+};

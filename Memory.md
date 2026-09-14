@@ -3,9 +3,9 @@
 ## Smart Provincial M&E Management Ecosystem
 
 **Last updated:** September 14, 2026
-**Current stage:** Phase 0 is complete (all 5 steps). Monorepo scaffold, Supabase connection, full schema, real ADP data (3,712 schemes), Supabase Auth (10 hardening points), RLS (22/22 verified), and now the **React Native app shell** — navigation, role-based routing stub, API client, working login screen — are all built. CI was failing on this work's PR (`Login_Screen_Implementation`) for reasons unrelated to the app code itself; see "CI fixes" below. Next: Phase 1 features (scheme browser, team assembly, ...).
+**Current stage:** Phase 0 is fully complete, including every follow-up item that was previously left open. All 5 steps built (schema, ADP import, Auth, API skeleton + RLS, RN app shell), plus: RLS is now real Jest tests (not `test.todo`), `comments` is scoped per-entity (not open-read), MFA is fully implemented and verified end-to-end (enroll → challenge → verify → new aal2 session, both backend and a mobile self-service screen), the mobile API URL is env-driven instead of hardcoded, and the two root READMEs are merged into one. Next: Phase 1 features (scheme browser, team assembly, ...).
 
-> Repo note: PR #1 (`feature/adp-schema-and-monitoring-workflow`) and PR #2 (`Build_database`) are both merged into `Main`. Current work is on branch `Login_Screen_Implementation` (PR open against `Main`, not yet merged as of this update).
+> Repo note: PR #1 (`feature/adp-schema-and-monitoring-workflow`), PR #2 (`Build_database`), and PR #3 (`Login_Screen_Implementation`) are all merged into `Main`. Current work is on branch `phase0-cleanup` (not yet pushed as of this update).
 
 > This file exists so anyone — a teammate or an AI assistant — picking this project back up can tell exactly where things stand without re-reading the whole planning conversation. Update "Current stage" and "Next steps" as work actually progresses; everything else here is a decision record and should stay historical.
 
@@ -45,7 +45,7 @@ Re-verified independently in a second, later pass (fresh server boot, all 10 poi
 
 **Files:** `backend/db/migrations/0005_login_lockout_columns.sql`; `middleware/{authenticate,authorize,divisionScope,validate,rateLimit}.js`; `repositories/{user,auditLog,session}.repo.js`; `services/auth.service.js`; `controllers/auth.controller.js`; `api/v1/routes/auth.routes.js` (mounted at `/api/v1/auth`); `validators/auth.schema.js`; `db/seeds/seedTestAccounts.js` (creates `dg.test@mec.local` / `rd.test@mec.local` / `meo.test@mec.local` / `support.test@mec.local` — division 1 = Karachi, department 1 = Agriculture; passwords are random per run, printed once to console, never committed). `constants/roles.js` now also exports `HIGH_VALUE_ROLES`. `lib/ApiError.js` gained an optional machine-readable `code` (e.g. `MFA_REQUIRED`, `ACCOUNT_LOCKED`, `EMAIL_TAKEN`) surfaced by `errorHandler.js`. New `.env` keys: `MFA_ENFORCEMENT_ENABLED`, `LOGIN_LOCKOUT_MAX_ATTEMPTS`, `LOGIN_LOCKOUT_WINDOW_MINUTES`, `INVITE_REDIRECT_URL`, `PASSWORD_RESET_REDIRECT_URL`, `RATE_LIMIT_MAX_PROVISION`.
 
-**Not built:** the mobile MFA-enrollment screen (blocks turning on point #7), real email delivery for invites/resets (no SMTP configured — Supabase's default sending may or may not be sufficient at volume), and a real alert channel for point #8's "notify on DG/RD lockout" (currently just a `LOGIN_LOCKED` audit_log row with `highValueAccount: true` — no email/Slack/push wired up).
+**Not built:** the mobile MFA-enrollment screen — **now built, see the "MFA" section below.** Still genuinely not built: real email delivery for invites/resets (no SMTP configured — Supabase's default sending may or may not be sufficient at volume), and a real alert channel for point #8's "notify on DG/RD lockout" (currently just a `LOGIN_LOCKED` audit_log row with `highValueAccount: true` — no email/Slack/push wired up). Both require third-party service credentials only the user can provide (an SMTP/email provider, a Slack webhook, etc.) — not something to build blindly without them.
 
 ## Row-Level Security (Phase 0 Step 4) — IMPLEMENTED and verified live
 
@@ -60,7 +60,7 @@ Re-verified independently in a second, later pass (fresh server boot, all 10 poi
 - **`team_approval_requests`**: the submitting RD, or the DG of that scheme's division; append-only (no delete policy).
 - **`site_visits`**: same division/membership split; the team's `LEAD_MEO` can update status/timestamps.
 - **`visit_forms`/`visit_photos`/`issue_reports`/`issue_report_photos`**: read = same visibility as the parent site visit; write = the `LEAD_MEO` only.
-- **`comments`**: open read (not yet scoped per-entity — a known simplification, see below); insert blocked for `SUPPORT_USER`.
+- **`comments`**: `can_view_commentable(type, id)` (added in migration `0008`, dispatches to `can_view_scheme`/`can_view_team`/`can_view_site_visit`/an issue-report join by `commentable_type`) — no longer open-read; insert still blocked for `SUPPORT_USER`.
 - **`notifications`**: strictly own rows.
 - Pure reference lookups (`divisions`, `districts`, `departments`, `sub_sectors`, `funding_sources`, `sdg_goals`, `form_templates`, `form_template_fields`): open read, no write policy anywhere (import/admin stays `postgres`-only).
 - `audit_log`, `schema_migrations`: no policies at all — stay fully deny-all by design.
@@ -69,9 +69,10 @@ Re-verified independently in a second, later pass (fresh server boot, all 10 poi
 
 **Verification:** a from-scratch Postgres test (`SET ROLE authenticated` + `SET request.jwt.claims` to simulate each of the 4 seeded users, real fixture rows for a team/visit in Karachi vs. one in Jacobabad, all in rolled-back transactions) — **22/22 checks passed**: division isolation both directions (schemes, users, teams, site visits), team-membership scoping for MEO/Support, `LEAD_MEO`-only writes to `visit_forms` (a non-lead RD's insert attempt threw the expected RLS violation), `SUPPORT_USER` blocked from posting a comment while RD could, and `anon` getting zero rows from `schemes`. Confirmed afterward that the app itself (connects as `postgres`, bypasses RLS) was completely unaffected — `/health` and login still worked identically post-migration.
 
-**Known simplification, not yet tightened:** `comments` SELECT is open to any authenticated user rather than scoped per `commentable_type`/`commentable_id` — doing that properly needs a per-type join (comments on a scheme vs. a team vs. a site visit each resolve visibility differently) that wasn't built yet. Revisit before comments ship as a real feature.
-
-**Not yet done:** the real verification above was a standalone script; the `backend/tests/integration/rls/*.test.js` files now hold `test.todo(...)` placeholders describing each check (Jest is installed as of the "CI fixes" work below) but not the actual Jest implementation — turning the standalone script into real `supertest`/`pg`-driven specs is a small, separate follow-up.
+**Update — both follow-ups closed (Phase 0 cleanup pass):**
+- **Migration `0008`** scopes `comments` per entity (`can_view_team()` added alongside `can_view_commentable()`); the "open read" simplification above no longer applies.
+- **`backend/tests/integration/rls/*.test.js` are now real Jest specs**, not `test.todo`. They run against the **real Supabase project** using the 4 seeded test accounts (`tests/globalSetup.js` checks `DIRECT_URL` + that the accounts exist; `tests/helpers/{pgTestClient,rlsFixtures}.js` do the `SET ROLE authenticated` simulation and fixture setup/teardown) rather than a disposable local Postgres — Docker isn't available on this dev machine, so the originally-planned "fake `auth.users` in a local container" approach (`docker-compose.yml`, still present but unused) was dropped in favor of what was already proven to work manually. Fixtures never touch `auth.users` or reference tables — only real, existing test accounts + disposable `visit_teams`/`site_visits`/`comments` rows, always cleaned up. Result: **14 real assertions pass**, 9 more remain `test.todo` (the supertest-based route/service tests, genuinely separate Phase-1-scale work). Runs against a clean `npm ci` with no `.env` (CI's exact situation) confirmed these skip gracefully rather than fail.
+- **Lesson learned mid-implementation:** a test run killed mid-flight (a hung backgrounded shell command, unrelated to the tests themselves) left 2 orphaned `visit_teams`/`site_visits` rows in the real project. Fixed by having `createFixtures()` delete any stale rows `created_by` the RD test account *before* creating new ones, so a crashed run self-heals on the next run instead of accumulating junk.
 
 ## React Native app shell (Phase 0 Step 5) — IMPLEMENTED, verified via Metro bundle compile
 
@@ -85,9 +86,23 @@ Option A's consequence (no self-service signup) means this is just: navigation, 
 
 **Dependency recovery, not a fresh install:** the user had already run a partial `expo install` (SDK 57, `expo` + `expo-secure-store`) directly in `mobile/` before this work started; that `package.json` got set aside by an earlier `git stash` during a branch switch and was recovered rather than reinstalling from scratch, then extended with `@react-navigation/native` + `native-stack`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `expo-constants` — all resolved via `npx expo install` so versions are guaranteed SDK-57-compatible rather than guessed.
 
-**Verification:** `npx tsc --noEmit` clean; requested the actual compiled bundle from Metro for both `platform=android` (997 modules) and `platform=ios` (999 modules) — both compiled with zero errors, which is the strongest signal available without a physical device. Confirmed the backend is reachable from the phone's side of the network, not just localhost (`http://192.168.100.120:4000` — the dev machine's Wi-Fi LAN IP, set in `app.json`), and that Windows Firewall already allows Node on the `Public` profile (the classification this Wi-Fi network has). Actually rendering on the physical device is inherently something only a human can confirm — handed off to the user with `exp://192.168.100.120:8081` and the 4 seeded test accounts' credentials.
+**Verification:** `npx tsc --noEmit` clean; requested the actual compiled bundle from Metro for both `platform=android` and `platform=ios` — both compiled with zero errors, which is the strongest signal available without a physical device. Confirmed the backend is reachable from the phone's side of the network, not just localhost, and that Windows Firewall already allows Node on the `Public` profile (the classification this Wi-Fi network has). Actually rendering on the physical device is inherently something only a human can confirm.
 
-**Note:** the LAN IP is hardcoded in `app.json` — it will need updating (or moving to a `.env`-driven config) if the dev machine's IP changes or a teammate runs this on a different network.
+**Update — the hardcoded-LAN-IP follow-up is closed:** `app.json` was replaced with **`app.config.js`** (Expo's dynamic config), which reads `apiBaseUrl` from the `API_BASE_URL` env var (falls back to `localhost`, fine for a simulator/emulator but not a physical device) instead of a value baked in at whatever IP the last person to touch it happened to be on. Usage: `API_BASE_URL=http://<your-LAN-IP>:4000/api/v1 npx expo start` — documented in `mobile/README.md`. Verified `npx expo config` resolves both the default and an overridden value correctly.
+
+## MFA (Phase 0 Step 3, hardening point #7) — IMPLEMENTED and verified live, backend + mobile
+
+Backend and mobile self-service enrollment, closing the "no MFA-enrollment screen" gap that previously blocked ever turning on `MFA_ENFORCEMENT_ENABLED`.
+
+**Backend — proxied through Express, never a direct Supabase call from the client** (same reasoning as login): `services/auth.service.js`'s `clientForUser(accessToken)` builds a one-off `supabase-js` client scoped to the caller's own access token (their `auth.mfa.*` methods act on "the client's current session," so a per-user client is the only way to act on their behalf server-side) — a pure Supabase-Auth-service call, unrelated to the service-role key's RLS-bypass privileges. Routes: `POST /auth/mfa/enroll`, `POST /auth/mfa/challenge`, `POST /auth/mfa/verify` (returns a **new aal2 session** — the caller must swap in the new tokens), `GET /auth/mfa/factors`, `DELETE /auth/mfa/factors/:factorId`. `authenticate.js` now also attaches `req.accessToken` (the raw bearer token, not just its decoded claims) since these routes need it. `authorize()` gained a `{ skipMfaCheck: true }` trailing-argument form for exactly these 5 routes — without it, once `MFA_ENFORCEMENT_ENABLED` is ever turned on, a DG/RD who hasn't finished enrolling could never reach the route that lets them finish (a real catch-22 caught while designing this, not just while testing it).
+
+**Mobile — `src/screens/common/SecuritySettingsScreen.tsx`**, reachable from every role's `RoleHomeScreen` via a new "Security settings" button (added to all 4 role navigators as a second stack screen, `useNavigation()`-driven). No QR-image library — the secret is shown as selectable plain text for "enter a setup key" manual entry, keeping the screen dependency-free. Flow: enroll → show secret → 6-digit code input → verify → `updateSession()` (new method on `AuthProvider`) swaps in the returned aal2 tokens without a full re-login. Available to all roles, not just DG/RD — anyone can opt in early; `MFA_ENFORCEMENT_ENABLED` (still `false`) is what would make it *required* for DG/RD specifically.
+
+**Verification — full round trip against live Supabase, not mocked:**
+- Implemented RFC 6238 TOTP generation from scratch (Node's built-in `crypto`, no library) to compute real codes for testing — validated against the **official RFC 6238 test vector** first (exact match), so the algorithm itself was proven correct before ever touching the live enroll/challenge/verify flow.
+- First live attempts failed with "Invalid TOTP code entered" — traced to this **sandbox's system clock being ~2–3 minutes off from Supabase's real server time** (confirmed precisely via Supabase's own HTTP `Date` response header), not a code defect. Recomputing the code using Supabase's authoritative time instead of local `Date.now()` succeeded immediately: enroll → challenge → verify returned a real new session. This is a sandbox/test-tooling artifact only — production correctness is unaffected, since `verify` is validated entirely by Supabase's own clock, never the backend's; a real user's phone stays NTP-synced normally.
+- Confirmed `listFactors` categorizes an *unverified* (abandoned mid-enrollment) factor under `all` but not under the `totp` array — the enrollment flow and its cleanup both need to check `all`, not the type-specific array; got this wrong once while testing (an enroll attempt failed with "factor with this friendly name already exists" until the stale factor was found via `all` and deleted).
+- Full cleanup confirmed after every test run — `dg.test@mec.local` (and every other seeded account) has zero MFA factors left over.
 
 ## CI fixes (`Login_Screen_Implementation` PR) — both `backend-ci` and `mobile-ci` were failing
 
@@ -110,7 +125,7 @@ None of this was caused by the app-shell or RLS code itself — it's the CI work
 | `schema.md`                  | Entity/relationship documentation covering both the ADP booklet reference data and the operational app data, in PostgreSQL/Supabase terms (supersedes an earlier MERN-based draft) |
 | `app-operational-schema.sql` | _Superseded_ by the numbered `backend/db/migrations/*` files (see Code artifacts below) — kept only as historical reference if still present                                        |
 | `phases.md`                  | Dependency-ordered, 34-step build sequence across Phase 0–4, with a 9-step critical path called out                                                                                |
-| `README.md`                  | Project front door — overview, feature summary, tech stack, docs index, generic getting-started scaffold                                                                           |
+| `README.md`                  | Project front door — merged from the original product README and the monorepo guide (`README (1).md`, now deleted) into one file: overview, roles, tech stack, repo layout, real getting-started commands, docs index |
 | `architecture.md`            | Tech stack + backend hardening (security / performance / efficiency); the layered-architecture spec the scaffold follows                                                            |
 
 ### Code / infra artifacts (added after planning)
@@ -122,12 +137,14 @@ None of this was caused by the app-shell or RLS code itself — it's the CI work
 | `backend/.env` | Filled with the live project: `SUPABASE_URL` (ref `fcneocvlbgmasatfpvrd`), service-role secret key, JWKS URL, `DATABASE_URL`/`DIRECT_URL` via the Supavisor pooler (`aws-0-ap-northeast-1`, ports 6543 / 5432, password URL-encoded). Git-ignored. |
 | `backend/scripts/check-db.js` | `npm run check:db` — Postgres + Supabase Storage connectivity check. Passes. |
 | `backend/scripts/migrate.js` | `npm run migrate` / `migrate:status` — applies `db/migrations/*.sql` in order via `DIRECT_URL`, tracks in `schema_migrations`. Migrations are immutable once applied. |
-| `backend/db/migrations/0001–0007` | `0001` reference tables, `0002` operational tables + enums + `updated_at` triggers, `0003` indexes, `0004` extends `departments`/`schemes`/`financial_year_allocations` to match the real ADP CSV columns, `0005` adds `users.failed_login_count`/`locked_until` (login lockout), `0006` RLS policies, `0007` fixes RLS recursion. All applied to Supabase. |
-| `backend/src/{middleware,repositories,services,controllers,validators}` auth slice | Full Supabase Auth implementation — see "Supabase Auth setup" above. Verified against the live project with real login/provision/deactivate/lockout/session/reset-password calls. |
+| `backend/db/migrations/0001–0008` | `0001` reference tables, `0002` operational tables + enums + `updated_at` triggers, `0003` indexes, `0004` extends `departments`/`schemes`/`financial_year_allocations` to match the real ADP CSV columns, `0005` adds `users.failed_login_count`/`locked_until` (login lockout), `0006` RLS policies, `0007` fixes RLS recursion, `0008` scopes `comments` per entity. All applied to Supabase. |
+| `backend/src/{middleware,repositories,services,controllers,validators}` auth slice | Full Supabase Auth implementation incl. MFA proxy routes — see "Supabase Auth setup" + "MFA" above. Verified against the live project with real login/provision/deactivate/lockout/session/reset-password/MFA enroll-challenge-verify calls. |
+| `backend/tests/{globalSetup.js, helpers/{pgTestClient,rlsFixtures}.js}` | Real RLS Jest test infra — connects to the live Supabase project via `DIRECT_URL`, simulates each seeded test account, self-skips if unavailable (e.g. in CI). |
+| `backend/eslint.config.js`, `mobile/eslint.config.js`, `mobile/jest.config.js` | Flat ESLint configs (replace the legacy `.eslintrc.json` files, deleted) + a `passWithNoTests` Jest config for mobile. |
 | `adp-database-seed-csv/` (repo root) | 12 CSVs, one per reference table, exported from the government ADP ledger — the source of truth `importAdpBooklet.js` reads. Committed to the repo (not git-ignored). |
 | `backend/db/seeds/importAdpBooklet.js` | `npm run seed:adp` — real implementation (was a stub). Truncates + reloads the 12 reference tables in one transaction, preserves the CSVs' own ids (`OVERRIDING SYSTEM VALUE` + sequence resync), dedupes the 24 exact-duplicate `scheme_sdg` rows. |
-
-Mobile app code and the React Native shell do not exist yet (stubs only).
+| `mobile/App.tsx`, `src/navigation/*`, `src/auth/*`, `src/api/{client,auth,mfa}.api.ts`, `src/screens/{auth/LoginScreen,common/{RoleHomeScreen,SecuritySettingsScreen}}.tsx` | The full React Native app shell + MFA enrollment screen — see "React Native app shell" + "MFA" above. |
+| `mobile/app.config.js` | Replaces the old static `app.json` — reads `apiBaseUrl` from the `API_BASE_URL` env var instead of a hardcoded LAN IP. |
 
 ## Key decisions made (chronological)
 
@@ -151,7 +168,13 @@ Mobile app code and the React Native shell do not exist yet (stubs only).
 18. **RLS was already enabled on every table with zero policies before we wrote any** — origin unknown, likely a Supabase project default. Meant enabling RLS wasn't part of this work, only writing the actual policies.
 19. **`anon` gets no RLS policies anywhere and had its default grants revoked** — this app has no unauthenticated use case (mobile always authenticates via Supabase Auth first).
 20. **Cross-table RLS policies must go through SECURITY DEFINER helper functions, never raw subqueries on another RLS-protected table** — a raw two-way subquery between `visit_teams` and `visit_team_members` caused a live "infinite recursion detected in policy" error, fixed in migration `0007`. Apply this rule from the start on any future cross-table policy.
-21. **`comments` visibility is intentionally left open-read for now** (not scoped per `commentable_type`/`commentable_id`) — a real per-entity join wasn't built; only the `SUPPORT_USER` posting restriction is enforced. Revisit before comments ships as a feature.
+21. **`comments` visibility is intentionally left open-read for now** (not scoped per `commentable_type`/`commentable_id`) — a real per-entity join wasn't built; only the `SUPPORT_USER` posting restriction is enforced. ~~Revisit before comments ships as a feature.~~ **Done — migration `0008`, see "Row-Level Security" above.**
+22. **RLS Jest tests run against real Supabase, not a disposable local Postgres** — Docker isn't installed on this dev machine, so the fake-`auth.users`-in-a-container plan (`docker-compose.yml`, still present but unused) was dropped for what already worked: the 4 real seeded test accounts + fixtures that only ever touch operational tables, cleaned up after every run.
+23. **MFA is proxied through the backend, including enrollment** — the mobile app still never talks to Supabase directly (architecture.md §2), even for TOTP setup. `authorize()` needed a `{ skipMfaCheck: true }` escape hatch for the MFA routes themselves, or a DG/RD could never reach the route that lets them finish enrolling once enforcement is ever turned on.
+24. **No QR-image library for MFA enrollment** — the secret is shown as selectable text for manual "enter a setup key" entry instead, keeping the mobile app dependency-free. Revisit if a real QR scan flow is wanted later.
+25. **TOTP verification failures during testing were a sandbox clock-drift artifact (~2–3 minutes off from Supabase's real time), not a code defect** — confirmed by validating the from-scratch RFC 6238 implementation against the official test vector first, then against Supabase's own authoritative HTTP `Date` header. No production impact: Supabase's own clock validates the code, never the backend's.
+26. **RLS test fixtures self-heal from a crashed prior run** — `createFixtures()` now deletes any stale `visit_teams`/`site_visits` rows `created_by` the RD test account before creating new ones, after a killed background test process once left 2 such rows behind in the real project.
+27. **Near-miss during the README cleanup:** a cleanup command briefly deleted `PRD (1).md` too (not intended — only the duplicate README was meant to go). It was tracked by git, so `git checkout -- "PRD (1).md"` recovered it losslessly before anything was committed; flagged here rather than silently glossed over.
 
 ## Open / unresolved questions
 
@@ -172,15 +195,16 @@ Carried forward from `PRD.md` §12 — none of these are answered yet:
 - [x] Add RLS policies scoped by division (migrations `0006`+`0007`) — 22/22 direct-Postgres verification checks passed
 - [x] Build the React Native app shell (navigation, role-based routing stub, API client, login screen — see "React Native app shell" above)
 - [x] Fix `backend-ci`/`mobile-ci` (both were failing — see "CI fixes" above): eslint + jest actually installed, flat configs, empty test stubs converted to `test.todo`, `migrate`/`check:rls` steps removed from backend-ci (can't run against CI's plain Postgres)
-- [ ] Wire the RLS verification script into real Jest specs in `backend/tests/integration/rls/` (now unblocked — Jest is installed; the files hold `test.todo` placeholders to fill in)
-- [ ] Tighten `comments` SELECT to be scoped per `commentable_type`/`commentable_id` instead of open-read (noted simplification)
+- [x] Wire the RLS verification script into real Jest specs in `backend/tests/integration/rls/` — 14 real assertions against the live project, 9 still `test.todo` (route/service integration tests needing supertest, separate Phase-1-scale work)
+- [x] Tighten `comments` SELECT to be scoped per `commentable_type`/`commentable_id` instead of open-read (migration `0008`)
+- [x] MFA backend proxy routes + a mobile self-service enrollment screen (`SecuritySettingsScreen.tsx`) — full round trip verified live against Supabase
+- [x] Mobile API URL is now env-driven (`app.config.js` + `API_BASE_URL`), not hardcoded to one machine's LAN IP
+- [x] Housekeeping: the two root READMEs are merged into one `README.md` (`README (1).md` deleted)
 - [ ] Flesh out the remaining backend routes/controllers/services/repositories for Phase 1 (start with the scheme browser — auth is done)
-- [ ] Mobile MFA-enrollment screen — needed before `MFA_ENFORCEMENT_ENABLED` can safely flip to `true`
-- [ ] Real email delivery for invite/reset links (SMTP not configured) and a real alert channel for DG/RD lockouts (currently audit_log-only)
-- [ ] A real way to run backend migrations/integration tests in CI (fake `auth.users` in the CI Postgres, or a Supabase preview-branch instance) — deferred, see "CI fixes" above
-- [ ] `mobile/app.json`'s `apiBaseUrl` is hardcoded to the dev machine's current LAN IP (`192.168.100.120`) — will need updating if that IP changes or a teammate runs this elsewhere
-- [ ] Housekeeping: two root READMEs still exist (`README.md` monorepo guide + `README (1).md` product front-door) — decide whether to merge
-- [ ] Commit + push this CI-fix work on branch `Login_Screen_Implementation` (PR open against `Main`, not yet merged) — not yet committed as of this update
+- [ ] Real email delivery for invite/reset links (SMTP not configured) and a real alert channel for DG/RD lockouts (currently audit_log-only) — both blocked on third-party service credentials only the user can provide
+- [ ] A real way to run backend migrations/integration tests in CI (fake `auth.users` in the CI Postgres, or a Supabase preview-branch instance) — deferred, see "CI fixes" above; the real Supabase-backed RLS tests above are a workable middle ground for local dev in the meantime
+- [ ] Convert the RLS standalone-script-turned-Jest-tests' remaining 9 `test.todo`s (route/service level) into real `supertest`-driven specs
+- [ ] Commit + push this Phase 0 cleanup work (branch `phase0-cleanup`, not yet pushed as of this update)
 
 ## Team
 

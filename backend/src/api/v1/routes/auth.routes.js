@@ -42,4 +42,14 @@ router.patch(
 router.get('/sessions', authenticate, authorize(), controller.listSessions);
 router.delete('/sessions/:sessionId', authenticate, authorize(), validate(schema.sessionIdParam), controller.revokeSession);
 
+// MFA (hardening point #7) — proxied through the backend so the mobile app
+// never talks to Supabase directly (architecture.md §2), same reasoning as
+// login. `skipMfaCheck` so a DG/RD who hasn't finished enrolling can still
+// reach the routes that let them finish it once MFA_ENFORCEMENT_ENABLED is on.
+router.post('/mfa/enroll', authenticate, authorize({ skipMfaCheck: true }), controller.mfaEnroll);
+router.post('/mfa/challenge', authenticate, authorize({ skipMfaCheck: true }), validate(schema.mfaChallenge), controller.mfaChallenge);
+router.post('/mfa/verify', authenticate, authorize({ skipMfaCheck: true }), validate(schema.mfaVerify), controller.mfaVerify);
+router.get('/mfa/factors', authenticate, authorize({ skipMfaCheck: true }), controller.mfaListFactors);
+router.delete('/mfa/factors/:factorId', authenticate, authorize({ skipMfaCheck: true }), validate(schema.factorIdParam), controller.mfaUnenroll);
+
 module.exports = router;
