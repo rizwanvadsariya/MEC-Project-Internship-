@@ -8,7 +8,10 @@
  * (hardening point #7) — requires an MFA-verified (aal2) session.
  *
  * Call with no roles (`authorize()`) to require "any authenticated, active
- * user" without a specific role.
+ * user" without a specific role. Pass `{ skipMfaCheck: true }` as a trailing
+ * argument for the MFA enroll/challenge/verify routes themselves — otherwise
+ * a DG/RD who hasn't finished enrolling could never reach the route that lets
+ * them finish enrolling once MFA_ENFORCEMENT_ENABLED is on.
  */
 'use strict';
 
@@ -32,7 +35,10 @@ function toAuthUser(profile) {
   };
 }
 
-function authorize(...roles) {
+function authorize(...args) {
+  const skipMfaCheck = typeof args[args.length - 1] === 'object' && args.pop().skipMfaCheck === true;
+  const roles = args;
+
   return asyncHandler(async function authorizeMiddleware(req, _res, next) {
     if (!req.user?.id) {
       throw ApiError.unauthorized('authenticate must run before authorize');
@@ -49,7 +55,7 @@ function authorize(...roles) {
       throw ApiError.forbidden('You do not have permission to perform this action');
     }
 
-    if (config.MFA_ENFORCEMENT_ENABLED && MFA_REQUIRED_ROLES.has(profile.role) && req.authClaims.aal !== 'aal2') {
+    if (!skipMfaCheck && config.MFA_ENFORCEMENT_ENABLED && MFA_REQUIRED_ROLES.has(profile.role) && req.authClaims.aal !== 'aal2') {
       throw ApiError.unauthorized('MFA verification required for this role', 'MFA_REQUIRED');
     }
 

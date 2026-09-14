@@ -11,7 +11,7 @@ data, per `../architecture.md` §2.
 | `src/api/` | Typed API client (axios + JWT refresh interceptor), one module per resource. |
 | `src/auth/` | AuthProvider, `useAuth`, refresh-token kept in `expo-secure-store` (never AsyncStorage). |
 | `src/navigation/` | Root navigator + one navigator per role (role-based routing). Deep-link config. |
-| `src/screens/` | Screens grouped by role: `auth/`, `common/`, `regionalDirector/`, `directorGeneral/`, `meo/`, `supportUser/`. |
+| `src/screens/` | Screens grouped by role: `auth/`, `common/`, `regionalDirector/`, `directorGeneral/`, `meo/`, `supportUser/`. `common/SecuritySettingsScreen.tsx` is the self-service TOTP MFA enrollment screen (backend-proxied, never a direct Supabase call). |
 | `src/components/` | Reusable UI: `common/`, `forms/` (dynamic template renderer), `charts/`, `map/`. |
 | `src/features/` | Per-domain hooks + query definitions (schemes, teams, approvals, siteVisits, issues). |
 | `src/offline/` | SQLite store + sync queue for MEO forms/photos captured offline (Phase 2). |
@@ -21,7 +21,12 @@ data, per `../architecture.md` §2.
 ## Getting started
 
 ```bash
-cp .env.example .env
 npm install
-npm start          # then open in Expo Go / a simulator
+
+# The API base URL comes from an env var, not a hardcoded value (app.config.js) —
+# localhost works for a simulator/emulator, but a physical device over Expo Go
+# needs your machine's actual LAN IP:
+#   Windows PowerShell: Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -match 'Wi-Fi' } | Select IPAddress
+API_BASE_URL=http://<your-LAN-IP>:4000/api/v1 npx expo start
+# Expo Go -> "Enter URL manually" -> exp://<your-LAN-IP>:8081
 ```

@@ -2,7 +2,7 @@
 import { useAuthContext } from './AuthProvider';
 
 export function useAuth() {
-  const { user, accessToken, isLoading, signIn, signOut } = useAuthContext();
+  const { user, accessToken, isLoading, signIn, signOut, updateSession } = useAuthContext();
   return {
     user,
     role: user?.role ?? null,
@@ -13,5 +13,6 @@ export function useAuth() {
     isLoading,
     signIn,
     signOut,
+    updateSession,
   };
 }

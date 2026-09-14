@@ -6,6 +6,7 @@
  */
 'use strict';
 
+const { createClient } = require('@supabase/supabase-js');
 const { supabase } = require('../config/supabase');
 const { config } = require('../config');
 const { ROLES, HIGH_VALUE_ROLES } = require('../constants/roles');
@@ -196,6 +197,63 @@ async function revokeSession(userId, sessionId) {
   return { id: deletedId };
 }
 
+/**
+ * Point #7 — MFA. Supabase's `supabase-js` MFA methods (`auth.mfa.*`) act on
+ * "the client's current session", so acting on a specific user's behalf from
+ * the backend means building a one-off client scoped to their own access
+ * token, the same trick used for `login()`'s signInWithPassword — this is a
+ * pure Supabase-Auth-service call, unrelated to the service-role key's
+ * RLS-bypass privileges.
+ */
+function clientForUser(accessToken) {
+  return createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}
+
+async function mfaEnroll(accessToken, userId) {
+  const sb = clientForUser(accessToken);
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp' });
+  if (error) throw ApiError.badRequest(error.message, undefined, 'MFA_ENROLL_FAILED');
+  await auditLogRepo.record({ actorId: userId, action: 'MFA_ENROLL_STARTED', entityType: 'users', entityId: userId, metadata: { factorId: data.id } });
+  return data; // { id, type: 'totp', totp: { qr_code, secret, uri } }
+}
+
+async function mfaChallenge(accessToken, factorId) {
+  const sb = clientForUser(accessToken);
+  const { data, error } = await sb.auth.mfa.challenge({ factorId });
+  if (error) throw ApiError.badRequest(error.message, undefined, 'MFA_CHALLENGE_FAILED');
+  return data; // { id, expires_at }
+}
+
+/** Verifying the TOTP code returns a NEW session at aal2 — the caller must
+ *  replace whatever access/refresh token it was holding with this one. */
+async function mfaVerify(accessToken, userId, { factorId, challengeId, code }) {
+  const sb = clientForUser(accessToken);
+  const { data, error } = await sb.auth.mfa.verify({ factorId, challengeId, code });
+  if (error) {
+    await auditLogRepo.record({ actorId: userId, action: 'MFA_VERIFY_FAILED', entityType: 'users', entityId: userId, metadata: { factorId } });
+    throw ApiError.badRequest(error.message, undefined, 'MFA_VERIFY_FAILED');
+  }
+  await auditLogRepo.record({ actorId: userId, action: 'MFA_ENROLLED', entityType: 'users', entityId: userId, metadata: { factorId } });
+  return data; // { access_token, refresh_token, ... } — aal2
+}
+
+async function mfaListFactors(accessToken) {
+  const sb = clientForUser(accessToken);
+  const { data, error } = await sb.auth.mfa.listFactors();
+  if (error) throw ApiError.badRequest(error.message);
+  return data; // { totp: [...], phone: [...] }
+}
+
+async function mfaUnenroll(accessToken, userId, factorId) {
+  const sb = clientForUser(accessToken);
+  const { error } = await sb.auth.mfa.unenroll({ factorId });
+  if (error) throw ApiError.badRequest(error.message, undefined, 'MFA_UNENROLL_FAILED');
+  await auditLogRepo.record({ actorId: userId, action: 'MFA_UNENROLLED', entityType: 'users', entityId: userId, metadata: { factorId } });
+}
+
 module.exports = {
   toPublicProfile,
   provisionUser,
@@ -204,4 +262,9 @@ module.exports = {
   forgotPassword,
   listSessions,
   revokeSession,
+  mfaEnroll,
+  mfaChallenge,
+  mfaVerify,
+  mfaListFactors,
+  mfaUnenroll,
 };

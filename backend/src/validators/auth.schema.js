@@ -49,4 +49,29 @@ const sessionIdParam = {
   params: z.object({ sessionId: z.string().uuid() }),
 };
 
-module.exports = { login, forgotPassword, provisionUser, userIdParam, sessionIdParam };
+const mfaChallenge = {
+  body: z.object({ factorId: z.string().uuid() }),
+};
+
+const mfaVerify = {
+  body: z.object({
+    factorId: z.string().uuid(),
+    challengeId: z.string().uuid(),
+    code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from your authenticator app'),
+  }),
+};
+
+const factorIdParam = {
+  params: z.object({ factorId: z.string().uuid() }),
+};
+
+module.exports = {
+  login,
+  forgotPassword,
+  provisionUser,
+  userIdParam,
+  sessionIdParam,
+  mfaChallenge,
+  mfaVerify,
+  factorIdParam,
+};
