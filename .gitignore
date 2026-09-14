@@ -24,6 +24,11 @@ mobile/ios/
 *.p8
 *.mobileprovision
 
+# Raw source photos for the login screen background — the app reads the
+# copies in mobile/assets/images/login/ instead; this is just the original
+# drop folder, not needed in the repo.
+mobile/MEC pictures/
+
 # ---- OS / editor ----
 .DS_Store
 Thumbs.db

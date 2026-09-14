@@ -10,6 +10,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Scroll
 import { useAuth } from '../../auth/useAuth';
 import { ApiClientError } from '../../api/client';
 import * as mfaApi from '../../api/mfa.api';
+import { colors, radius, spacing, typography } from '../../theme';
 
 type Stage = 'loading' | 'off' | 'enrolling' | 'on';
 
@@ -96,7 +97,7 @@ export default function SecuritySettingsScreen() {
   if (stage === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#2563eb" />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -156,28 +157,53 @@ export default function SecuritySettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0b1220' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1220' },
-  title: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  status: { color: '#cbd5e1', fontSize: 15, marginBottom: 16 },
-  instructions: { color: '#94a3b8', fontSize: 13, lineHeight: 20, marginBottom: 14 },
-  secretBox: { backgroundColor: '#1f2937', borderRadius: 8, padding: 14, marginBottom: 10 },
-  secretText: { color: '#fff', fontSize: 16, fontFamily: 'monospace', letterSpacing: 1 },
-  uriText: { color: '#475569', fontSize: 10, marginBottom: 16 },
-  label: { color: '#cbd5e1', fontSize: 13, marginTop: 8, marginBottom: 6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  title: {
+    color: colors.textPrimary,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    marginBottom: spacing.md,
+  },
+  status: { color: colors.textSecondary, fontSize: typography.size.md, marginBottom: spacing.md },
+  instructions: {
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    lineHeight: typography.lineHeight.md,
+    marginBottom: spacing.md,
+  },
+  secretBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    padding: spacing.md - 2,
+    marginBottom: spacing.sm + 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secretText: { color: colors.textPrimary, fontSize: 16, fontFamily: 'monospace', letterSpacing: 1 },
+  uriText: { color: colors.textSecondary, fontSize: 10, marginBottom: spacing.md },
+  label: { color: colors.textSecondary, fontSize: typography.size.sm, marginTop: spacing.sm, marginBottom: spacing.xs + 2 },
   codeInput: {
-    backgroundColor: '#1f2937',
-    color: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
     fontSize: 18,
     letterSpacing: 4,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
-  button: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
-  dangerButton: { backgroundColor: '#7f1d1d' },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  error: { color: '#f87171', marginTop: 14, fontSize: 13 },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.md - 4,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  dangerButton: { backgroundColor: colors.error },
+  buttonText: { color: colors.white, fontWeight: typography.weight.medium, fontSize: typography.size.md },
+  error: { color: colors.error, marginTop: spacing.md, fontSize: typography.size.sm },
 });

@@ -10,6 +10,7 @@ import RegionalDirectorNavigator from './RegionalDirectorNavigator';
 import DirectorGeneralNavigator from './DirectorGeneralNavigator';
 import MeoNavigator from './MeoNavigator';
 import SupportUserNavigator from './SupportUserNavigator';
+import { colors } from '../theme';
 
 export default function RootNavigator() {
   const { isLoading, isAuthenticated, role } = useAuth();
@@ -17,7 +18,7 @@ export default function RootNavigator() {
   if (isLoading) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -45,6 +46,6 @@ export default function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  splash: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1220' },
-  unknown: { color: '#f87171' },
+  splash: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  unknown: { color: colors.error },
 });
