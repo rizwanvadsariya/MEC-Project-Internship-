@@ -4,12 +4,13 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleHomeScreen from '../screens/common/RoleHomeScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
+import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
 
 export default function MeoNavigator() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="MeoHome" component={RoleHomeScreen} options={{ title: 'Lead MEO' }} />
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
     </Stack.Navigator>

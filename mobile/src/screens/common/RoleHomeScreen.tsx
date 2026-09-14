@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../auth/useAuth';
+import { colors, radius, spacing, typography } from '../../theme';
 
 const ROLE_LABELS: Record<string, string> = {
   REGIONAL_DIRECTOR: 'Regional Director',
@@ -54,16 +55,41 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#0b1220' },
-  welcome: { color: '#94a3b8', fontSize: 14, marginTop: 12 },
-  name: { color: '#fff', fontSize: 26, fontWeight: '700', marginBottom: 20 },
-  card: { backgroundColor: '#111827', borderRadius: 12, padding: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  rowLabel: { color: '#94a3b8', fontSize: 13 },
-  rowValue: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  note: { color: '#64748b', fontSize: 12, marginTop: 20, lineHeight: 18 },
-  securityButton: { marginTop: 16, backgroundColor: '#1f2937', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  securityButtonText: { color: '#cbd5e1', fontWeight: '600' },
-  logout: { marginTop: 'auto', backgroundColor: '#1f2937', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  logoutText: { color: '#f87171', fontWeight: '600' },
+  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
+  welcome: { color: colors.textSecondary, fontSize: typography.size.sm, marginTop: spacing.sm },
+  name: {
+    color: colors.textPrimary,
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    marginBottom: spacing.lg,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
+  rowLabel: { color: colors.textSecondary, fontSize: typography.size.sm },
+  rowValue: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.medium },
+  note: { color: colors.textSecondary, fontSize: typography.size.xs, marginTop: spacing.lg, lineHeight: typography.lineHeight.md },
+  securityButton: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.md - 4,
+    alignItems: 'center',
+  },
+  securityButtonText: { color: colors.primaryDark, fontWeight: typography.weight.medium },
+  logout: {
+    marginTop: 'auto',
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.md - 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  logoutText: { color: colors.error, fontWeight: typography.weight.medium },
 });
