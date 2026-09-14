@@ -6,10 +6,6 @@ visits the scheme site and files photos + a progress form + any issues, and
 the whole record is visible (read-only) to the rest of the team and to
 leadership within that division.
 
-> Professional/internship project at **Techclomate** — not affiliated with or
-> endorsed by the Government of Sindh; built as a monitoring tool for internal
-> secretariat use.
-
 Scheme progress today is tracked manually — paper reports, phone calls,
 disconnected spreadsheets — with no reliable way to verify claimed physical
 progress against the ADP booklet's own figures, and no structured trail of who
@@ -45,12 +41,12 @@ predictive risk flagging, and everything past MVP) is in [`phases.md`](./phases.
 
 ## User roles
 
-| Role | Access |
-|---|---|
+| Role                       | Access                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
 | **Regional Director (RD)** | Assembles visit teams, submits for DG approval, full visibility within their own division |
-| **Director General (DG)** | Approves/rejects proposed teams, full visibility within their own division |
-| **MEO (lead)** | Visits the site, fills the form, uploads photos, files issues |
-| **Support user** | Strictly view-only — sees the form, photos, and issues for visits they're assigned to |
+| **Director General (DG)**  | Approves/rejects proposed teams, full visibility within their own division                |
+| **MEO (lead)**             | Visits the site, fills the form, uploads photos, files issues                             |
+| **Support user**           | Strictly view-only — sees the form, photos, and issues for visits they're assigned to     |
 
 Full permission matrix in [`PRD.md`](./PRD.md#7-role--permission-matrix).
 
@@ -80,12 +76,12 @@ Each package has its own README with the folder-by-folder breakdown:
 
 ## Tech stack (PERN)
 
-| Layer | Choice |
-|---|---|
+| Layer                     | Choice                                                       |
+| ------------------------- | ------------------------------------------------------------ |
 | Database / Auth / Storage | PostgreSQL, Auth, Storage — [Supabase](https://supabase.com) |
-| Backend API | Node.js + Express.js (hosted on Render) |
-| Mobile client | React Native + Expo (TypeScript) |
-| Frontend hosting | Vercel |
+| Backend API               | Node.js + Express.js (hosted on Render)                      |
+| Mobile client             | React Native + Expo (TypeScript)                             |
+| Frontend hosting          | Vercel                                                       |
 
 ## Getting started
 
@@ -109,13 +105,13 @@ for finding your machine's LAN IP.
 
 ### Environment variables
 
-| Variable | Used by | Purpose |
-|---|---|---|
-| `SUPABASE_URL` | Backend | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Backend only | Privileged key for server-side operations — never ship this to the mobile bundle |
-| `SUPABASE_JWKS_URL` | Backend | JWT verification (auth middleware) |
-| `DATABASE_URL` / `DIRECT_URL` | Backend | Postgres via the Supabase pooler (transaction / session) |
-| `API_BASE_URL` | Mobile | URL of the running Express API — a LAN IP, not `localhost`, when testing on a physical device |
+| Variable                      | Used by      | Purpose                                                                                       |
+| ----------------------------- | ------------ | --------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`                | Backend      | Supabase project URL                                                                          |
+| `SUPABASE_SERVICE_ROLE_KEY`   | Backend only | Privileged key for server-side operations — never ship this to the mobile bundle              |
+| `SUPABASE_JWKS_URL`           | Backend      | JWT verification (auth middleware)                                                            |
+| `DATABASE_URL` / `DIRECT_URL` | Backend      | Postgres via the Supabase pooler (transaction / session)                                      |
+| `API_BASE_URL`                | Mobile       | URL of the running Express API — a LAN IP, not `localhost`, when testing on a physical device |
 
 ## Deployment
 
@@ -131,13 +127,13 @@ DG approval -> site visit -> form/photos/issues -> view access -> dashboards.
 
 ## Project documentation
 
-| File | Contents |
-|---|---|
-| [`PRD.md`](./PRD.md) | Product requirements — problem, roles, workflow, permission matrix, phased features, open questions |
-| [`schema.md`](./schema.md) | Entity/relationship model — ADP reference data + operational workflow, with the RLS join logic |
-| [`architecture.md`](./architecture.md) | Tech stack + backend hardening (security, performance, efficiency) |
-| [`phases.md`](./phases.md) | Dependency-ordered build sequence |
-| [`Memory.md`](./Memory.md) | **Current implementation status** and every non-obvious decision made along the way |
+| File                                   | Contents                                                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`PRD.md`](./PRD.md)                   | Product requirements — problem, roles, workflow, permission matrix, phased features, open questions |
+| [`schema.md`](./schema.md)             | Entity/relationship model — ADP reference data + operational workflow, with the RLS join logic      |
+| [`architecture.md`](./architecture.md) | Tech stack + backend hardening (security, performance, efficiency)                                  |
+| [`phases.md`](./phases.md)             | Dependency-ordered build sequence                                                                   |
+| [`Memory.md`](./Memory.md)             | **Current implementation status** and every non-obvious decision made along the way                 |
 
 ## Team
 
