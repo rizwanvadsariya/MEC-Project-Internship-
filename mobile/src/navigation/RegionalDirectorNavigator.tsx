@@ -6,6 +6,8 @@ import RoleHomeScreen from '../screens/common/RoleHomeScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import TeamAssemblyScreen from '../screens/regionalDirector/TeamAssemblyScreen';
+import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
+import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -17,6 +19,8 @@ export default function RegionalDirectorNavigator() {
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
       <Stack.Screen name="TeamAssembly" component={TeamAssemblyScreen} options={{ title: 'Assemble team' }} />
+      <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: 'Site visits' }} />
+      <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: 'Site visit' }} />
     </Stack.Navigator>
   );
 }

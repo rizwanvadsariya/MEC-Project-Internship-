@@ -6,6 +6,8 @@ import RoleHomeScreen from '../screens/common/RoleHomeScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import ApprovalQueueScreen from '../screens/directorGeneral/ApprovalQueueScreen';
+import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
+import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -17,6 +19,8 @@ export default function DirectorGeneralNavigator() {
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
       <Stack.Screen name="ApprovalQueue" component={ApprovalQueueScreen} options={{ title: 'Approval queue' }} />
+      <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: 'Site visits' }} />
+      <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: 'Site visit' }} />
     </Stack.Navigator>
   );
 }

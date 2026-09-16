@@ -69,7 +69,7 @@ const DASHBOARDS: Record<string, DashboardConfig> = {
     emptyTitle: 'No visits assigned',
     emptyMessage: 'Approved team assignments will appear here when you are added to a visit.',
     nextWorkspace: 'Next workspace: Assigned visits',
-    nextRoute: 'Schemes',
+    nextRoute: 'SiteVisits',
   },
   SUPPORT_USER: {
     eyebrow: 'Read-only workspace',
@@ -130,6 +130,9 @@ export default function RoleHomeScreen() {
         </Text>
       </View>
 
+      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('SiteVisits')}>
+        <Text style={styles.securityButtonText}>Site visits</Text>
+      </Pressable>
       <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Security')}>
         <Text style={styles.securityButtonText}>Security settings</Text>
       </Pressable>

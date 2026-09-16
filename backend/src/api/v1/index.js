@@ -12,9 +12,6 @@ router.use('/auth', require('./routes/auth.routes'));
 router.use('/schemes', require('./routes/schemes.routes'));
 router.use('/teams', require('./routes/teams.routes'));
 router.use('/approvals', require('./routes/approvals.routes'));
-
-// router.use('/schemes', require('./routes/schemes.routes'));
-// router.use('/teams', require('./routes/teams.routes'));
-// ...
+router.use('/site-visits', require('./routes/siteVisits.routes'));
 
 module.exports = router;

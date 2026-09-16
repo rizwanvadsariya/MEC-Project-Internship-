@@ -6,6 +6,7 @@
 'use strict';
 
 const db = require('../config/database');
+const siteVisitRepo = require('./siteVisit.repo');
 
 async function listPending(divisionId) {
 	const { rows } = await db.query(
@@ -61,12 +62,7 @@ async function decide(teamId, reviewerId, divisionId, decision, remarks) {
 		);
 		await client.query(`update visit_teams set status = $2 where id = $1`, [teamId, decision]);
 		if (decision === 'APPROVED') {
-			await client.query(
-				`insert into site_visits (team_id, scheme_id)
-				 select vt.id, vt.scheme_id from visit_teams vt
-				 where vt.id = $1 and not exists (select 1 from site_visits sv where sv.team_id = vt.id)`,
-				[teamId],
-			);
+			await siteVisitRepo.createForApprovedTeam(client, teamId);
 		}
 		await client.query('commit');
 		return { teamId, decision, remarks: remarks || null };

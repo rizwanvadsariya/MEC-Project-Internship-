@@ -2,8 +2,8 @@
 
 ## Smart Provincial M&E Management Ecosystem
 
-**Last updated:** September 15, 2026
-**Current stage:** Phase 0 is fully complete. Phase 1 Steps 6–9 are now implemented: role-based empty-state dashboards, a read-only province-wide scheme browser, RD team assembly, and the DG approval queue with rejection/resubmission. The live reject → resubmit → approve loop was verified, including exactly one site visit creation on approval. The next Phase 1 work is site-visit creation/display and the visit workflow.
+**Last updated:** September 17, 2026
+**Current stage:** Phase 0 is fully complete. Phase 1 Steps 6–10 are now implemented: role-based empty-state dashboards, a read-only province-wide scheme browser, RD team assembly, the DG approval queue with rejection/resubmission, and site-visit auto-creation/display. The live reject → resubmit → approve loop is now covered by a real automated test (not just a one-off manual script), and it asserts exactly one site visit is created on approval. The next Phase 1 work is the dynamic form-template seed and the visit-form-fill workflow (Steps 11–12).
 
 ## Mobile UI theme (per `ui-implementation.md`) — IMPLEMENTED
 
@@ -166,6 +166,10 @@ None of this was caused by the app-shell or RLS code itself — it's the CI work
 | `backend/db/seeds/importAdpBooklet.js` | `npm run seed:adp` — real implementation (was a stub). Truncates + reloads the 12 reference tables in one transaction, preserves the CSVs' own ids (`OVERRIDING SYSTEM VALUE` + sequence resync), dedupes the 24 exact-duplicate `scheme_sdg` rows. |
 | `mobile/App.tsx`, `src/navigation/*`, `src/auth/*`, `src/api/{client,auth,mfa}.api.ts`, `src/screens/{auth/LoginScreen,common/{RoleHomeScreen,SecuritySettingsScreen}}.tsx` | The full React Native app shell + MFA enrollment screen — see "React Native app shell" + "MFA" above. |
 | `mobile/app.config.js` | Replaces the old static `app.json` — reads `apiBaseUrl` from the `API_BASE_URL` env var instead of a hardcoded LAN IP. |
+| `backend/src/{repositories,services,controllers,validators}/siteVisit.*`, `api/v1/routes/siteVisits.routes.js` | Site visit list/detail (Step 10) — see "Step 10" above. `siteVisit.repo.createForApprovedTeam` is also what `approval.repo.decide` calls on APPROVE. |
+| `backend/babel.config.js` | Test-only — lets Jest's default transform actually convert jose v6's ESM syntax to CommonJS; paired with `jest.config.js`'s `transformIgnorePatterns`. Production never touches it. |
+| `backend/tests/helpers/{authToken,envAvailable}.js` | Real-JWT minting + a `.env`-required-transitively guard for route-level Jest tests — see "Step 10" above. |
+| `mobile/src/api/siteVisits.api.ts`, `src/screens/common/{SiteVisitListScreen,SiteVisitDetailScreen}.tsx` | Mobile site-visit list/detail (Step 10) — see "Step 10" above. |
 
 ## Key decisions made (chronological)
 
@@ -196,6 +200,9 @@ None of this was caused by the app-shell or RLS code itself — it's the CI work
 25. **TOTP verification failures during testing were a sandbox clock-drift artifact (~2–3 minutes off from Supabase's real time), not a code defect** — confirmed by validating the from-scratch RFC 6238 implementation against the official test vector first, then against Supabase's own authoritative HTTP `Date` header. No production impact: Supabase's own clock validates the code, never the backend's.
 26. **RLS test fixtures self-heal from a crashed prior run** — `createFixtures()` now deletes any stale `visit_teams`/`site_visits` rows `created_by` the RD test account before creating new ones, after a killed background test process once left 2 such rows behind in the real project.
 27. **Near-miss during the README cleanup:** a cleanup command briefly deleted `PRD (1).md` too (not intended — only the duplicate README was meant to go). It was tracked by git, so `git checkout -- "PRD (1).md"` recovered it losslessly before anything was committed; flagged here rather than silently glossed over.
+28. **Express 5 made `req.query` a read-only getter** — `middleware/validate.js`'s old `req[part] = result.data` throws for `part === 'query'` (worked fine for `body`/`params`, which stayed plain writable properties). Fixed by `Object.defineProperty(req, part, { value, writable: true, configurable: true })` instead of a plain assignment. Apply this pattern to any future code that needs to replace `req.query` wholesale.
+29. **A validator's `query` export must be wrapped as `{ query: z.object(...) }`, matching `idParam`'s `{ params: ... }`** — an unwrapped `z.object(...)` makes `validate()`'s `schemas.query` lookup undefined, so validation is silently skipped rather than erroring. `schemes.schema.js` had exactly this bug (found while building Step 10) — the scheme browser's `?limit=`/filters were never actually validated/coerced; fixed alongside #28.
+30. **`jose` v6 is ESM-only, which broke Jest (but never production)** — Jest's default transform skips `node_modules` for speed, so `require('jose')` in `authenticate.js` threw under Jest specifically (plain `node src/server.js` already worked, since Node 24 supports `require()`-of-ESM natively). This is almost certainly why every prior HTTP route-level test in this repo stayed `test.todo` — there was no way to load `src/app` under Jest at all until this was fixed. Resolved with a test-only Babel transform scoped to just that package (`backend/babel.config.js` + `jest.config.js`'s `transformIgnorePatterns`) rather than touching the `jose` version or `authenticate.js` itself.
 
 ## Open / unresolved questions
 
@@ -243,7 +250,31 @@ Routes:
 
 The mobile `ApprovalQueueScreen` is mounted in the Director General navigator. Push/in-app notifications are not part of this step; they remain Phase 2 Step 17.
 
-**Live verification:** a temporary real Supabase workflow passed submit → reject with remarks → RD resubmit → approve, produced two approval-history rows and exactly one site visit, then cleaned all temporary rows.
+**Live verification:** a temporary real Supabase workflow passed submit → reject with remarks → RD resubmit → approve, produced two approval-history rows and exactly one site visit, then cleaned all temporary rows. **That manual verification is now a permanent automated test** — see Step 10 below.
+
+### Step 10 — Site visit auto-creation + display — IMPLEMENTED
+
+Auto-creation itself (insert-on-approve, idempotent via a `not exists` guard) already lived inline in `approval.repo.decide()` from Step 9; this step extracted it into `siteVisit.repo.createForApprovedTeam(client, teamId)` (the repo that actually owns `site_visits`, matching the layered-architecture convention every other resource follows) and added the read side that makes the created visit visible:
+
+- `GET /api/v1/site-visits` — list, scoped exactly like the `site_visits_select` RLS policy (migration 0007): RD/DG see every visit in their own division (via `scheme_districts`/`districts`), MEO/Support see only visits for teams they're a member of. Supports `schemeId`/`status` filters and keyset cursor pagination (`created_at, id` — `site_visits.id` is a uuid, not sequential, so the bigint-style `id <` cursor `schemes.repo` uses doesn't apply here).
+- `GET /api/v1/site-visits/:id` — detail, same scoping, includes the team member list; 404 (not the row) if the actor can't see it.
+- Mobile: `SiteVisitListScreen` (new, shared across all 4 role navigators) and `SiteVisitDetailScreen` (previously a stub) show scheme, status, schedule, and team. A "Site visits" quick link was added to `RoleHomeScreen` for every role; MEO's existing "Assigned visits" empty-state link now actually points at it.
+
+**Two real, pre-existing bugs were found and fixed while building this (neither caused by this feature — both were just never exercised before):**
+1. **`middleware/validate.js` couldn't validate any `query` schema at all under Express 5.** `req.query = result.data` throws `TypeError: Cannot set property query of #<IncomingMessage> which has only a getter` — Express 5 made `req.query` a read-only getter (Express 4 had it as a plain writable property). Fixed by redefining the property (`Object.defineProperty(req, part, { value, writable: true, configurable: true })`) instead of assigning. This had never fired before because of bug #2 below.
+2. **`schemes.schema.js`'s `query` export wasn't wrapped in `{ query: ... }`** the way `validate()`'s `schemas[part]` lookup expects (unlike its own `idParam`, which *was* wrapped) — so the scheme browser's query validation was silently skipped entirely, `?limit=` never actually took effect (always fell back to the default 20), and — by accident — that's exactly what kept bug #1 from ever being hit. Fixed by wrapping it the same way; scheme-browser query params are now actually validated/coerced.
+3. **Jest couldn't load `jose` (JWT verification) at all**, blocking every real HTTP route test in this codebase (`schemes.routes.test.js`/`approvals.routes.test.js` had stayed `test.todo` for exactly this reason, most likely) — jose v6 is ESM-only, and Jest's default transform skips all of `node_modules` including jose. Fixed at the test-tooling level only: `backend/babel.config.js` (new, `@babel/preset-env` targeting current Node) + `jest.config.js`'s `transformIgnorePatterns: ['node_modules/(?!(jose)/)']`. Production (`node src/server.js`) never touches Babel — Node 24 already supports `require()`-of-ESM natively, which is why this was invisible outside Jest.
+
+**New backend test infrastructure (`tests/helpers/`), reusable by any future route test:**
+- `authToken.js` — mints a real, JWKS-verifiable access token for a seeded test account by resetting its password via the service-role admin client and logging in through the real `POST /auth/login` route (a token can't be fabricated locally; Supabase JWTs are asymmetric). Side effect: running these tests overwrites the seeded test accounts' passwords to a fixed test value.
+- `envAvailable.js` — guards any test that transitively requires `src/config` (fatal via `process.exit(1)` with no `backend/.env`) so CI skips gracefully instead of killing the whole Jest run; paired with keeping those `require()` calls lazy (inside `beforeAll`, never at a `describe` body's top level, since `describe.skip` still executes the describe callback).
+
+**Real (not `test.todo`) tests added:**
+- `tests/unit/services/approval.service.test.js` + new `siteVisit.service.test.js` — mocked-repo unit tests (factory-form `jest.mock`, so the real repo — which needs `.env` — is never loaded).
+- `tests/integration/db/siteVisitCreation.test.js` (new) — against the real Supabase project: approving creates exactly one `site_visit`, and calling the repo function again is a no-op (idempotency).
+- `tests/integration/routes/siteVisits.routes.test.js` (new) + `approvals.routes.test.js` (was `test.todo`) — real supertest + real JWTs against the real project: division/membership-scoped visibility for all 4 roles, cursor pagination, 404-not-the-row on an unauthorized detail fetch, and the full submit → reject → resubmit → approve HTTP flow asserting the audit trail and the created site visit.
+
+All 9 suites / 34 real tests pass against the live project (5 pre-existing, unrelated `test.todo`s remain — `schemes.routes.test.js` pagination/division tests and 3 `team.service.test.js` unit tests — not part of this feature).
 
 ## Next steps (Phase 1, per `phases.md`)
 
@@ -265,7 +296,8 @@ The mobile `ApprovalQueueScreen` is mounted in the Director General navigator. P
 - [x] Implement read-only scheme browser with search/filter/pagination (Step 7)
 - [x] Implement RD team assembly with lead and supporting MEOs (Step 8)
 - [x] Implement DG approval queue, rejection remarks, and RD resubmission loop (Step 9)
-- [ ] Implement site-visit auto-creation/display and the remaining Phase 1 visit workflow (Step 10 onward)
+- [x] Implement site-visit auto-creation + read (list/detail) display (Step 10)
+- [ ] Seed dynamic form templates per department and build the visit-form-fill workflow (Steps 11–12 onward)
 - [ ] Flesh out remaining backend routes/controllers/services/repositories for Phase 1
 - [ ] Add RD team-status/history screen so submitted, rejected, and approved requests are visible in the mobile app
 - [ ] Add Phase 2 notification infrastructure for approval and visit events (not part of current Phase 1 scope)

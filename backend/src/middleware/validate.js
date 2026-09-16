@@ -18,7 +18,13 @@ function validate(schemas) {
       if (!result.success) {
         throw ApiError.badRequest('Validation failed', result.error.flatten().fieldErrors);
       }
-      req[part] = result.data;
+      // Express 5 defines req.query as a read-only getter (parsed lazily from
+      // the URL) — a plain `req.query = ...` throws ("Cannot set property
+      // query of #<IncomingMessage> which has only a getter"). Redefining the
+      // property replaces the getter with a plain writable value on this
+      // request instance; harmless for body/params, which were already plain
+      // writable properties.
+      Object.defineProperty(req, part, { value: result.data, writable: true, configurable: true, enumerable: true });
     }
     next();
   };
