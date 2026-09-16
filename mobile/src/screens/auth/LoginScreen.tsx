@@ -40,9 +40,9 @@ import { ApiClientError, apiBaseUrl } from '../../api/client';
 import { colors, radius, spacing, typography } from '../../theme';
 
 const BACKGROUND_IMAGES = [
-  require('../../../assets/images/login/site-1.jpg'),
-  require('../../../assets/images/login/site-2.jpg'),
-  require('../../../assets/images/login/site-3.jpg'),
+  require('../../../assets/images/login/site-1.webp'),
+  require('../../../assets/images/login/site-2.webp'),
+  require('../../../assets/images/login/site-3.webp'),
 ];
 
 const CROSSFADE_INTERVAL_MS = 5500;
