@@ -4,8 +4,8 @@
  * lead MEO can actually fill them in (phases.md Steps 12-14).
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../auth/useAuth';
 import { getSiteVisit, type SiteVisitDetail } from '../../api/siteVisits.api';
 import { colors, radius, spacing, typography } from '../../theme';
@@ -18,8 +18,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function SiteVisitDetailScreen() {
-	const { accessToken } = useAuth();
+	const { accessToken, user } = useAuth();
 	const route = useRoute<{ key: string; name: string; params?: { id?: string } }>();
+	const navigation = useNavigation<{ navigate: (screen: string, params?: Record<string, string>) => void }>();
 	const visitId = route.params?.id ?? '';
 	const [visit, setVisit] = useState<SiteVisitDetail | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -58,6 +59,12 @@ export default function SiteVisitDetailScreen() {
 				<Row label="Started" value={visit.startedAt ? new Date(visit.startedAt).toLocaleString() : '—'} />
 				<Row label="Completed" value={visit.completedAt ? new Date(visit.completedAt).toLocaleString() : '—'} />
 			</View>
+			{visit.members.some((member) => member.userId === user?.id && member.teamRole === 'LEAD_MEO') ? <Pressable style={styles.formButton} onPress={() => navigation.navigate('VisitForm', { id: visit.id })}>
+				<Text style={styles.formButtonText}>Open visit form</Text>
+			</Pressable> : null}
+			{visit.members.some((member) => member.userId === user?.id && member.teamRole === 'LEAD_MEO') ? <Pressable style={styles.photoButton} onPress={() => navigation.navigate('PhotoCapture', { id: visit.id })}>
+				<Text style={styles.formButtonText}>Capture progress photo</Text>
+			</Pressable> : null}
 
 			<Text style={styles.sectionTitle}>Team</Text>
 			<View style={styles.card}>
@@ -98,4 +105,7 @@ const styles = StyleSheet.create({
 	memberName: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.medium },
 	memberRole: { color: colors.textSecondary, fontSize: typography.size.xs },
 	pendingNote: { color: colors.textSecondary, fontSize: typography.size.xs, lineHeight: typography.lineHeight.sm, marginTop: spacing.lg, textAlign: 'center' },
+	formButton: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, marginTop: spacing.lg },
+	formButtonText: { color: colors.white, fontWeight: typography.weight.bold },
+	photoButton: { alignItems: 'center', backgroundColor: colors.primaryDark, borderRadius: radius.md, paddingVertical: spacing.md, marginTop: spacing.sm },
 });

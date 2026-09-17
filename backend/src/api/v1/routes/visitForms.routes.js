@@ -5,5 +5,14 @@
  */
 'use strict';
 const router = require('express').Router();
-// TODO: define routes
+const authenticate = require('../../../middleware/authenticate');
+const authorize = require('../../../middleware/authorize');
+const validate = require('../../../middleware/validate');
+const controller = require('../../../controllers/visitForms.controller');
+const schema = require('../../../validators/visitForm.schema');
+
+router.use(authenticate, authorize());
+router.get('/:id/form', validate(schema.idParam), controller.get);
+router.put('/:id/form', validate(schema.idParam), validate(schema.save), controller.saveDraft);
+router.post('/:id/form/submit', validate(schema.idParam), validate(schema.save), controller.submit);
 module.exports = router;

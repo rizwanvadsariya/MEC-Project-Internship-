@@ -7,6 +7,8 @@ import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
+import VisitFormScreen from '../screens/meo/VisitFormScreen';
+import PhotoCaptureScreen from '../screens/meo/PhotoCaptureScreen';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -19,6 +21,8 @@ export default function MeoNavigator() {
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
       <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: 'Site visits' }} />
       <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: 'Site visit' }} />
+      <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: 'Visit form' }} />
+      <Stack.Screen name="PhotoCapture" component={PhotoCaptureScreen} options={{ title: 'Progress photos' }} />
     </Stack.Navigator>
   );
 }

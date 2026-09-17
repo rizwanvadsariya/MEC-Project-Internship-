@@ -8,8 +8,13 @@
 const { createClient } = require('@supabase/supabase-js');
 const { config } = require('./index');
 
-const supabase = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, {
+const serviceRoleOptions = {
   auth: { autoRefreshToken: false, persistSession: false },
-});
+};
 
-module.exports = { supabase };
+const supabase = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, serviceRoleOptions);
+// Auth login uses the client session state. Storage must keep an independent
+// service-role authorization header for uploads and signed URLs.
+const storageSupabase = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, serviceRoleOptions);
+
+module.exports = { supabase, storageSupabase };
