@@ -19,18 +19,27 @@ async function findSchemeDivision(schemeId) {
 	return rows[0] || null;
 }
 
+/**
+ * MEOs must belong to this division. Support users may either belong to it
+ * or have no division at all — the users table's own CHECK constraint
+ * (schema.md §4.1) explicitly allows a NULL division_id for SUPPORT_USER,
+ * so those accounts are division-agnostic and eligible everywhere.
+ */
 async function findEligibleMembers(divisionId) {
 	const { rows } = await db.query(
 		`select id, full_name as "fullName", email, role, department_id as "departmentId"
 		 from users
-		 where is_active = true and division_id = $1 and role = 'MEO'
-		 order by full_name`,
+		 where is_active = true and (
+			 (role = 'MEO' and division_id = $1)
+			 or (role = 'SUPPORT_USER' and (division_id = $1 or division_id is null))
+		 )
+		 order by role, full_name`,
 		[divisionId],
 	);
 	return rows;
 }
 
-async function createDraft({ schemeId, createdBy, leadMeoId, supportingMemberIds }) {
+async function createDraft({ schemeId, createdBy, leadMeoId, supportingMembers }) {
 	const client = await db.pool.connect();
 	try {
 		await client.query('begin');
@@ -41,7 +50,7 @@ async function createDraft({ schemeId, createdBy, leadMeoId, supportingMemberIds
 		)).rows[0];
 		const members = [
 			[team.id, leadMeoId, 'LEAD_MEO'],
-			...supportingMemberIds.filter((id) => id !== leadMeoId).map((id) => [team.id, id, 'SUPPORT_MEO']),
+			...supportingMembers.map((member) => [team.id, member.id, member.teamRole]),
 		];
 		for (const member of members) {
 			await client.query(

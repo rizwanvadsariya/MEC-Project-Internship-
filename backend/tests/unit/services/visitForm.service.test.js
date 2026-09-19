@@ -62,3 +62,18 @@ test('only the lead MEO can edit and a submitted form cannot be changed', async 
 	visitFormRepo.findForm.mockResolvedValue({ status: 'SUBMITTED' });
 	await expect(service.save(actor, 'visit-1', { physicalProgressPct: 1, responses: {} }, 'DRAFT')).rejects.toMatchObject({ statusCode: 409 });
 });
+
+test('the lead MEO can always see their own draft; a non-lead viewer sees null until it is submitted', async () => {
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: true });
+	visitFormRepo.findForm.mockResolvedValue({ id: 'form-1', status: 'DRAFT', physicalProgressPct: 20 });
+	await expect(service.get(actor, 'visit-1')).resolves.toMatchObject({ form: { id: 'form-1', status: 'DRAFT', physicalProgressPct: 20 }, canEdit: true });
+
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: false });
+	await expect(service.get({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toMatchObject({ form: null, canEdit: false });
+});
+
+test('a non-lead viewer sees the form once it is SUBMITTED', async () => {
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: false });
+	visitFormRepo.findForm.mockResolvedValue({ id: 'form-1', status: 'SUBMITTED', physicalProgressPct: 100 });
+	await expect(service.get({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toMatchObject({ form: { id: 'form-1', status: 'SUBMITTED', physicalProgressPct: 100 }, canEdit: false });
+});

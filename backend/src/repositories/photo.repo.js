@@ -11,8 +11,9 @@ async function findVisitContext(siteVisitId, actor) {
 		`select sv.id as "siteVisitId", sv.team_id as "teamId", exists (
 			select 1 from visit_team_members vtm where vtm.team_id = sv.team_id
 			and vtm.user_id = $2 and vtm.team_role = 'LEAD_MEO'
-		) as "isLeadMeo"
+		) as "isLeadMeo", coalesce(vf.status = 'SUBMITTED', false) as "formSubmitted"
 		from site_visits sv
+		left join visit_forms vf on vf.site_visit_id = sv.id
 		where sv.id = $1 and (
 			exists (select 1 from visit_team_members member_vtm where member_vtm.team_id = sv.team_id and member_vtm.user_id = $2)
 			or ($3 and exists (select 1 from scheme_districts sd join districts d on d.id = sd.district_id where sd.scheme_id = sv.scheme_id and d.division_id = $4))

@@ -18,6 +18,7 @@ maybeDescribe('visit form fill routes', () => {
 	let getUserId;
 	let meoToken;
 	let supportToken;
+	let dgToken;
 	let fixture;
 
 	beforeAll(async () => {
@@ -28,6 +29,7 @@ maybeDescribe('visit form fill routes', () => {
 
 		meoToken = await getAccessToken('MEO');
 		supportToken = await getAccessToken('SUPPORT_USER');
+		dgToken = await getAccessToken('DIRECTOR_GENERAL');
 		const meoId = getUserId('MEO');
 		const supportId = getUserId('SUPPORT_USER');
 		const rdId = (await db.query('select id from users where email = $1', ['rd.test@mec.local'])).rows[0].id;
@@ -78,18 +80,30 @@ maybeDescribe('visit form fill routes', () => {
 		expect(submitted.body.error.message).toMatch(/Required form fields/);
 	});
 
-	test('non-lead team members can read but cannot edit the form', async () => {
+	test('a support-team member and the division DG can read but not edit the form', async () => {
 		const read = await request(app)
 			.get(`/api/v1/site-visits/${fixture.visitId}/form`)
 			.set('Authorization', `Bearer ${supportToken}`);
 		expect(read.status).toBe(200);
 		expect(read.body.data.canEdit).toBe(false);
 
+		const readByDg = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/form`)
+			.set('Authorization', `Bearer ${dgToken}`);
+		expect(readByDg.status).toBe(200);
+		expect(readByDg.body.data.canEdit).toBe(false);
+
 		const write = await request(app)
 			.put(`/api/v1/site-visits/${fixture.visitId}/form`)
 			.set('Authorization', `Bearer ${supportToken}`)
 			.send({ physicalProgressPct: 40, responses: {} });
 		expect(write.status).toBe(403);
+
+		const writeByDg = await request(app)
+			.put(`/api/v1/site-visits/${fixture.visitId}/form`)
+			.set('Authorization', `Bearer ${dgToken}`)
+			.send({ physicalProgressPct: 40, responses: {} });
+		expect(writeByDg.status).toBe(403);
 	});
 
 	test('lead MEO can submit a valid form once and later edits are rejected', async () => {
@@ -119,5 +133,20 @@ maybeDescribe('visit form fill routes', () => {
 		expect(stored.status).toBe('SUBMITTED');
 		expect(Number(stored.physical_progress_pct)).toBe(40);
 		expect(stored.responses).toEqual(responses);
+	});
+
+	test('after submission, the support-team member and division DG can still read the now-SUBMITTED form', async () => {
+		const readBySupport = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/form`)
+			.set('Authorization', `Bearer ${supportToken}`);
+		expect(readBySupport.status).toBe(200);
+		expect(readBySupport.body.data.form.status).toBe('SUBMITTED');
+		expect(Number(readBySupport.body.data.form.physicalProgressPct)).toBe(40);
+
+		const readByDg = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/form`)
+			.set('Authorization', `Bearer ${dgToken}`);
+		expect(readByDg.status).toBe(200);
+		expect(readByDg.body.data.form.status).toBe('SUBMITTED');
 	});
 });

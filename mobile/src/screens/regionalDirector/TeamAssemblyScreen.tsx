@@ -53,24 +53,26 @@ export default function TeamAssemblyScreen() {
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.eyebrow}>Team assembly</Text>
 			<Text style={styles.title}>Build a monitoring team</Text>
-			<Text style={styles.subtitle}>Scheme #{params.schemeId} · Select one lead MEO and any supporting MEOs.</Text>
+			<Text style={styles.subtitle}>Scheme #{params.schemeId} · Select one lead MEO and any supporting MEOs or support staff.</Text>
 			{error ? <Text style={styles.error}>{error}</Text> : null}
 			{message ? <Text style={styles.success}>{message}</Text> : null}
 			{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
-			{!loading && !members.length ? <Text style={styles.empty}>No active MEOs are available in your division.</Text> : null}
+			{!loading && !members.length ? <Text style={styles.empty}>No active MEOs or support users are available in your division.</Text> : null}
 			{members.map((member) => {
 				const isLead = member.id === leadMeoId;
 				const isSupporting = supportingIds.includes(member.id);
+				const canLead = member.role === 'MEO';
 				return (
 					<View key={member.id} style={styles.memberCard}>
 						<View style={styles.memberInfo}>
 							<Text style={styles.memberName}>{member.fullName}</Text>
 							<Text style={styles.memberEmail}>{member.email}</Text>
+							<Text style={styles.memberRole}>{member.role === 'MEO' ? 'MEO' : 'Support user'}</Text>
 						</View>
 						<View style={styles.actions}>
-							<Pressable style={[styles.roleButton, isLead && styles.selectedLead]} onPress={() => setLeadMeoId(isLead ? '' : member.id)}>
+							{canLead ? <Pressable style={[styles.roleButton, isLead && styles.selectedLead]} onPress={() => setLeadMeoId(isLead ? '' : member.id)}>
 								<Text style={[styles.roleText, isLead && styles.selectedText]}>Lead MEO</Text>
-							</Pressable>
+							</Pressable> : null}
 							<Pressable style={[styles.roleButton, isSupporting && styles.selectedSupport]} onPress={() => toggleSupporting(member.id)}>
 								<Text style={[styles.roleText, isSupporting && styles.selectedText]}>Support</Text>
 							</Pressable>
@@ -98,6 +100,7 @@ const styles = StyleSheet.create({
 	memberInfo: { flex: 1, paddingRight: spacing.sm },
 	memberName: { color: colors.textPrimary, fontSize: typography.size.md, fontWeight: typography.weight.bold },
 	memberEmail: { color: colors.textSecondary, fontSize: typography.size.xs, marginTop: spacing.xs },
+	memberRole: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.bold, marginTop: spacing.xs },
 	actions: { gap: spacing.xs },
 	roleButton: { borderColor: colors.border, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
 	selectedLead: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },

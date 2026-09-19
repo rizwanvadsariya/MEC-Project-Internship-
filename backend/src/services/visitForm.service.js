@@ -37,7 +37,12 @@ async function get(actor, siteVisitId) {
 	if (!context) throw ApiError.notFound('Site visit not found');
 	const template = await visitFormRepo.findTemplate(context.departmentId);
 	if (!template) throw ApiError.conflict('No active form template is configured for this department');
-	return { siteVisitId, template, form: await visitFormRepo.findForm(siteVisitId), canEdit: context.isLeadMeo };
+	const form = await visitFormRepo.findForm(siteVisitId);
+	// A draft-in-progress is the lead MEO's own working copy — nobody else
+	// (not even a division RD/DG or a fellow team member) sees any of the
+	// report's contents until the lead MEO actually submits it.
+	const visibleForm = context.isLeadMeo || form?.status === 'SUBMITTED' ? form : null;
+	return { siteVisitId, template, form: visibleForm, canEdit: context.isLeadMeo };
 }
 
 async function save(actor, siteVisitId, payload, status) {

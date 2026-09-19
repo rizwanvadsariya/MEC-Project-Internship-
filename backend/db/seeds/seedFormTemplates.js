@@ -24,6 +24,9 @@ const FIELD_SETS = {
 		{ fieldKey: 'materials_available', label: 'Required materials are available', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'labor_on_site', label: 'Workers present on site', fieldType: 'number' },
 		{ fieldKey: 'estimated_completion_date', label: 'Estimated completion date', fieldType: 'date' },
+		{ fieldKey: 'site_access_clear', label: 'Site access is clear for workers and equipment', fieldType: 'boolean', isRequired: true },
+		{ fieldKey: 'environmental_safeguards', label: 'Environmental safeguards are in place', fieldType: 'boolean', isRequired: true },
+		{ fieldKey: 'measurement_verified', label: 'Reported work quantities were verified on site', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'infrastructure_issues', label: 'Infrastructure issues observed', fieldType: 'text' },
 	],
 	health: [
@@ -34,6 +37,8 @@ const FIELD_SETS = {
 		{ fieldKey: 'medicine_stock_available', label: 'Essential medicines are available', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'equipment_functional', label: 'Key equipment is functional', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'sanitation_condition', label: 'Sanitation condition', fieldType: 'select', options: ['GOOD', 'ACCEPTABLE', 'POOR', 'UNAVAILABLE'], isRequired: true },
+		{ fieldKey: 'medical_waste_managed', label: 'Medical waste is managed safely', fieldType: 'boolean', isRequired: true },
+		{ fieldKey: 'patient_load_observed', label: 'Approximate patients served during visit', fieldType: 'number' },
 		{ fieldKey: 'service_delivery_issues', label: 'Service delivery issues observed', fieldType: 'text' },
 	],
 	education: [
@@ -46,6 +51,8 @@ const FIELD_SETS = {
 		{ fieldKey: 'sanitation_available', label: 'Usable sanitation facilities are available', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'electricity_available', label: 'Electricity is available', fieldType: 'boolean', isRequired: true },
 		{ fieldKey: 'learning_materials_available', label: 'Learning materials are available', fieldType: 'boolean', isRequired: true },
+		{ fieldKey: 'building_safe_for_students', label: 'Building appears safe for students', fieldType: 'boolean', isRequired: true },
+		{ fieldKey: 'attendance_rate_pct', label: 'Approximate student attendance (%)', fieldType: 'number' },
 		{ fieldKey: 'education_issues', label: 'Education issues observed', fieldType: 'text' },
 	],
 };
