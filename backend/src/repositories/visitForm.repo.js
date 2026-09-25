@@ -78,23 +78,49 @@ async function findForm(siteVisitId) {
 	return result.rows[0] || null;
 }
 
+/**
+ * Submitting the form (status SUBMITTED) is also this app's only "visit
+ * completed" signal — there is no separate complete/check-in action anywhere
+ * else — so it atomically flips site_visits.status too, in the same
+ * transaction, rather than leaving that column permanently stuck at
+ * SCHEDULED/IN_PROGRESS forever (phases.md Step 17's "visit completed"
+ * trigger reads this transition). Guarded against a CANCELLED visit, even
+ * though nothing cancels a visit yet, as a defensive no-op rather than
+ * silently resurrecting one if that's ever added.
+ */
 async function save(siteVisitId, actorId, templateId, payload, status) {
-	const result = await db.query(
-		`insert into visit_forms (site_visit_id, template_id, filled_by, status, physical_progress_pct, remarks, responses)
-		 values ($1, $2, $3, $4, $5, $6, $7::jsonb)
-		 on conflict (site_visit_id) do update set
-			 template_id = excluded.template_id,
-			 filled_by = excluded.filled_by,
-			 status = excluded.status,
-			 physical_progress_pct = excluded.physical_progress_pct,
-			 remarks = excluded.remarks,
-			 responses = excluded.responses
-		 returning id, site_visit_id as "siteVisitId", template_id as "templateId", filled_by as "filledBy",
-			 status, physical_progress_pct as "physicalProgressPct", remarks, responses,
-			 created_at as "createdAt", updated_at as "updatedAt"`,
-		[siteVisitId, templateId, actorId, status, payload.physicalProgressPct, payload.remarks ?? null, JSON.stringify(payload.responses)],
-	);
-	return result.rows[0];
+	const client = await db.pool.connect();
+	try {
+		await client.query('begin');
+		const result = await client.query(
+			`insert into visit_forms (site_visit_id, template_id, filled_by, status, physical_progress_pct, remarks, responses)
+			 values ($1, $2, $3, $4, $5, $6, $7::jsonb)
+			 on conflict (site_visit_id) do update set
+				 template_id = excluded.template_id,
+				 filled_by = excluded.filled_by,
+				 status = excluded.status,
+				 physical_progress_pct = excluded.physical_progress_pct,
+				 remarks = excluded.remarks,
+				 responses = excluded.responses
+			 returning id, site_visit_id as "siteVisitId", template_id as "templateId", filled_by as "filledBy",
+				 status, physical_progress_pct as "physicalProgressPct", remarks, responses,
+				 created_at as "createdAt", updated_at as "updatedAt"`,
+			[siteVisitId, templateId, actorId, status, payload.physicalProgressPct, payload.remarks ?? null, JSON.stringify(payload.responses)],
+		);
+		if (status === 'SUBMITTED') {
+			await client.query(
+				`update site_visits set status = 'COMPLETED', completed_at = now() where id = $1 and status <> 'CANCELLED'`,
+				[siteVisitId],
+			);
+		}
+		await client.query('commit');
+		return result.rows[0];
+	} catch (error) {
+		await client.query('rollback');
+		throw error;
+	} finally {
+		client.release();
+	}
 }
 
 module.exports = { findContext, findTemplate, findForm, save };

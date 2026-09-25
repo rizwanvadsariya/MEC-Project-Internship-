@@ -5,5 +5,13 @@
  */
 'use strict';
 const router = require('express').Router();
-// TODO: define routes
+const authenticate = require('../../../middleware/authenticate');
+const authorize = require('../../../middleware/authorize');
+const controller = require('../../../controllers/dashboards.controller');
+const { ROLES } = require('../../../constants/roles');
+
+router.use(authenticate);
+router.get('/division', authorize(ROLES.REGIONAL_DIRECTOR, ROLES.DIRECTOR_GENERAL), controller.getDivisionSummary);
+router.get('/member', authorize(ROLES.MEO, ROLES.SUPPORT_USER), controller.getMemberSummary);
+
 module.exports = router;

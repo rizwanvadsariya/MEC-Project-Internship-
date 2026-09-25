@@ -6,6 +6,7 @@
 'use strict';
 
 const visitFormRepo = require('../repositories/visitForm.repo');
+const notificationService = require('./notification.service');
 const ApiError = require('../lib/ApiError');
 
 function validateResponses(template, responses, requireRequired) {
@@ -54,7 +55,12 @@ async function save(actor, siteVisitId, payload, status) {
 	const existing = await visitFormRepo.findForm(siteVisitId);
 	if (existing?.status === 'SUBMITTED') throw ApiError.conflict('This visit form has already been submitted');
 	validateResponses(template, payload.responses, status === 'SUBMITTED');
-	return visitFormRepo.save(siteVisitId, actor.id, template.id, payload, status);
+	const saved = await visitFormRepo.save(siteVisitId, actor.id, template.id, payload, status);
+	if (status === 'SUBMITTED') {
+		// Fire-and-forget (phases.md Step 17) — never delays this response.
+		notificationService.notifyVisitCompleted(siteVisitId);
+	}
+	return saved;
 }
 
 module.exports = { get, save, validateResponses };

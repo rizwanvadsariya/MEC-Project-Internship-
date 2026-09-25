@@ -13,6 +13,7 @@ import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import VisitFormScreen from '../screens/meo/VisitFormScreen';
 import VisitReportScreen from '../screens/meo/VisitReportScreen';
+import NotificationsScreen from '../screens/common/NotificationsScreen';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -21,6 +22,7 @@ export default function RegionalDirectorNavigator() {
   return (
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="RdHome" component={RoleHomeScreen} options={{ title: 'Regional Director' }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
       <Stack.Screen name="TeamAssembly" component={TeamAssemblyScreen} options={{ title: 'Assemble team' }} />

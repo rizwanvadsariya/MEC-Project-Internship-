@@ -12,6 +12,10 @@ async function file(actor, siteVisitId, payload) {
 	if (!context) throw ApiError.notFound('Site visit not found');
 	if (!context.isLeadMeo) throw ApiError.forbidden('Only the lead MEO can file issue reports');
 	if (context.formSubmitted) throw ApiError.conflict('The submitted visit report is locked and cannot be edited', undefined, 'VISIT_REPORT_LOCKED');
+	// No "issue filed" notification here — an issue filed before the report
+	// is submitted is still the lead MEO's own invisible working copy (Step
+	// 15's rule). notification.service fires it once the report is actually
+	// SUBMITTED, from visitForm.service, alongside "visit completed".
 	return issueRepo.create(siteVisitId, actor.id, payload);
 }
 

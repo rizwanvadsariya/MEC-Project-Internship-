@@ -6,8 +6,14 @@ jest.mock('../../../src/repositories/visitForm.repo', () => ({
 	findForm: jest.fn(),
 	save: jest.fn(),
 }));
+// notification.service transitively requires src/config/database (fatal with
+// no backend/.env) — same factory-mock rationale as approval.service.test.js.
+jest.mock('../../../src/services/notification.service', () => ({
+	notifyVisitCompleted: jest.fn(),
+}));
 
 const visitFormRepo = require('../../../src/repositories/visitForm.repo');
+const notificationService = require('../../../src/services/notification.service');
 const service = require('../../../src/services/visitForm.service');
 
 const actor = { id: 'meo-1', role: 'MEO', divisionId: 1 };
@@ -33,6 +39,20 @@ test('lead MEO can save a draft with partial dynamic responses', async () => {
 
 	await expect(service.save(actor, 'visit-1', payload, 'DRAFT')).resolves.toEqual({ id: 'form-1', status: 'DRAFT' });
 	expect(visitFormRepo.save).toHaveBeenCalledWith('visit-1', actor.id, template.id, payload, 'DRAFT');
+	// A draft save is not "visit completed" — the trigger only fires on SUBMITTED.
+	expect(notificationService.notifyVisitCompleted).not.toHaveBeenCalled();
+});
+
+test('submitting the form fires the "visit completed" notification trigger (phases.md Step 17)', async () => {
+	visitFormRepo.save.mockResolvedValue({ id: 'form-1', status: 'SUBMITTED' });
+	const payload = {
+		physicalProgressPct: 100,
+		responses: { facility_functional: true, facility_type: 'HOSPITAL', staff_present: 4 },
+	};
+
+	await service.save(actor, 'visit-1', payload, 'SUBMITTED');
+
+	expect(notificationService.notifyVisitCompleted).toHaveBeenCalledWith('visit-1');
 });
 
 test('submission rejects missing required dynamic fields', async () => {
