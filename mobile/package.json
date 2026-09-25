@@ -5,7 +5,8 @@
   "description": "Smart Provincial M&E Ecosystem — React Native (Expo) client.",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "node scripts/sync-api-host.js && expo start",
+    "start:phone": "node scripts/sync-api-host.js && expo start -c",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "eslint .",

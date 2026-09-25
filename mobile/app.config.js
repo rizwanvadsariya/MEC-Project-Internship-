@@ -10,7 +10,22 @@
  * back to localhost, which works for the iOS simulator / Android emulator
  * but NOT a physical device over Wi-Fi (see mobile/README.md).
  */
+const os = require('os');
 require('dotenv').config();
+
+function getLanAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const entries of Object.values(interfaces)) {
+    for (const entry of entries || []) {
+      if (entry.family === 'IPv4' && !entry.internal && !entry.address.startsWith('169.254.')) {
+        return entry.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+const apiBaseUrl = process.env.API_BASE_URL || `http://${getLanAddress()}:4000/api/v1`;
 
 module.exports = {
   expo: {
@@ -21,7 +36,7 @@ module.exports = {
     orientation: 'portrait',
     plugins: ['expo-secure-store', 'expo-font', '@react-native-community/datetimepicker', 'expo-image-picker'],
     extra: {
-      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:4000/api/v1',
+      apiBaseUrl,
     },
   },
 };
