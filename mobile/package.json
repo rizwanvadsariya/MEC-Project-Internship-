@@ -7,6 +7,8 @@
   "scripts": {
     "start": "node scripts/sync-api-host.js && expo start",
     "start:phone": "node scripts/sync-api-host.js && expo start -c",
+    "start:lan": "node scripts/start-lan.js",
+    "start:tunnel": "node scripts/start-lan.js --tunnel",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "eslint .",
@@ -22,10 +24,12 @@
     "expo": "~57.0.22",
     "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.18",
+    "expo-device": "~57.0.2",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
     "expo-image-picker": "~57.0.18",
     "expo-linear-gradient": "~57.0.2",
+    "expo-notifications": "~57.0.21",
     "expo-secure-store": "~57.0.4",
     "react": "19.2.3",
     "react-native": "0.86.3",
@@ -34,6 +38,7 @@
     "react-native-screens": "~4.26.0"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.2.4",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",

@@ -15,5 +15,8 @@ router.use('/approvals', require('./routes/approvals.routes'));
 router.use('/site-visits', require('./routes/siteVisits.routes'));
 router.use('/site-visits', require('./routes/visitForms.routes'));
 router.use('/site-visits', require('./routes/photos.routes'));
+router.use('/site-visits', require('./routes/issues.routes'));
+router.use('/dashboards', require('./routes/dashboards.routes'));
+router.use('/notifications', require('./routes/notifications.routes'));
 
 module.exports = router;

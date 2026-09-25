@@ -11,8 +11,14 @@ jest.mock('../../../src/repositories/approval.repo', () => ({
 	listPending: jest.fn(),
 	decide: jest.fn(),
 }));
+// notification.service transitively requires src/config/database (fatal with
+// no backend/.env) — never actually loaded here, same rationale as the repo mock above.
+jest.mock('../../../src/services/notification.service', () => ({
+	notifyTeamDecision: jest.fn(),
+}));
 
 const approvalRepo = require('../../../src/repositories/approval.repo');
+const notificationService = require('../../../src/services/notification.service');
 const approvalService = require('../../../src/services/approval.service');
 const ApiError = require('../../../src/lib/ApiError');
 
@@ -36,6 +42,7 @@ test('approve writes an append-only team_approval_requests row and flips visit_t
 
 	expect(approvalRepo.decide).toHaveBeenCalledWith('team-1', actor.id, actor.divisionId, 'APPROVED', undefined);
 	expect(result).toEqual({ teamId: 'team-1', decision: 'APPROVED', remarks: null });
+	expect(notificationService.notifyTeamDecision).toHaveBeenCalledWith('team-1', 'APPROVED');
 });
 
 test('reject writes an append-only team_approval_requests row and flips visit_teams.status to REJECTED, with remarks passed through', async () => {
@@ -45,13 +52,15 @@ test('reject writes an append-only team_approval_requests row and flips visit_te
 
 	expect(approvalRepo.decide).toHaveBeenCalledWith('team-1', actor.id, actor.divisionId, 'REJECTED', 'missing lead MEO');
 	expect(result.decision).toBe('REJECTED');
+	expect(notificationService.notifyTeamDecision).toHaveBeenCalledWith('team-1', 'REJECTED');
 });
 
-test('decide throws 404 when approval.repo finds no pending request for that team in the actor\'s division (RLS-equivalent scoping already applied inside the repo query)', async () => {
+test('decide throws 404 when approval.repo finds no pending request for that team in the actor\'s division (RLS-equivalent scoping already applied inside the repo query), and never fires a notification for a decision that didn\'t happen', async () => {
 	approvalRepo.decide.mockResolvedValue(null);
 
 	await expect(approvalService.decide(actor, 'team-404', { decision: 'APPROVED' })).rejects.toMatchObject({
 		statusCode: 404,
 	});
 	await expect(approvalService.decide(actor, 'team-404', { decision: 'APPROVED' })).rejects.toBeInstanceOf(ApiError);
+	expect(notificationService.notifyTeamDecision).not.toHaveBeenCalled();
 });

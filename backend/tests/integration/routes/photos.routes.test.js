@@ -22,6 +22,7 @@ maybeDescribe('visit photo routes', () => {
 	let getUserId;
 	let meoToken;
 	let supportToken;
+	let dgToken;
 	let fixture;
 
 	beforeAll(async () => {
@@ -34,6 +35,7 @@ maybeDescribe('visit photo routes', () => {
 
 		meoToken = await getAccessToken('MEO');
 		supportToken = await getAccessToken('SUPPORT_USER');
+		dgToken = await getAccessToken('DIRECTOR_GENERAL');
 		const meoId = getUserId('MEO');
 		const supportId = getUserId('SUPPORT_USER');
 		const rdId = (await db.query('select id from users where email = $1', ['rd.test@mec.local'])).rows[0].id;
@@ -59,13 +61,14 @@ maybeDescribe('visit photo routes', () => {
 		if (!db || !fixture) return;
 		if (fixture.storagePath) await supabase.storage.from(config.STORAGE_BUCKET_VISIT_PHOTOS).remove([fixture.storagePath]);
 		await db.query('delete from visit_photos where site_visit_id = $1', [fixture.visitId]);
+		await db.query('delete from visit_forms where site_visit_id = $1', [fixture.visitId]);
 		await db.query('delete from site_visits where id = $1', [fixture.visitId]);
 		await db.query('delete from visit_team_members where team_id = $1', [fixture.teamId]);
 		await db.query('delete from visit_teams where id = $1', [fixture.teamId]);
 		await db.close();
 	});
 
-	test('lead MEO uploads a photo and a support member can list its signed URL', async () => {
+	test('lead MEO uploads a photo, but it stays invisible to others until the report is submitted', async () => {
 		const upload = await request(app)
 			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
 			.set('Authorization', `Bearer ${meoToken}`)
@@ -75,24 +78,44 @@ maybeDescribe('visit photo routes', () => {
 		expect(upload.body.data.storagePath).toMatch(new RegExp(`^${fixture.visitId}/`));
 		fixture.storagePath = upload.body.data.storagePath;
 
-		const listed = await request(app)
+		// Not submitted yet — a draft-in-progress's evidence photos are the lead
+		// MEO's own working copy, invisible to everyone else until submitted.
+		const listedBeforeSubmit = await request(app)
 			.get(`/api/v1/site-visits/${fixture.visitId}/photos`)
 			.set('Authorization', `Bearer ${supportToken}`);
-		expect(listed.status).toBe(200);
-		expect(listed.body.data).toHaveLength(1);
-		expect(listed.body.data[0].signedUrl).toMatch(/^https?:\/\//);
+		expect(listedBeforeSubmit.status).toBe(200);
+		expect(listedBeforeSubmit.body.data).toHaveLength(0);
+
+		const listedByDgBeforeSubmit = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${dgToken}`);
+		expect(listedByDgBeforeSubmit.status).toBe(200);
+		expect(listedByDgBeforeSubmit.body.data).toHaveLength(0);
+
+		// The lead MEO themselves can always see their own pending evidence.
+		const listedByMeo = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${meoToken}`);
+		expect(listedByMeo.status).toBe(200);
+		expect(listedByMeo.body.data).toHaveLength(1);
 
 		const stored = (await db.query('select storage_path, caption from visit_photos where site_visit_id = $1', [fixture.visitId])).rows[0];
 		expect(stored.storage_path).toBe(fixture.storagePath);
 		expect(stored.caption).toBe('Front elevation');
 	});
 
-	test('support user cannot upload and invalid MIME is rejected', async () => {
+	test('support user and division DG cannot upload; invalid MIME is rejected', async () => {
 		const forbidden = await request(app)
 			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
 			.set('Authorization', `Bearer ${supportToken}`)
 			.attach('photo', ONE_PIXEL_PNG, { filename: 'visit.png', contentType: 'image/png' });
 		expect(forbidden.status).toBe(403);
+
+		const forbiddenDg = await request(app)
+			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${dgToken}`)
+			.attach('photo', ONE_PIXEL_PNG, { filename: 'visit.png', contentType: 'image/png' });
+		expect(forbiddenDg.status).toBe(403);
 
 		const invalid = await request(app)
 			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
@@ -101,7 +124,7 @@ maybeDescribe('visit photo routes', () => {
 		expect(invalid.status).toBe(400);
 	});
 
-	test('lead MEO can delete a submitted photo', async () => {
+	test('lead MEO can delete a photo before the report is submitted', async () => {
 		const row = (await db.query('select id, storage_path from visit_photos where site_visit_id = $1 limit 1', [fixture.visitId])).rows[0];
 		expect(row).toBeTruthy();
 
@@ -114,5 +137,36 @@ maybeDescribe('visit photo routes', () => {
 		expect(remaining.rows).toHaveLength(0);
 		const storageCheck = await supabase.storage.from(config.STORAGE_BUCKET_VISIT_PHOTOS).download(row.storage_path);
 		expect(storageCheck.error).toBeTruthy();
+	});
+
+	test('once the report is submitted, photos become visible to everyone', async () => {
+		const upload = await request(app)
+			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${meoToken}`)
+			.field('caption', 'Final progress shot')
+			.attach('photo', ONE_PIXEL_PNG, { filename: 'visit.png', contentType: 'image/png' });
+		expect(upload.status).toBe(201);
+		fixture.storagePath = upload.body.data.storagePath;
+
+		const scheme = (await db.query('select department_id as "departmentId" from schemes where id = (select scheme_id from site_visits where id = $1)', [fixture.visitId])).rows[0];
+		const template = (await db.query('select id from form_templates where department_id = $1 and is_active = true order by version desc limit 1', [scheme.departmentId])).rows[0];
+		await db.query(
+			`insert into visit_forms (site_visit_id, template_id, filled_by, status, physical_progress_pct, responses)
+			 values ($1, $2, $3, 'SUBMITTED', 100, '{}'::jsonb)`,
+			[fixture.visitId, template.id, getUserId('MEO')],
+		);
+
+		const listedBySupport = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${supportToken}`);
+		expect(listedBySupport.status).toBe(200);
+		expect(listedBySupport.body.data).toHaveLength(1);
+		expect(listedBySupport.body.data[0].signedUrl).toMatch(/^https?:\/\//);
+
+		const listedByDg = await request(app)
+			.get(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${dgToken}`);
+		expect(listedByDg.status).toBe(200);
+		expect(listedByDg.body.data).toHaveLength(1);
 	});
 });

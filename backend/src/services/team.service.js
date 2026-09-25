@@ -10,13 +10,25 @@ const userRepo = require('../repositories/user.repo');
 const ApiError = require('../lib/ApiError');
 const { ROLES } = require('../constants/roles');
 
-async function assertMemberIds(ids, divisionId) {
-	const uniqueIds = [...new Set(ids)];
-	const profiles = await Promise.all(uniqueIds.map((id) => userRepo.findById(id)));
-	if (profiles.some((profile) => !profile || !profile.is_active || profile.role !== ROLES.MEO || profile.division_id !== divisionId)) {
-		throw ApiError.badRequest('All team members must be active MEOs in the RD division', undefined, 'INVALID_TEAM_MEMBER');
+/**
+ * The lead slot must be an MEO (the one who actually does the fieldwork).
+ * Supporting slots accept either another MEO or a SUPPORT_USER — schema.md's
+ * team_member_role enum has both SUPPORT_MEO and DEPT_MEMBER for exactly this
+ * ("supporting MEOs, other-department staff who accompany the lead MEO" per
+ * PRD.md's role table) — team.repo.createDraft assigns whichever matches the
+ * member's actual app role.
+ */
+async function assertMember(id, divisionId, allowedRoles) {
+	const profile = await userRepo.findById(id);
+	// A SUPPORT_USER may have a NULL division_id (schema.md §4.1's CHECK
+	// constraint explicitly allows this) — that makes them division-agnostic,
+	// not out-of-division, so they pass the division check either way. An MEO
+	// always needs an exact division match.
+	const inDivision = !!profile && (profile.division_id === divisionId || (profile.role === ROLES.SUPPORT_USER && profile.division_id === null));
+	if (!profile || !profile.is_active || !inDivision || !allowedRoles.includes(profile.role)) {
+		throw ApiError.badRequest('All team members must be active MEOs or support users in the RD division', undefined, 'INVALID_TEAM_MEMBER');
 	}
-	return uniqueIds;
+	return profile;
 }
 
 async function createDraft(actor, input) {
@@ -25,8 +37,16 @@ async function createDraft(actor, input) {
 	if (scheme.divisionId !== actor.divisionId) {
 		throw ApiError.forbidden('You can only assemble teams for schemes in your division', 'TEAM_DIVISION_DENIED');
 	}
-	const memberIds = await assertMemberIds([input.leadMeoId, ...input.supportingMemberIds], actor.divisionId);
-	return teamRepo.createDraft({ ...input, createdBy: actor.id, supportingMemberIds: memberIds.filter((id) => id !== input.leadMeoId) });
+	await assertMember(input.leadMeoId, actor.divisionId, [ROLES.MEO]);
+	const uniqueSupportingIds = [...new Set(input.supportingMemberIds)].filter((id) => id !== input.leadMeoId);
+	const supportingProfiles = await Promise.all(
+		uniqueSupportingIds.map((id) => assertMember(id, actor.divisionId, [ROLES.MEO, ROLES.SUPPORT_USER])),
+	);
+	const supportingMembers = supportingProfiles.map((profile) => ({
+		id: profile.id,
+		teamRole: profile.role === ROLES.MEO ? 'SUPPORT_MEO' : 'DEPT_MEMBER',
+	}));
+	return teamRepo.createDraft({ schemeId: input.schemeId, createdBy: actor.id, leadMeoId: input.leadMeoId, supportingMembers });
 }
 
 async function eligibleMembers(actor) {

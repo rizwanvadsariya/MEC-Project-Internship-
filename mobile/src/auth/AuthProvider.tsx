@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, type Pr
 import { login as apiLogin, fetchMe, type AuthUser } from '../api/auth.api';
 import { ApiClientError } from '../api/client';
 import { saveSession, loadSession, clearSession } from './secureStorage';
+import { registerForPushNotifications } from '../notifications/registerForPushNotifications';
 
 type AuthContextValue = {
   isLoading: boolean;
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           const profile = await fetchMe(stored.accessToken);
           setUser(profile);
           setAccessToken(stored.accessToken);
+          void registerForPushNotifications(stored.accessToken);
         } catch {
           await clearSession();
         }
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     });
     setAccessToken(session.access_token);
     setUser(profile);
+    void registerForPushNotifications(session.access_token);
   };
 
   const signOut = async () => {

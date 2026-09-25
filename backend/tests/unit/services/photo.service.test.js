@@ -39,14 +39,20 @@ test('rejects non-image and oversized uploads before touching storage', async ()
 	expect(storage.upload).not.toHaveBeenCalled();
 });
 
-test('only the lead MEO can upload, while visible users can list signed photos', async () => {
+test('only the lead MEO can upload, and other visible users can list signed photos once the report is submitted', async () => {
 	photoRepo.findVisitContext.mockResolvedValueOnce({ isLeadMeo: false });
 	await expect(photoService.upload(actor, 'visit-1', file)).rejects.toMatchObject({ statusCode: 403 });
 
-	photoRepo.findVisitContext.mockResolvedValueOnce({ isLeadMeo: false });
+	photoRepo.findVisitContext.mockResolvedValueOnce({ isLeadMeo: false, formSubmitted: true });
 	await expect(photoService.list({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toEqual([
 		{ id: 'photo-1', storagePath: 'visit-1/photo.png', signedUrl: 'https://signed.example/photo.png' },
 	]);
+});
+
+test('a non-lead viewer sees no photos before the report is submitted', async () => {
+	photoRepo.findVisitContext.mockResolvedValueOnce({ isLeadMeo: false, formSubmitted: false });
+	await expect(photoService.list({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toEqual([]);
+	expect(photoRepo.list).not.toHaveBeenCalled();
 });
 
 test('removes the object when database registration fails', async () => {

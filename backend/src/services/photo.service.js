@@ -17,6 +17,7 @@ async function upload(actor, siteVisitId, file, metadata = {}) {
 	const context = await photoRepo.findVisitContext(siteVisitId, actor);
 	if (!context) throw ApiError.notFound('Site visit not found');
 	if (!context.isLeadMeo) throw ApiError.forbidden('Only the lead MEO can upload visit photos');
+	if (context.formSubmitted) throw ApiError.conflict('The submitted visit report is locked and cannot be edited', undefined, 'VISIT_REPORT_LOCKED');
 	if (!file) throw ApiError.badRequest('A photo file is required');
 	if (!ALLOWED_TYPES.has(file.mimetype)) throw ApiError.badRequest('Only JPEG, PNG, and WebP photos are supported');
 	if (file.size > MAX_BYTES) throw ApiError.badRequest('Photo must be 10 MB or smaller');
@@ -38,6 +39,9 @@ async function upload(actor, siteVisitId, file, metadata = {}) {
 async function list(actor, siteVisitId) {
 	const context = await photoRepo.findVisitContext(siteVisitId, actor);
 	if (!context) throw ApiError.notFound('Site visit not found');
+	// Same rule as the form itself: a draft-in-progress's evidence photos are
+	// the lead MEO's own working copy, invisible to everyone else until submitted.
+	if (!context.isLeadMeo && !context.formSubmitted) return [];
 	const photos = await photoRepo.list(siteVisitId);
 	return Promise.all(photos.map(async (photo) => ({
 		...photo,
@@ -49,6 +53,7 @@ async function remove(actor, siteVisitId, photoId) {
 	const context = await photoRepo.findVisitContext(siteVisitId, actor);
 	if (!context) throw ApiError.notFound('Site visit not found');
 	if (!context.isLeadMeo) throw ApiError.forbidden('Only the lead MEO can remove visit photos');
+	if (context.formSubmitted) throw ApiError.conflict('The submitted visit report is locked and cannot be edited', undefined, 'VISIT_REPORT_LOCKED');
 	const photo = await photoRepo.findById(siteVisitId, photoId);
 	if (!photo) throw ApiError.notFound('Photo not found');
 	await storage.remove(config.STORAGE_BUCKET_VISIT_PHOTOS, photo.storagePath);

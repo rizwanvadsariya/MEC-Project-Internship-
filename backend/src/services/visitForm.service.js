@@ -6,6 +6,7 @@
 'use strict';
 
 const visitFormRepo = require('../repositories/visitForm.repo');
+const notificationService = require('./notification.service');
 const ApiError = require('../lib/ApiError');
 
 function validateResponses(template, responses, requireRequired) {
@@ -37,7 +38,12 @@ async function get(actor, siteVisitId) {
 	if (!context) throw ApiError.notFound('Site visit not found');
 	const template = await visitFormRepo.findTemplate(context.departmentId);
 	if (!template) throw ApiError.conflict('No active form template is configured for this department');
-	return { siteVisitId, template, form: await visitFormRepo.findForm(siteVisitId), canEdit: context.isLeadMeo };
+	const form = await visitFormRepo.findForm(siteVisitId);
+	// A draft-in-progress is the lead MEO's own working copy — nobody else
+	// (not even a division RD/DG or a fellow team member) sees any of the
+	// report's contents until the lead MEO actually submits it.
+	const visibleForm = context.isLeadMeo || form?.status === 'SUBMITTED' ? form : null;
+	return { siteVisitId, template, form: visibleForm, canEdit: context.isLeadMeo };
 }
 
 async function save(actor, siteVisitId, payload, status) {
@@ -49,7 +55,12 @@ async function save(actor, siteVisitId, payload, status) {
 	const existing = await visitFormRepo.findForm(siteVisitId);
 	if (existing?.status === 'SUBMITTED') throw ApiError.conflict('This visit form has already been submitted');
 	validateResponses(template, payload.responses, status === 'SUBMITTED');
-	return visitFormRepo.save(siteVisitId, actor.id, template.id, payload, status);
+	const saved = await visitFormRepo.save(siteVisitId, actor.id, template.id, payload, status);
+	if (status === 'SUBMITTED') {
+		// Fire-and-forget (phases.md Step 17) — never delays this response.
+		notificationService.notifyVisitCompleted(siteVisitId);
+	}
+	return saved;
 }
 
 module.exports = { get, save, validateResponses };

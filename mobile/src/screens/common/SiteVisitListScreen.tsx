@@ -4,9 +4,9 @@
  * same scoping the backend enforces in siteVisit.repo/RLS). Shared across all
  * 4 role navigators rather than duplicated per role.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../auth/useAuth';
 import { listSiteVisits, type SiteVisitSummary } from '../../api/siteVisits.api';
 import { colors, radius, spacing, typography } from '../../theme';
@@ -49,10 +49,12 @@ export default function SiteVisitListScreen() {
 		}
 	}, [accessToken]);
 
-	useEffect(() => {
-		const timer = setTimeout(() => { void load(); }, 0);
-		return () => clearTimeout(timer);
-	}, [load]);
+	useFocusEffect(
+		useCallback(() => {
+			const timer = setTimeout(() => { void load(); }, 0);
+			return () => clearTimeout(timer);
+		}, [load]),
+	);
 
 	const loadMore = async () => {
 		if (!accessToken || !nextCursor || loadingMore) return;

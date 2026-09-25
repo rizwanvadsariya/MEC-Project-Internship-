@@ -6,8 +6,14 @@ jest.mock('../../../src/repositories/visitForm.repo', () => ({
 	findForm: jest.fn(),
 	save: jest.fn(),
 }));
+// notification.service transitively requires src/config/database (fatal with
+// no backend/.env) — same factory-mock rationale as approval.service.test.js.
+jest.mock('../../../src/services/notification.service', () => ({
+	notifyVisitCompleted: jest.fn(),
+}));
 
 const visitFormRepo = require('../../../src/repositories/visitForm.repo');
+const notificationService = require('../../../src/services/notification.service');
 const service = require('../../../src/services/visitForm.service');
 
 const actor = { id: 'meo-1', role: 'MEO', divisionId: 1 };
@@ -33,6 +39,20 @@ test('lead MEO can save a draft with partial dynamic responses', async () => {
 
 	await expect(service.save(actor, 'visit-1', payload, 'DRAFT')).resolves.toEqual({ id: 'form-1', status: 'DRAFT' });
 	expect(visitFormRepo.save).toHaveBeenCalledWith('visit-1', actor.id, template.id, payload, 'DRAFT');
+	// A draft save is not "visit completed" — the trigger only fires on SUBMITTED.
+	expect(notificationService.notifyVisitCompleted).not.toHaveBeenCalled();
+});
+
+test('submitting the form fires the "visit completed" notification trigger (phases.md Step 17)', async () => {
+	visitFormRepo.save.mockResolvedValue({ id: 'form-1', status: 'SUBMITTED' });
+	const payload = {
+		physicalProgressPct: 100,
+		responses: { facility_functional: true, facility_type: 'HOSPITAL', staff_present: 4 },
+	};
+
+	await service.save(actor, 'visit-1', payload, 'SUBMITTED');
+
+	expect(notificationService.notifyVisitCompleted).toHaveBeenCalledWith('visit-1');
 });
 
 test('submission rejects missing required dynamic fields', async () => {
@@ -61,4 +81,19 @@ test('only the lead MEO can edit and a submitted form cannot be changed', async 
 	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: true });
 	visitFormRepo.findForm.mockResolvedValue({ status: 'SUBMITTED' });
 	await expect(service.save(actor, 'visit-1', { physicalProgressPct: 1, responses: {} }, 'DRAFT')).rejects.toMatchObject({ statusCode: 409 });
+});
+
+test('the lead MEO can always see their own draft; a non-lead viewer sees null until it is submitted', async () => {
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: true });
+	visitFormRepo.findForm.mockResolvedValue({ id: 'form-1', status: 'DRAFT', physicalProgressPct: 20 });
+	await expect(service.get(actor, 'visit-1')).resolves.toMatchObject({ form: { id: 'form-1', status: 'DRAFT', physicalProgressPct: 20 }, canEdit: true });
+
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: false });
+	await expect(service.get({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toMatchObject({ form: null, canEdit: false });
+});
+
+test('a non-lead viewer sees the form once it is SUBMITTED', async () => {
+	visitFormRepo.findContext.mockResolvedValue({ departmentId: 13, isLeadMeo: false });
+	visitFormRepo.findForm.mockResolvedValue({ id: 'form-1', status: 'SUBMITTED', physicalProgressPct: 100 });
+	await expect(service.get({ ...actor, role: 'SUPPORT_USER' }, 'visit-1')).resolves.toMatchObject({ form: { id: 'form-1', status: 'SUBMITTED', physicalProgressPct: 100 }, canEdit: false });
 });

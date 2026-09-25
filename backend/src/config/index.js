@@ -60,6 +60,14 @@ const schema = z.object({
   // (point #1, #10). Mobile app.json declares the `mec://` scheme.
   INVITE_REDIRECT_URL: z.string().default('mec://auth/accept-invite'),
   PASSWORD_RESET_REDIRECT_URL: z.string().default('mec://auth/reset-password'),
+
+  // ---- Notifications (phases.md Step 17) -----------------------------------
+  // Off by default in test/CI so the suite never makes a real outbound call
+  // to Expo's push API; notification *rows* still get written either way.
+  PUSH_NOTIFICATIONS_ENABLED: boolFromEnv(true),
+  // Optional: an Expo access token enables Expo's stricter, authenticated
+  // push-sending mode. Not required for the basic Push API used here.
+  EXPO_ACCESS_TOKEN: z.string().optional(),
 });
 
 // Surface the "you haven't finished .env yet" case with a clear message rather
