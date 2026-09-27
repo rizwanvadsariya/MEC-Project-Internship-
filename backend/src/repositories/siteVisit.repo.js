@@ -9,14 +9,28 @@ const db = require('../config/database');
 
 const ROLES_WITH_DIVISION_SCOPE = new Set(['REGIONAL_DIRECTOR', 'DIRECTOR_GENERAL']);
 
-const LIST_SELECT = `
-	select sv.id, sv.team_id as "teamId", sv.scheme_id as "schemeId", sv.status,
-		sv.scheduled_date as "scheduledDate", sv.started_at as "startedAt", sv.completed_at as "completedAt",
-		sv.created_at as "createdAt",
-		s.uid as "schemeUid", s.name as "schemeName"
-	from site_visits sv
-	join schemes s on s.id = sv.scheme_id
-`;
+// scheduled_date::text avoids a real bug hit while testing Step 21: the pg
+// driver parses a `date` column into a JS Date at local midnight, and JSON
+// serialization then converts to UTC — shifting the date back a day on any
+// server whose local timezone is ahead of UTC (e.g. 2026-03-10 became
+// "2026-03-09T19:00:00.000Z" at UTC+5). Casting to text sidesteps the whole
+// Date round trip and just returns the plain "YYYY-MM-DD" string.
+/**
+ * `extraSelect` lets a caller append an actor-scoped column (listForActor's
+ * "isLeadMeo", for the calendar's per-row "can I plan this" check) without
+ * every other caller paying for a join they don't need.
+ */
+function listSelect(extraSelect = '') {
+	return `
+		select sv.id, sv.team_id as "teamId", sv.scheme_id as "schemeId", sv.status,
+			sv.scheduled_date::text as "scheduledDate", sv.started_at as "startedAt", sv.completed_at as "completedAt",
+			sv.created_at as "createdAt",
+			s.uid as "schemeUid", s.name as "schemeName"${extraSelect}
+		from site_visits sv
+		join schemes s on s.id = sv.scheme_id
+	`;
+}
+const LIST_SELECT = listSelect();
 
 /**
  * Mirrors the site_visits_select RLS policy (migration 0007) exactly, since
@@ -45,6 +59,8 @@ function visibilityClause(actor, params) {
 async function listForActor(actor, filters) {
 	const params = [];
 	const clauses = [visibilityClause(actor, params)];
+	params.push(actor.id);
+	const leadMeoIdx = params.length;
 
 	if (filters.schemeId) {
 		params.push(filters.schemeId);
@@ -53,6 +69,18 @@ async function listForActor(actor, filters) {
 	if (filters.status) {
 		params.push(filters.status);
 		clauses.push(`sv.status = $${params.length}`);
+	}
+	if (filters.unscheduled) {
+		clauses.push(`sv.scheduled_date is null`);
+	} else {
+		if (filters.scheduledFrom) {
+			params.push(filters.scheduledFrom);
+			clauses.push(`sv.scheduled_date >= $${params.length}`);
+		}
+		if (filters.scheduledTo) {
+			params.push(filters.scheduledTo);
+			clauses.push(`sv.scheduled_date <= $${params.length}`);
+		}
 	}
 	if (filters.cursor) {
 		params.push(filters.cursor.createdAt);
@@ -66,7 +94,10 @@ async function listForActor(actor, filters) {
 	params.push(limit + 1);
 
 	const result = await db.query(
-		`${LIST_SELECT} where ${clauses.join(' and ')} order by sv.created_at desc, sv.id desc limit $${params.length}`,
+		`${listSelect(`, exists (
+			select 1 from visit_team_members ltm
+			where ltm.team_id = sv.team_id and ltm.user_id = $${leadMeoIdx} and ltm.team_role = 'LEAD_MEO'
+		) as "isLeadMeo"`)} where ${clauses.join(' and ')} order by sv.created_at desc, sv.id desc limit $${params.length}`,
 		params,
 	);
 	const hasMore = result.rows.length > limit;
@@ -100,6 +131,22 @@ async function findByIdForActor(actor, id) {
 }
 
 /**
+ * Sets/clears a visit's planned date (phases.md Step 21). Authorization
+ * (RD-in-division or the visit's own lead MEO, not already COMPLETED/
+ * CANCELLED) lives in siteVisit.service.schedule — this is a plain write.
+ */
+async function updateScheduledDate(id, scheduledDate) {
+	const result = await db.query(
+		`update site_visits set scheduled_date = $2 where id = $1
+		 returning id, team_id as "teamId", scheme_id as "schemeId", status,
+			scheduled_date::text as "scheduledDate", started_at as "startedAt", completed_at as "completedAt",
+			created_at as "createdAt"`,
+		[id, scheduledDate],
+	);
+	return result.rows[0];
+}
+
+/**
  * Creates the one site_visit a newly-APPROVED team gets. Idempotent — a
  * second call for the same team is a no-op — so callers don't need their own
  * "have we already done this" guard. Takes an already-open transaction client
@@ -115,4 +162,4 @@ async function createForApprovedTeam(client, teamId) {
 	);
 }
 
-module.exports = { listForActor, findByIdForActor, createForApprovedTeam };
+module.exports = { listForActor, findByIdForActor, createForApprovedTeam, updateScheduledDate };

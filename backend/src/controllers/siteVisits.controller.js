@@ -18,4 +18,8 @@ const getById = asyncHandler(async (req, res) => {
 	ApiResponse.ok(res, await siteVisitService.getById(req.authUser, req.params.id));
 });
 
-module.exports = { list, getById };
+const schedule = asyncHandler(async (req, res) => {
+	ApiResponse.ok(res, await siteVisitService.schedule(req.authUser, req.params.id, req.body.scheduledDate));
+});
+
+module.exports = { list, getById, schedule };

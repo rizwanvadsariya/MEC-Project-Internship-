@@ -62,6 +62,55 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 		)).rows[0]?.id;
 		if (!schemeA || !schemeB) throw new Error('Need a scheme inside and one outside division 1 — run `npm run seed:adp` first');
 
+		// Step 23 analytics fixtures: 2 departments with >=2 schemes each inside
+		// divisionA — one to actually report progress on (avgProgressPct should
+		// be a real weighted number), one to leave entirely unreported
+		// (avgProgressPct must come back null, never 0/NaN).
+		const deptCandidates = (await db.query(
+			`select dep.id as "departmentId", dep.name as "departmentName",
+					array_agg(distinct s.id order by s.id) as "schemeIds"
+			 from schemes s
+			 join departments dep on dep.id = s.department_id
+			 where exists (
+				 select 1 from scheme_districts sd join districts d on d.id = sd.district_id
+				 where sd.scheme_id = s.id and d.division_id = $1
+			 )
+			 group by dep.id, dep.name
+			 having count(distinct s.id) >= 2
+			 order by dep.id
+			 limit 2`,
+			[divisionA],
+		)).rows;
+		if (deptCandidates.length < 2) throw new Error('Need at least 2 departments with >=2 schemes each in division 1 — run `npm run seed:adp` first');
+		const [deptProgress, deptNoProgress] = deptCandidates;
+
+		// Self-heal: reset every scheme in both fixture departments to NULL
+		// progress first (in case a prior crashed run left values behind), then
+		// write only the exact values this test controls.
+		await db.query('update schemes set physical_progress_pct = null where id = any($1::bigint[])', [[...deptProgress.schemeIds, ...deptNoProgress.schemeIds]]);
+		const [progressSchemeA, progressSchemeB] = deptProgress.schemeIds;
+		await db.query('update schemes set physical_progress_pct = 80 where id = $1', [progressSchemeA]);
+		await db.query('update schemes set physical_progress_pct = 20 where id = $1', [progressSchemeB]);
+		// A distinctive value on the OTHER division's scheme — must never leak
+		// into divisionA's progressByDepartment/overallProgress numbers below.
+		await db.query('update schemes set physical_progress_pct = 99 where id = $1', [schemeB]);
+
+		// Matches dashboard.repo's own EXISTS-based SCHEME_IN_DIVISION pattern
+		// (not a join) — a scheme linked to multiple districts within the same
+		// division must still only be counted once per department.
+		const deptTotals = (await db.query(
+			`select dep.id as "departmentId", count(s.id)::int as "schemesTotal"
+			 from schemes s
+			 join departments dep on dep.id = s.department_id
+			 where dep.id in ($2, $3) and exists (
+				 select 1 from scheme_districts sd join districts d on d.id = sd.district_id
+				 where sd.scheme_id = s.id and d.division_id = $1
+			 )
+			 group by dep.id`,
+			[divisionA, deptProgress.departmentId, deptNoProgress.departmentId],
+		)).rows;
+		const totalsByDeptId = Object.fromEntries(deptTotals.map((row) => [row.departmentId, row.schemesTotal]));
+
 		// Self-heal from a crashed prior run, same rationale as rlsFixtures.js.
 		await db.query(`delete from issue_reports where site_visit_id in (select id from site_visits where team_id in (select id from visit_teams where created_by = $1 and scheme_id in ($2,$3)))`, [users.rd, schemeA, schemeB]);
 		await db.query(`delete from site_visits where team_id in (select id from visit_teams where created_by = $1 and scheme_id in ($2,$3))`, [users.rd, schemeA, schemeB]);
@@ -90,7 +139,13 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 		const teamB = (await db.query(`insert into visit_teams (scheme_id, created_by, status) values ($1,$2,'APPROVED') returning id`, [schemeB, users.rd])).rows[0].id;
 		const visitB = (await db.query(`insert into site_visits (team_id, scheme_id, status) values ($1,$2,'SCHEDULED') returning id`, [teamB, schemeB])).rows[0].id;
 
-		f = { ...users, divisionA, schemeA, schemeB, teamDraft, teamPending, teamApproved, teamRejected, teamB, visitScheduled, visitB, issueOpen, issueResolved };
+		f = {
+			...users, divisionA, schemeA, schemeB, teamDraft, teamPending, teamApproved, teamRejected, teamB,
+			visitScheduled, visitB, issueOpen, issueResolved,
+			deptProgress: { ...deptProgress, schemesTotal: totalsByDeptId[deptProgress.departmentId] },
+			deptNoProgress: { ...deptNoProgress, schemesTotal: totalsByDeptId[deptNoProgress.departmentId] },
+			progressSchemeA, progressSchemeB,
+		};
 	}, 30000); // several sequential round trips to the remote Supabase pooler + JWKS fetch on first login
 
 	afterAll(async () => {
@@ -100,6 +155,8 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 			await db.query('delete from site_visits where id in ($1,$2)', [f.visitScheduled, f.visitB]);
 			await db.query('delete from visit_team_members where team_id = $1', [f.teamApproved]);
 			await db.query('delete from visit_teams where id in ($1,$2,$3,$4,$5)', [f.teamDraft, f.teamPending, f.teamApproved, f.teamRejected, f.teamB]);
+			// Step 23 analytics fixtures — reset the progress values this suite wrote.
+			await db.query('update schemes set physical_progress_pct = null where id = any($1::bigint[])', [[...f.deptProgress.schemeIds, ...f.deptNoProgress.schemeIds, f.schemeB]]);
 		}
 		await db.close();
 	});
@@ -158,5 +215,62 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 		expect(res.body.data.division.id).toBe(f.divisionA);
 		expect(res.body.data.teams.total).toBeGreaterThanOrEqual(4);
 		expect(res.body.data.recentVisits.map((v) => v.id)).not.toContain(f.visitB);
+	});
+
+	test('progressByDepartment/overallProgress (Step 23): correct numbers, null for an unreported department, cross-division isolation', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+		const res = await request(app).get('/api/v1/dashboards/division').set('Authorization', `Bearer ${token}`);
+
+		expect(res.status).toBe(200);
+		const { data } = res.body;
+
+		const progressRow = data.progressByDepartment.find((row) => row.departmentId === f.deptProgress.departmentId);
+		expect(progressRow).toBeDefined();
+		expect(progressRow.departmentName).toBe(f.deptProgress.departmentName);
+		expect(progressRow.schemesTotal).toBe(f.deptProgress.schemesTotal);
+		// Only the 2 schemes this suite set (80, 20) are reported — schemeB's 99
+		// lives in a different division and must not be counted or averaged in.
+		expect(progressRow.schemesReported).toBe(2);
+		expect(progressRow.avgProgressPct).toBeCloseTo(50, 6);
+
+		const noProgressRow = data.progressByDepartment.find((row) => row.departmentId === f.deptNoProgress.departmentId);
+		expect(noProgressRow).toBeDefined();
+		expect(noProgressRow.schemesTotal).toBe(f.deptNoProgress.schemesTotal);
+		expect(noProgressRow.schemesReported).toBe(0);
+		expect(noProgressRow.avgProgressPct).toBeNull();
+
+		// overallProgress: recompute the expected weighted average from the
+		// division's own full progressByDepartment response (proves the
+		// service weights by schemesReported rather than naively averaging
+		// per-department averages) and cross-check against the endpoint's value.
+		const expected = data.progressByDepartment.reduce(
+			(acc, row) => {
+				acc.schemesTotal += row.schemesTotal;
+				acc.schemesReported += row.schemesReported;
+				if (row.avgProgressPct != null) acc.weightedSum += row.avgProgressPct * row.schemesReported;
+				return acc;
+			},
+			{ schemesTotal: 0, schemesReported: 0, weightedSum: 0 },
+		);
+		expect(data.overallProgress.schemesTotal).toBe(expected.schemesTotal);
+		expect(data.overallProgress.schemesReported).toBe(expected.schemesReported);
+		expect(data.overallProgress.avgProgressPct).toBeCloseTo(expected.weightedSum / expected.schemesReported, 6);
+		// This division's own reported schemes must contribute — proves the
+		// figure isn't accidentally always null/0.
+		expect(data.overallProgress.schemesReported).toBeGreaterThanOrEqual(2);
+	});
+
+	test('a different division\'s scheme progress never leaks into progressByDepartment/overallProgress', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+		const res = await request(app).get('/api/v1/dashboards/division').set('Authorization', `Bearer ${token}`);
+
+		expect(res.status).toBe(200);
+		const { data } = res.body;
+		// schemeB (division B) was set to 99 — if it ever leaked into divisionA's
+		// rollup it would either inflate a department's avgProgressPct toward 99
+		// or add an extra schemesReported count neither fixture value explains.
+		const progressRow = data.progressByDepartment.find((row) => row.departmentId === f.deptProgress.departmentId);
+		expect(progressRow.schemesReported).toBe(2);
+		expect(progressRow.avgProgressPct).toBeCloseTo(50, 6);
 	});
 });

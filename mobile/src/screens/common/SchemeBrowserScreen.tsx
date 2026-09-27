@@ -10,6 +10,8 @@ import {
 	TextInput,
 	View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuth } from '../../auth/useAuth';
 import {
 	getSchemeFilterOptions,
@@ -27,8 +29,10 @@ type FilterOption = { label: string; value?: number | string };
 const EMPTY_FILTERS: SchemeFilters = { limit: 20 };
 
 export default function SchemeBrowserScreen() {
-	const { accessToken } = useAuth();
-	const navigation = useNavigation<{ navigate: (screen: string, params?: { schemeId: number }) => void }>();
+	const { t } = useTranslation();
+	const { accessToken, user } = useAuth();
+	const navigation = useNavigation<{ navigate: (screen: string, params?: Record<string, string | number>) => void }>();
+	const canDiscuss = user?.role !== 'SUPPORT_USER';
 	const [filters, setFilters] = useState<SchemeFilters>(EMPTY_FILTERS);
 	const [options, setOptions] = useState<SchemeFilterOptions | null>(null);
 	const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -49,17 +53,17 @@ export default function SchemeBrowserScreen() {
 			setSchemes((current) => (append ? [...current, ...result.schemes] : result.schemes));
 			setNextCursor(result.nextCursor);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load schemes.');
+			setError(err instanceof Error ? err.message : t('schemes.couldNotLoad'));
 		} finally {
 			setLoading(false);
 			setLoadingMore(false);
 		}
-	}, [accessToken]);
+	}, [accessToken, t]);
 
 	useEffect(() => {
 		if (!accessToken) return;
-		getSchemeFilterOptions(accessToken).then(setOptions).catch(() => setError('Could not load filter options.'));
-	}, [accessToken]);
+		getSchemeFilterOptions(accessToken).then(setOptions).catch(() => setError(t('schemes.couldNotLoadFilters')));
+	}, [accessToken, t]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => load({ ...filters, search: search.trim() || undefined }), 350);
@@ -67,7 +71,7 @@ export default function SchemeBrowserScreen() {
 	}, [filters, load, search]);
 
 	const filterOptions = useMemo(() => buildFilterOptions(activeFilter, options), [activeFilter, options]);
-	const activeLabel = activeFilter ? filterTitle(activeFilter) : '';
+	const activeLabel = activeFilter ? filterTitle(activeFilter, t) : '';
 
 	const chooseFilter = (value?: number | string) => {
 		if (!activeFilter) return;
@@ -83,13 +87,13 @@ export default function SchemeBrowserScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>Scheme browser</Text>
-				<Text style={styles.subtitle}>Read-only ADP scheme register</Text>
+				<Text style={styles.title}>{t('schemes.title')}</Text>
+				<Text style={styles.subtitle}>{t('schemes.subtitle')}</Text>
 			</View>
 			<TextInput
 				value={search}
 				onChangeText={setSearch}
-				placeholder="Search scheme name or UID"
+				placeholder={t('schemes.searchPlaceholder')}
 				placeholderTextColor={colors.textSecondary}
 				style={styles.search}
 				returnKeyType="search"
@@ -97,21 +101,27 @@ export default function SchemeBrowserScreen() {
 			<View style={styles.filterRow}>
 				{(['divisionId', 'districtId', 'departmentId', 'subSectorId', 'status'] as FilterKey[]).map((key) => (
 					<Pressable key={key} style={styles.filterChip} onPress={() => setActiveFilter(key)}>
-						<Text style={styles.filterChipText}>{selectedLabel(key, filters[key], options)}</Text>
+						<Text style={styles.filterChipText}>{selectedLabel(key, filters[key], options, t)}</Text>
 					</Pressable>
 				))}
 			</View>
 			<Pressable onPress={clearFilters} style={styles.clearButton}>
-				<Text style={styles.clearText}>Clear filters</Text>
+				<Text style={styles.clearText}>{t('common.clearFilters')}</Text>
 			</Pressable>
 
 			{error ? <Text style={styles.error}>{error}</Text> : null}
 			{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
-			{!loading && !schemes.length ? <Text style={styles.empty}>No schemes match these filters.</Text> : null}
+			{!loading && !schemes.length ? <Text style={styles.empty}>{t('schemes.noSchemesMatch')}</Text> : null}
 			<FlatList
 				data={schemes}
 				keyExtractor={(item) => String(item.id)}
-				renderItem={({ item }) => <SchemeCard scheme={item} onAssemble={() => navigation.navigate('TeamAssembly', { schemeId: item.id })} />}
+				renderItem={({ item }) => (
+					<SchemeCard
+						scheme={item}
+						onAssemble={() => navigation.navigate('TeamAssembly', { schemeId: item.id })}
+						onDiscuss={canDiscuss ? () => navigation.navigate('Comments', { commentableType: 'SCHEME', commentableId: String(item.id), title: t('schemes.discussionTitle', { schemeName: item.name }) }) : undefined}
+					/>
+				)}
 				contentContainerStyle={styles.list}
 				onEndReached={() => nextCursor && !loadingMore && load({ ...filters, search: search.trim() || undefined, cursor: nextCursor }, true)}
 				onEndReachedThreshold={0.4}
@@ -123,7 +133,7 @@ export default function SchemeBrowserScreen() {
 					<Pressable style={styles.modalCard} onPress={() => {}}>
 						<Text style={styles.modalTitle}>{activeLabel}</Text>
 						<Pressable style={styles.option} onPress={() => chooseFilter(undefined)}>
-							<Text style={styles.optionText}>All {activeLabel.toLowerCase()}</Text>
+							<Text style={styles.optionText}>{t('common.allOf', { label: activeLabel })}</Text>
 						</Pressable>
 						<FlatList
 							data={filterOptions}
@@ -141,23 +151,31 @@ export default function SchemeBrowserScreen() {
 	);
 }
 
-function SchemeCard({ scheme, onAssemble }: { scheme: Scheme; onAssemble: () => void }) {
+function SchemeCard({ scheme, onAssemble, onDiscuss }: { scheme: Scheme; onAssemble: () => void; onDiscuss?: () => void }) {
+	const { t } = useTranslation();
 	return (
 		<View style={styles.card}>
 			<View style={styles.cardTop}>
 				<Text style={styles.uid}>{scheme.uid}</Text>
-				<Text style={styles.status}>{scheme.status || 'Unspecified'}</Text>
+				<Text style={styles.status}>{scheme.status || t('common.unspecified')}</Text>
 			</View>
 			<Text style={styles.schemeName}>{scheme.name}</Text>
 			<Text style={styles.meta}>{scheme.departmentName}{scheme.subSectorName ? ` · ${scheme.subSectorName}` : ''}</Text>
-			<Text style={styles.meta}>{scheme.districts.join(', ') || 'District not specified'}</Text>
+			<Text style={styles.meta}>{scheme.districts.join(', ') || t('schemes.districtNotSpecified')}</Text>
 			<View style={styles.progressRow}>
-				<Text style={styles.progress}>Physical {scheme.physicalProgressPct ?? 0}%</Text>
-				<Text style={styles.progress}>Financial {scheme.financialProgressPct ?? 0}%</Text>
+				<Text style={styles.progress}>{t('schemes.physicalProgress', { pct: scheme.physicalProgressPct ?? 0 })}</Text>
+				<Text style={styles.progress}>{t('schemes.financialProgress', { pct: scheme.financialProgressPct ?? 0 })}</Text>
 			</View>
-			<Pressable style={styles.teamButton} onPress={onAssemble}>
-				<Text style={styles.teamButtonText}>Assemble team</Text>
-			</Pressable>
+			<View style={styles.cardActions}>
+				<Pressable style={styles.teamButton} onPress={onAssemble}>
+					<Text style={styles.teamButtonText}>{t('schemes.assembleTeam')}</Text>
+				</Pressable>
+				{onDiscuss ? (
+					<Pressable style={styles.discussButton} onPress={onDiscuss}>
+						<Text style={styles.discussButtonText}>{t('schemes.discussion')}</Text>
+					</Pressable>
+				) : null}
+			</View>
 		</View>
 	);
 }
@@ -169,15 +187,21 @@ function buildFilterOptions(key: FilterKey | null, options: SchemeFilterOptions 
 	return source.map((item) => ({ label: item.name, value: item.id }));
 }
 
-function selectedLabel(key: FilterKey, value: number | string | undefined, options: SchemeFilterOptions | null) {
-	if (value === undefined) return filterTitle(key);
+function selectedLabel(key: FilterKey, value: number | string | undefined, options: SchemeFilterOptions | null, t: TFunction) {
+	if (value === undefined) return filterTitle(key, t);
 	if (key === 'status') return String(value);
 	const source = key === 'divisionId' ? options?.divisions : key === 'districtId' ? options?.districts : key === 'departmentId' ? options?.departments : options?.subSectors;
-	return source?.find((item) => item.id === value)?.name ?? filterTitle(key);
+	return source?.find((item) => item.id === value)?.name ?? filterTitle(key, t);
 }
 
-function filterTitle(key: FilterKey) {
-	return { divisionId: 'Division', districtId: 'District', departmentId: 'Department', subSectorId: 'Sub-sector', status: 'Status' }[key];
+function filterTitle(key: FilterKey, t: TFunction) {
+	return {
+		divisionId: t('schemes.filters.division'),
+		districtId: t('schemes.filters.district'),
+		departmentId: t('schemes.filters.department'),
+		subSectorId: t('schemes.filters.subSector'),
+		status: t('schemes.filters.status'),
+	}[key];
 }
 
 const styles = StyleSheet.create({
@@ -203,8 +227,11 @@ const styles = StyleSheet.create({
 	meta: { color: colors.textSecondary, fontSize: typography.size.xs, lineHeight: typography.lineHeight.sm, marginTop: spacing.xs },
 	progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
 	progress: { color: colors.textPrimary, fontSize: typography.size.xs, fontWeight: typography.weight.medium },
-	teamButton: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginTop: spacing.md },
+	cardActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+	teamButton: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
 	teamButtonText: { color: colors.white, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
+	discussButton: { alignSelf: 'flex-start', backgroundColor: colors.background, borderColor: colors.primary, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+	discussButtonText: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
 	modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(27,46,30,0.35)' },
 	modalCard: { maxHeight: '75%', backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
 	modalTitle: { color: colors.textPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold, marginBottom: spacing.sm },

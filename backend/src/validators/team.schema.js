@@ -11,6 +11,9 @@ const create = {
 		schemeId: z.coerce.number().int().positive(),
 		leadMeoId: uuid,
 		supportingMemberIds: z.array(uuid).max(20).default([]),
+		// RD self-inclusion (schema.md's own team_member_role enum has
+		// RD_OBSERVER for exactly this) — optional, defaults to not included.
+		includeSelf: z.boolean().default(false),
 	}),
 };
 

@@ -46,6 +46,11 @@ async function createDraft(actor, input) {
 		id: profile.id,
 		teamRole: profile.role === ROLES.MEO ? 'SUPPORT_MEO' : 'DEPT_MEMBER',
 	}));
+	// RD self-inclusion is optional (per the user's own request) — the RD is
+	// never eligible-members-checked like an MEO/SUPPORT_USER would be, since
+	// they're always the actor creating the team, already known to be in the
+	// right division by the check above.
+	if (input.includeSelf) supportingMembers.push({ id: actor.id, teamRole: 'RD_OBSERVER' });
 	return teamRepo.createDraft({ schemeId: input.schemeId, createdBy: actor.id, leadMeoId: input.leadMeoId, supportingMembers });
 }
 

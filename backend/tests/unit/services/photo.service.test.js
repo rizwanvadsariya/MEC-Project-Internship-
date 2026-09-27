@@ -33,6 +33,19 @@ test('lead MEO uploads an allowed photo and registers its storage path', async (
 	expect(photoRepo.create).toHaveBeenCalledWith('visit-1', actor.id, expect.any(String), { caption: 'Front elevation' });
 });
 
+test('geo-tag metadata (phases.md Step 19) passes through to the repo untouched, coordinates included', async () => {
+	const metadata = { caption: 'Front elevation', geoLat: 24.8607, geoLng: 67.0011, takenAt: '2026-01-01T12:00:00.000Z' };
+
+	await photoService.upload(actor, 'visit-1', file, metadata);
+
+	expect(photoRepo.create).toHaveBeenCalledWith('visit-1', actor.id, expect.any(String), metadata);
+});
+
+test('uploading with no geo metadata at all still succeeds — coordinates are optional, not required', async () => {
+	await expect(photoService.upload(actor, 'visit-1', file)).resolves.toEqual({ id: 'photo-1' });
+	expect(photoRepo.create).toHaveBeenCalledWith('visit-1', actor.id, expect.any(String), {});
+});
+
 test('rejects non-image and oversized uploads before touching storage', async () => {
 	await expect(photoService.upload(actor, 'visit-1', { ...file, mimetype: 'application/pdf' })).rejects.toMatchObject({ statusCode: 400 });
 	await expect(photoService.upload(actor, 'visit-1', { ...file, size: photoService.MAX_BYTES + 1 })).rejects.toMatchObject({ statusCode: 400 });

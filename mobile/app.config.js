@@ -19,7 +19,20 @@ module.exports = {
     scheme: 'mec',
     version: '0.1.0',
     orientation: 'portrait',
-    plugins: ['expo-secure-store', 'expo-font', '@react-native-community/datetimepicker', 'expo-image-picker', 'expo-notifications'],
+    plugins: [
+      'expo-secure-store',
+      'expo-font',
+      '@react-native-community/datetimepicker',
+      'expo-image-picker',
+      'expo-notifications',
+      'expo-localization',
+      [
+        'expo-location',
+        {
+          locationWhenInUsePermission: 'MEC uses your location to geo-tag progress photos taken during a site visit.',
+        },
+      ],
+    ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:4000/api/v1',
     },
