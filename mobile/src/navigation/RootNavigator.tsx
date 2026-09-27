@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
 import AuthNavigator from './AuthNavigator';
 import RegionalDirectorNavigator from './RegionalDirectorNavigator';
@@ -13,6 +14,7 @@ import SupportUserNavigator from './SupportUserNavigator';
 import { colors } from '../theme';
 
 export default function RootNavigator() {
+  const { t } = useTranslation();
   const { isLoading, isAuthenticated, role } = useAuth();
 
   if (isLoading) {
@@ -39,7 +41,7 @@ export default function RootNavigator() {
     default:
       return (
         <View style={styles.splash}>
-          <Text style={styles.unknown}>Unknown role: {String(role)}</Text>
+          <Text style={styles.unknown}>{t('navigation.unknownRole', { role: String(role) })}</Text>
         </View>
       );
   }

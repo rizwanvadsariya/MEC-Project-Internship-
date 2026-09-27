@@ -53,6 +53,11 @@ test('submitting the form fires the "visit completed" notification trigger (phas
 	await service.save(actor, 'visit-1', payload, 'SUBMITTED');
 
 	expect(notificationService.notifyVisitCompleted).toHaveBeenCalledWith('visit-1');
+	// The repo layer owns the schemes.physical_progress_pct rollup write (same
+	// transaction as the form upsert) once status is SUBMITTED — the service
+	// just needs to pass the submitted payload/status through untouched so
+	// the repo has the right physicalProgressPct to roll up.
+	expect(visitFormRepo.save).toHaveBeenCalledWith('visit-1', actor.id, template.id, payload, 'SUBMITTED');
 });
 
 test('submission rejects missing required dynamic fields', async () => {

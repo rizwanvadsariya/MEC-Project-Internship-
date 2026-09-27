@@ -42,9 +42,11 @@ if (!ip) {
 const apiBaseUrl = `http://${ip}:4000/api/v1`;
 console.log(`[start-lan] Detected LAN IP ${ip} — starting Expo with API_BASE_URL=${apiBaseUrl}`);
 
-// Pass through any extra flags (e.g. `--tunnel`) given to the npm script.
+// Force LAN mode so Expo does not advertise localhost or reuse an ambiguous
+// host selection when this script is used from a physical device.
 const extraArgs = process.argv.slice(2);
-const result = spawnSync('npx', ['expo', 'start', ...extraArgs], {
+const hostArgs = extraArgs.includes('--tunnel') ? [] : ['--lan'];
+const result = spawnSync('npx', ['expo', 'start', ...hostArgs, ...extraArgs], {
 	stdio: 'inherit',
 	shell: true,
 	env: { ...process.env, API_BASE_URL: apiBaseUrl },

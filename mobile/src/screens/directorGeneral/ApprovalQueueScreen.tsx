@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { decideApproval, listPendingApprovals, type PendingApproval } from '../../api/approvals.api';
 import { colors, radius, spacing, typography } from '../../theme';
+import { formatExactDateTime, formatRelativeTime, groupByMonth } from '../../utils/dateTime';
 
 export default function ApprovalQueueScreen() {
+	const { t } = useTranslation();
 	const { accessToken } = useAuth();
 	const [items, setItems] = useState<PendingApproval[]>([]);
 	const [selected, setSelected] = useState<PendingApproval | null>(null);
@@ -20,21 +24,32 @@ export default function ApprovalQueueScreen() {
 			setItems(await listPendingApprovals(accessToken));
 			setError('');
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load approval queue.');
+			setError(err instanceof Error ? err.message : t('approvals.couldNotLoad'));
 		} finally {
 			setLoading(false);
 		}
-	}, [accessToken]);
+	}, [accessToken, t]);
 
+	useFocusEffect(
+		useCallback(() => {
+			const timer = setTimeout(() => { void load(); }, 0);
+			return () => clearTimeout(timer);
+		}, [load]),
+	);
+
+	// Keeps "just now"/"5 minutes ago" fresh while the screen stays open,
+	// without refetching from the server — a plain re-render tick every
+	// minute is enough resolution for this display, and self-cleans on unmount.
+	const [, forceRerenderTick] = useState(0);
 	useEffect(() => {
-		const timer = setTimeout(() => { void load(); }, 0);
-		return () => clearTimeout(timer);
-	}, [load]);
+		const interval = setInterval(() => forceRerenderTick((n) => n + 1), 60000);
+		return () => clearInterval(interval);
+	}, []);
 
 	const decide = async (decision: 'APPROVED' | 'REJECTED') => {
 		if (!accessToken || !selected) return;
 		if (decision === 'REJECTED' && !remarks.trim()) {
-			setError('Add remarks before rejecting a team.');
+			setError(t('approvals.remarksRequiredForRejection'));
 			return;
 		}
 		setSaving(true);
@@ -44,7 +59,7 @@ export default function ApprovalQueueScreen() {
 			setRemarks('');
 			await load();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not record the decision.');
+			setError(err instanceof Error ? err.message : t('approvals.couldNotDecide'));
 		} finally {
 			setSaving(false);
 		}
@@ -53,23 +68,34 @@ export default function ApprovalQueueScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>Approval queue</Text>
-				<Text style={styles.subtitle}>Review proposed monitoring teams in submission order.</Text>
+				<Text style={styles.title}>{t('approvals.title')}</Text>
+				<Text style={styles.subtitle}>{t('approvals.subtitle')}</Text>
 			</View>
 			{error ? <Text style={styles.error}>{error}</Text> : null}
 			{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
-			{!loading && !items.length ? <Text style={styles.empty}>No teams are waiting for approval.</Text> : null}
-			<FlatList
-				data={items}
+			{!loading && !items.length ? <Text style={styles.empty}>{t('approvals.noTeamsWaiting')}</Text> : null}
+			<SectionList
+				sections={groupByMonth(items).map((group) => ({
+					title: group.monthLabel,
+					count: group.items.length,
+					data: group.items,
+				}))}
 				keyExtractor={(item) => item.requestId}
 				contentContainerStyle={styles.list}
+				renderSectionHeader={({ section }) => (
+					<Text style={styles.sectionHeader}>
+						{section.title} · {t('approvals.pendingCountInMonth', { count: section.count })}
+					</Text>
+				)}
 				renderItem={({ item }) => (
 					<Pressable style={styles.card} onPress={() => { setSelected(item); setRemarks(''); }}>
 						<Text style={styles.uid}>{item.schemeUid}</Text>
 						<Text style={styles.schemeName}>{item.schemeName}</Text>
-						<Text style={styles.meta}>Submitted by {item.submittedByName} · Version {item.teamVersion}</Text>
+						<Text style={styles.meta}>{t('approvals.submittedBy', { name: item.submittedByName, version: item.teamVersion })}</Text>
+						<Text style={styles.meta}>{t('approvals.submittedAt', { date: formatExactDateTime(item.submittedAt) })}</Text>
+						<Text style={styles.timeAgo}>{formatRelativeTime(item.submittedAt, t)}</Text>
 						<Text style={styles.memberSummary}>{item.members.map((member) => `${member.fullName} (${member.teamRole})`).join(', ')}</Text>
-						<Text style={styles.reviewHint}>Review proposal</Text>
+						<Text style={styles.reviewHint}>{t('approvals.reviewProposal')}</Text>
 					</Pressable>
 				)}
 			/>
@@ -77,27 +103,33 @@ export default function ApprovalQueueScreen() {
 			<Modal visible={selected !== null} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
 				<View style={styles.modalBackdrop}>
 					<View style={styles.modalCard}>
-						<Text style={styles.modalTitle}>Review team</Text>
+						<Text style={styles.modalTitle}>{t('approvals.reviewTeam')}</Text>
 						<Text style={styles.schemeName}>{selected?.schemeUid}</Text>
 						<Text style={styles.meta}>{selected?.schemeName}</Text>
+						{selected ? (
+							<>
+								<Text style={styles.meta}>{t('approvals.submittedAt', { date: formatExactDateTime(selected.submittedAt) })}</Text>
+								<Text style={styles.timeAgo}>{formatRelativeTime(selected.submittedAt, t)}</Text>
+							</>
+						) : null}
 						{selected?.members.map((member) => <Text key={member.userId} style={styles.memberLine}>{member.fullName} · {member.teamRole}</Text>)}
 						<TextInput
 							value={remarks}
 							onChangeText={setRemarks}
-							placeholder="Remarks, required for rejection"
+							placeholder={t('approvals.remarksPlaceholder')}
 							placeholderTextColor={colors.textSecondary}
 							multiline
 							style={styles.remarks}
 						/>
 						<View style={styles.actions}>
 							<Pressable disabled={saving} style={[styles.rejectButton, saving && styles.disabled]} onPress={() => decide('REJECTED')}>
-								<Text style={styles.rejectText}>Reject</Text>
+								<Text style={styles.rejectText}>{t('approvals.reject')}</Text>
 							</Pressable>
 							<Pressable disabled={saving} style={[styles.approveButton, saving && styles.disabled]} onPress={() => decide('APPROVED')}>
-								{saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.approveText}>Approve</Text>}
+								{saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.approveText}>{t('approvals.approve')}</Text>}
 							</Pressable>
 						</View>
-						<Pressable onPress={() => setSelected(null)} style={styles.cancelButton}><Text style={styles.cancelText}>Close</Text></Pressable>
+						<Pressable onPress={() => setSelected(null)} style={styles.cancelButton}><Text style={styles.cancelText}>{t('approvals.close')}</Text></Pressable>
 					</View>
 				</View>
 			</Modal>
@@ -114,9 +146,19 @@ const styles = StyleSheet.create({
 	loader: { margin: spacing.xl },
 	empty: { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xl },
 	list: { paddingBottom: spacing.xl },
+	sectionHeader: {
+		color: colors.primaryDark,
+		fontSize: typography.size.xs,
+		fontWeight: typography.weight.bold,
+		textTransform: 'uppercase',
+		letterSpacing: 0.5,
+		marginTop: spacing.md,
+		marginBottom: spacing.sm,
+	},
 	card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
 	uid: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
 	schemeName: { color: colors.textPrimary, fontSize: typography.size.md, fontWeight: typography.weight.bold, lineHeight: typography.lineHeight.md, marginTop: spacing.xs },
+	timeAgo: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.medium, marginTop: spacing.xs / 2 },
 	meta: { color: colors.textSecondary, fontSize: typography.size.xs, lineHeight: typography.lineHeight.sm, marginTop: spacing.xs },
 	memberSummary: { color: colors.textPrimary, fontSize: typography.size.xs, lineHeight: typography.lineHeight.sm, marginTop: spacing.sm },
 	reviewHint: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.bold, marginTop: spacing.md },

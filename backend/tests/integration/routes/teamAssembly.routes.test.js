@@ -33,6 +33,9 @@ maybeDescribe('team assembly with a support-user member', () => {
 	let schemeId;
 	let teamId;
 	let visitId;
+	let rdId;
+	let teamWithSelf;
+	let teamWithoutSelf;
 
 	beforeAll(async () => {
 		request = require('supertest');
@@ -46,7 +49,7 @@ maybeDescribe('team assembly with a support-user member', () => {
 		await getAccessToken('SUPPORT_USER');
 		meoId = getUserId('MEO');
 		supportId = getUserId('SUPPORT_USER');
-		const rdId = getUserId('REGIONAL_DIRECTOR');
+		rdId = getUserId('REGIONAL_DIRECTOR');
 
 		const rdDivision = (await db.query('select division_id as "divisionId" from users where id = $1', [rdId])).rows[0].divisionId;
 		const scheme = await db.query(
@@ -75,6 +78,10 @@ maybeDescribe('team assembly with a support-user member', () => {
 			await db.query('delete from team_approval_requests where team_id = $1', [teamId]);
 			await db.query('delete from visit_team_members where team_id = $1', [teamId]);
 			await db.query('delete from visit_teams where id = $1', [teamId]);
+		}
+		for (const id of [teamWithSelf, teamWithoutSelf].filter(Boolean)) {
+			await db.query('delete from visit_team_members where team_id = $1', [id]);
+			await db.query('delete from visit_teams where id = $1', [id]);
 		}
 		await db.close();
 	});
@@ -195,4 +202,29 @@ maybeDescribe('team assembly with a support-user member', () => {
 		expect(list.status).toBe(200);
 		expect(list.body.data.some((item) => item.id === visitId)).toBe(true);
 	});
+
+	test('includeSelf: true adds the RD to the team as RD_OBSERVER (user-reported request)', async () => {
+		const created = await request(app)
+			.post('/api/v1/teams')
+			.set('Authorization', `Bearer ${rdToken}`)
+			.send({ schemeId, leadMeoId: meoId, supportingMemberIds: [], includeSelf: true });
+		expect(created.status).toBe(201);
+		teamWithSelf = created.body.data.id;
+
+		const rdMember = created.body.data.members.find((member) => member.userId === rdId);
+		expect(rdMember).toBeTruthy();
+		expect(rdMember.teamRole).toBe('RD_OBSERVER');
+	});
+
+	test('omitting includeSelf leaves the RD out of the team entirely', async () => {
+		const created = await request(app)
+			.post('/api/v1/teams')
+			.set('Authorization', `Bearer ${rdToken}`)
+			.send({ schemeId, leadMeoId: meoId, supportingMemberIds: [] });
+		expect(created.status).toBe(201);
+		teamWithoutSelf = created.body.data.id;
+
+		expect(created.body.data.members.some((member) => member.userId === rdId)).toBe(false);
+	});
 });
+

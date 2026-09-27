@@ -28,7 +28,7 @@ async function create(siteVisitId, uploadedBy, storagePath, metadata) {
 		`insert into visit_photos (site_visit_id, uploaded_by, storage_path, caption, geo_lat, geo_lng, taken_at)
 		 values ($1, $2, $3, $4, $5, $6, $7)
 		 returning id, site_visit_id as "siteVisitId", uploaded_by as "uploadedBy", storage_path as "storagePath",
-		 caption, geo_lat as "geoLat", geo_lng as "geoLng", taken_at as "takenAt", created_at as "createdAt"`,
+		 caption, geo_lat::float8 as "geoLat", geo_lng::float8 as "geoLng", taken_at as "takenAt", created_at as "createdAt"`,
 		[siteVisitId, uploadedBy, storagePath, metadata.caption ?? null, metadata.geoLat ?? null, metadata.geoLng ?? null, metadata.takenAt ?? null],
 	);
 	return result.rows[0];
@@ -36,8 +36,12 @@ async function create(siteVisitId, uploadedBy, storagePath, metadata) {
 
 async function list(siteVisitId) {
 	const result = await db.query(
+		// geo_lat/geo_lng are numeric(9,6) — the pg driver returns numeric as a
+		// string by default (to avoid silent precision loss), so this casts to
+		// float8 rather than leaving every caller to remember to Number() it;
+		// coordinates only ever need ~6 decimal places of precision anyway.
 		`select id, site_visit_id as "siteVisitId", uploaded_by as "uploadedBy", storage_path as "storagePath",
-				caption, geo_lat as "geoLat", geo_lng as "geoLng", taken_at as "takenAt", created_at as "createdAt"
+				caption, geo_lat::float8 as "geoLat", geo_lng::float8 as "geoLng", taken_at as "takenAt", created_at as "createdAt"
 		 from visit_photos where site_visit_id = $1 order by created_at desc`,
 		[siteVisitId],
 	);

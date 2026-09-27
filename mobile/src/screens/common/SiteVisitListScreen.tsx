@@ -7,16 +7,10 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { listSiteVisits, type SiteVisitSummary } from '../../api/siteVisits.api';
 import { colors, radius, spacing, typography } from '../../theme';
-
-const STATUS_LABEL: Record<string, string> = {
-	SCHEDULED: 'Scheduled',
-	IN_PROGRESS: 'In progress',
-	COMPLETED: 'Completed',
-	CANCELLED: 'Cancelled',
-};
 
 function statusColor(status: string) {
 	if (status === 'IN_PROGRESS') return colors.warning;
@@ -26,6 +20,7 @@ function statusColor(status: string) {
 }
 
 export default function SiteVisitListScreen() {
+	const { t } = useTranslation();
 	const { accessToken } = useAuth();
 	const navigation = useNavigation<{ navigate: (screen: string, params?: Record<string, unknown>) => void }>();
 	const [items, setItems] = useState<SiteVisitSummary[]>([]);
@@ -43,11 +38,11 @@ export default function SiteVisitListScreen() {
 			setNextCursor(result.nextCursor);
 			setError('');
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load site visits.');
+			setError(err instanceof Error ? err.message : t('siteVisits.list.couldNotLoad'));
 		} finally {
 			setLoading(false);
 		}
-	}, [accessToken]);
+	}, [accessToken, t]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -60,11 +55,11 @@ export default function SiteVisitListScreen() {
 		if (!accessToken || !nextCursor || loadingMore) return;
 		setLoadingMore(true);
 		try {
-			const result = await listSiteVisits(accessToken, nextCursor);
+			const result = await listSiteVisits(accessToken, { cursor: nextCursor });
 			setItems((prev) => [...prev, ...result.items]);
 			setNextCursor(result.nextCursor);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load more site visits.');
+			setError(err instanceof Error ? err.message : t('siteVisits.list.couldNotLoadMore'));
 		} finally {
 			setLoadingMore(false);
 		}
@@ -73,12 +68,12 @@ export default function SiteVisitListScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>Site visits</Text>
-				<Text style={styles.subtitle}>Visits scheduled once a team is approved.</Text>
+				<Text style={styles.title}>{t('siteVisits.list.title')}</Text>
+				<Text style={styles.subtitle}>{t('siteVisits.list.subtitle')}</Text>
 			</View>
 			{error ? <Text style={styles.error}>{error}</Text> : null}
 			{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
-			{!loading && !items.length ? <Text style={styles.empty}>No site visits yet.</Text> : null}
+			{!loading && !items.length ? <Text style={styles.empty}>{t('siteVisits.list.noVisitsYet')}</Text> : null}
 			<FlatList
 				data={items}
 				keyExtractor={(item) => item.id}
@@ -91,12 +86,12 @@ export default function SiteVisitListScreen() {
 						<View style={styles.cardHeader}>
 							<Text style={styles.uid}>{item.schemeUid}</Text>
 							<View style={[styles.statusPill, { backgroundColor: statusColor(item.status) }]}>
-								<Text style={styles.statusText}>{STATUS_LABEL[item.status] ?? item.status}</Text>
+								<Text style={styles.statusText}>{t(`siteVisits.status.${item.status}`, { defaultValue: item.status })}</Text>
 							</View>
 						</View>
 						<Text style={styles.schemeName}>{item.schemeName}</Text>
 						<Text style={styles.meta}>
-							{item.scheduledDate ? `Scheduled ${item.scheduledDate}` : 'Not yet scheduled'}
+							{item.scheduledDate ? t('siteVisits.list.scheduledOn', { date: item.scheduledDate }) : t('siteVisits.list.notYetScheduled')}
 						</Text>
 					</Pressable>
 				)}

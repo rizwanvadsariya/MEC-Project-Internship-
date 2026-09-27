@@ -8,11 +8,13 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { listNotifications, markNotificationRead, type NotificationItem } from '../../api/notifications.api';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export default function NotificationsScreen() {
+	const { t } = useTranslation();
 	const { accessToken } = useAuth();
 	const [items, setItems] = useState<NotificationItem[]>([]);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -29,11 +31,11 @@ export default function NotificationsScreen() {
 			setNextCursor(result.nextCursor);
 			setError('');
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load notifications.');
+			setError(err instanceof Error ? err.message : t('notifications.couldNotLoad'));
 		} finally {
 			setLoading(false);
 		}
-	}, [accessToken]);
+	}, [accessToken, t]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -50,7 +52,7 @@ export default function NotificationsScreen() {
 			setItems((prev) => [...prev, ...result.items]);
 			setNextCursor(result.nextCursor);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Could not load more notifications.');
+			setError(err instanceof Error ? err.message : t('notifications.couldNotLoadMore'));
 		} finally {
 			setLoadingMore(false);
 		}
@@ -69,12 +71,12 @@ export default function NotificationsScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>Notifications</Text>
-				<Text style={styles.subtitle}>Team decisions, completed visits, and issues filed on your visits.</Text>
+				<Text style={styles.title}>{t('notifications.title')}</Text>
+				<Text style={styles.subtitle}>{t('notifications.subtitle')}</Text>
 			</View>
 			{error ? <Text style={styles.error}>{error}</Text> : null}
 			{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
-			{!loading && !items.length ? <Text style={styles.empty}>No notifications yet.</Text> : null}
+			{!loading && !items.length ? <Text style={styles.empty}>{t('notifications.noNotificationsYet')}</Text> : null}
 			<FlatList
 				data={items}
 				keyExtractor={(item) => item.id}

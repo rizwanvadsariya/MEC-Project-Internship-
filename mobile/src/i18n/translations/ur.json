@@ -1,0 +1,432 @@
+{
+  "common": {
+    "loading": "لوڈ ہو رہا ہے…",
+    "retry": "دوبارہ کوشش کریں",
+    "save": "محفوظ کریں",
+    "cancel": "منسوخ کریں",
+    "close": "بند کریں",
+    "ok": "ٹھیک ہے",
+    "yes": "جی ہاں",
+    "no": "نہیں",
+    "selectDate": "تاریخ منتخب کریں",
+    "enterResponse": "جواب درج کریں",
+    "notProvided": "فراہم نہیں کیا گیا",
+    "notSpecified": "متعین نہیں",
+    "unspecified": "غیر متعین",
+    "search": "تلاش کریں",
+    "clearFilters": "فلٹرز ہٹائیں",
+    "allOf": "تمام {{label}}",
+    "division": "ڈویژن {{id}}",
+    "provinceWideAccess": "صوبے بھر تک رسائی",
+    "genericError": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔"
+  },
+  "navigation": {
+    "regionalDirector": "ریجنل ڈائریکٹر",
+    "directorGeneral": "ڈائریکٹر جنرل",
+    "leadMeo": "لیڈ ایم ای او",
+    "supportUser": "معاون صارف",
+    "notifications": "اطلاعات",
+    "security": "سیکیورٹی",
+    "schemeBrowser": "اسکیم بروزر",
+    "assembleTeam": "ٹیم تشکیل دیں",
+    "siteVisits": "سائٹ وزٹس",
+    "siteVisit": "سائٹ وزٹ",
+    "visitCalendar": "وزٹ کیلنڈر",
+    "visitForm": "وزٹ فارم",
+    "submittedReport": "جمع کردہ رپورٹ",
+    "discussion": "تبادلہ خیال",
+    "approvalQueue": "منظوری کی قطار",
+    "language": "زبان",
+    "analytics": "تجزیات",
+    "unknownRole": "نامعلوم کردار: {{role}}"
+  },
+  "auth": {
+    "brandTitle": "اسمارٹ صوبائی ایم اینڈ ای",
+    "brandSubtitle": "سندھ سیکرٹریٹ — اسکیم نگرانی",
+    "signInTitle": "سائن ان کریں",
+    "emailLabel": "ای میل",
+    "passwordLabel": "پاس ورڈ",
+    "emailPlaceholder": "آپ@mec.local",
+    "logIn": "لاگ ان کریں",
+    "loggingIn": "لاگ ان ہو رہا ہے…",
+    "enterEmailAndPassword": "اپنا ای میل اور پاس ورڈ درج کریں۔",
+    "apiHint": "اے پی آئی: {{url}}"
+  },
+  "roleHome": {
+    "welcomeBack": "خوش آمدید،",
+    "eyebrow": {
+      "rd": "ڈویژن ورک اسپیس",
+      "dg": "ڈویژن نگرانی",
+      "meo": "فیلڈ ورک اسپیس",
+      "support": "صرف مطالعہ ورک اسپیس"
+    },
+    "title": {
+      "rd": "آپ کا نگرانی کا جائزہ",
+      "dg": "آپ کا منظوری کا جائزہ",
+      "meo": "آپ کے وزٹس کا جائزہ",
+      "support": "ایک نظر میں نگرانی"
+    },
+    "description": {
+      "rd": "اپنے ڈویژن بھر میں ٹیمیں تشکیل دیں اور فیلڈ وزٹس کو رواں رکھیں۔",
+      "dg": "تجویز کردہ ٹیموں کا جائزہ لیں اور اپنے ڈویژن میں پیش رفت کا سراغ رکھیں۔",
+      "meo": "تفویض کردہ کام دیکھیں اور فیلڈ رپورٹس کو تازہ رکھیں۔",
+      "support": "ریکارڈ میں تبدیلی کیے بغیر اسکیم کی پیش رفت اور وزٹ کی سرگرمی پر نظر رکھیں۔"
+    },
+    "metrics": {
+      "activeTeams": "فعال ٹیمیں",
+      "awaitingApproval": "منظوری کے منتظر",
+      "upcomingVisits": "آئندہ وزٹس",
+      "pendingApprovals": "زیرِ التوا منظوریاں",
+      "activeVisits": "فعال وزٹس",
+      "openIssues": "کھلے مسائل",
+      "assignedVisits": "تفویض کردہ وزٹس",
+      "formsDue": "زیرِ التوا فارمز",
+      "issuesReported": "رپورٹ شدہ مسائل",
+      "schemesMonitored": "زیرِ نگرانی اسکیمیں",
+      "recentUpdates": "حالیہ تازہ کاریاں"
+    },
+    "empty": {
+      "rd": {
+        "titleActive": "ڈویژن میں سرگرمی جاری ہے",
+        "titleNone": "ابھی تک کوئی نگرانی کی سرگرمی نہیں",
+        "messageActive_one": "{{division}} میں {{count}} ٹیم کا سراغ رکھا جا رہا ہے۔",
+        "messageActive_other": "{{division}} میں {{count}} ٹیموں کا سراغ رکھا جا رہا ہے۔",
+        "messageNone": "اپنی پہلی فیلڈ نگرانی ٹیم بنانے کے لیے کوئی اسکیم دیکھیں۔"
+      },
+      "dg": {
+        "titleActive": "ٹیمیں آپ کے فیصلے کی منتظر ہیں",
+        "titleNone": "منظوری کی قطار خالی ہے",
+        "messageActive_one": "{{division}} میں {{count}} ٹیم کو فیصلے کی ضرورت ہے۔",
+        "messageActive_other": "{{division}} میں {{count}} ٹیموں کو فیصلے کی ضرورت ہے۔",
+        "messageNone": "جب کوئی ریجنل ڈائریکٹر تجویز جمع کرائے گا تو نئی ٹیم تجاویز یہاں ظاہر ہوں گی۔"
+      },
+      "meo": {
+        "titleActive": "فیلڈ ورک جاری ہے",
+        "titleNone": "کوئی وزٹ تفویض نہیں کی گئی",
+        "messageActive_one": "آپ کو {{visitCount}} وزٹ تفویض کی گئی ہے، {{formCount}} فارم اب بھی زیرِ التوا ہے۔",
+        "messageActive_other": "آپ کو {{visitCount}} وزٹس تفویض کی گئی ہیں، {{formCount}} فارمز اب بھی زیرِ التوا ہیں۔",
+        "messageNone": "جب آپ کو کسی وزٹ میں شامل کیا جائے گا تو منظور شدہ ٹیم تفویضات یہاں ظاہر ہوں گی۔"
+      },
+      "support": {
+        "titleActive": "نگرانی جاری ہے",
+        "titleNone": "ابھی جائزہ لینے کے لیے کچھ نہیں",
+        "messageActive_one": "آپ کی ٹیم تفویضات کے ذریعے {{count}} اسکیم کا سراغ رکھا جا رہا ہے۔",
+        "messageActive_other": "آپ کی ٹیم تفویضات کے ذریعے {{count}} اسکیموں کا سراغ رکھا جا رہا ہے۔",
+        "messageNone": "نگرانی کا کام شروع ہوتے ہی اسکیم اور وزٹ کی تازہ کاریاں یہاں ظاہر ہوں گی۔"
+      }
+    },
+    "nextWorkspace": {
+      "schemes": "اگلا ورک اسپیس: اسکیم بروزر",
+      "approvalQueue": "اگلا ورک اسپیس: منظوری کی قطار",
+      "assignedVisits": "اگلا ورک اسپیس: تفویض کردہ وزٹس"
+    },
+    "primaryAction": {
+      "rd": "اسکیمیں دیکھیں اور نئی ٹیم تفویض کریں",
+      "dg": "زیرِ التوا ٹیم منظوریاں دیکھیں"
+    },
+    "activityTitle": {
+      "division": "ڈویژن کی حالیہ سرگرمی",
+      "visits": "آپ کے وزٹس کی حالیہ سرگرمی"
+    },
+    "profile": {
+      "signedInAs": "بطور سائن ان"
+    },
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "ریجنل ڈائریکٹر",
+      "DIRECTOR_GENERAL": "ڈائریکٹر جنرل",
+      "MEO": "لیڈ ایم ای او",
+      "SUPPORT_USER": "معاون صارف"
+    },
+    "buttons": {
+      "siteVisits": "سائٹ وزٹس",
+      "visitCalendar": "وزٹ کیلنڈر",
+      "notifications": "اطلاعات",
+      "security": "سیکیورٹی سیٹنگز",
+      "language": "زبان",
+      "analytics": "تجزیات",
+      "logOut": "لاگ آؤٹ"
+    },
+    "errorLoadActivity": "آپ کی سرگرمی لوڈ نہیں ہو سکی۔"
+  },
+  "schemes": {
+    "title": "اسکیم بروزر",
+    "subtitle": "صرف مطالعہ اے ڈی پی اسکیم رجسٹر",
+    "searchPlaceholder": "اسکیم کا نام یا یو آئی ڈی تلاش کریں",
+    "filters": {
+      "division": "ڈویژن",
+      "district": "ضلع",
+      "department": "محکمہ",
+      "subSector": "ذیلی شعبہ",
+      "status": "حیثیت"
+    },
+    "noSchemesMatch": "ان فلٹرز کے مطابق کوئی اسکیم نہیں ملی۔",
+    "couldNotLoad": "اسکیمیں لوڈ نہیں ہو سکیں۔",
+    "couldNotLoadFilters": "فلٹر آپشنز لوڈ نہیں ہو سکے۔",
+    "districtNotSpecified": "ضلع متعین نہیں",
+    "physicalProgress": "طبعی {{pct}}%",
+    "financialProgress": "مالی {{pct}}%",
+    "assembleTeam": "ٹیم تشکیل دیں",
+    "discussion": "تبادلہ خیال",
+    "discussionTitle": "{{schemeName}} — تبادلہ خیال"
+  },
+  "teams": {
+    "eyebrow": "ٹیم کی تشکیل",
+    "title": "نگرانی ٹیم بنائیں",
+    "subtitle": "اسکیم نمبر {{schemeId}} · ایک لیڈ ایم ای او اور معاون ایم ای اوز یا معاون عملہ منتخب کریں۔",
+    "couldNotLoadMembers": "اہل ایم ای اوز لوڈ نہیں ہو سکے۔",
+    "noEligibleMembers": "آپ کے ڈویژن میں کوئی فعال ایم ای او یا معاون صارف دستیاب نہیں ہے۔",
+    "leadMeo": "لیڈ ایم ای او",
+    "support": "معاون",
+    "meoLabel": "ایم ای او",
+    "supportUserLabel": "معاون صارف",
+    "addMyself": "خود کو اس ٹیم میں شامل کریں",
+    "addMyselfHint": "اختیاری — ایم ای اوز کے ساتھ بطور مبصر ٹیم کا ساتھ دیں۔",
+    "submitForApproval": "ڈی جی کی منظوری کے لیے جمع کرائیں",
+    "submittedMessage": "ٹیم ڈی جی کی منظوری کے لیے جمع کرا دی گئی۔",
+    "couldNotSubmit": "ٹیم جمع نہیں کرائی جا سکی۔",
+    "selectLeadMeoFirst": "جمع کرانے سے پہلے ایک لیڈ ایم ای او منتخب کریں۔"
+  },
+  "approvals": {
+    "title": "منظوری کی قطار",
+    "subtitle": "تجویز کردہ نگرانی ٹیموں کا جمع کرانے کی ترتیب میں جائزہ لیں۔",
+    "noTeamsWaiting": "کوئی ٹیم منظوری کی منتظر نہیں ہے۔",
+    "couldNotLoad": "منظوری کی قطار لوڈ نہیں ہو سکی۔",
+    "submittedBy": "{{name}} کی جانب سے جمع کرایا گیا · ورژن {{version}}",
+    "submittedAt": "{{date}} کو جمع کرایا گیا",
+    "pendingCountInMonth_one": "{{count}} زیرالتوا درخواست",
+    "pendingCountInMonth_other": "{{count}} زیرالتوا درخواستیں",
+    "reviewProposal": "تجویز کا جائزہ لیں",
+    "reviewTeam": "ٹیم کا جائزہ لیں",
+    "remarksPlaceholder": "تبصرے، مسترد کرنے کے لیے لازمی ہیں",
+    "reject": "مسترد کریں",
+    "approve": "منظور کریں",
+    "close": "بند کریں",
+    "remarksRequiredForRejection": "ٹیم مسترد کرنے سے پہلے تبصرہ درج کریں۔",
+    "couldNotDecide": "فیصلہ محفوظ نہیں ہو سکا۔"
+  },
+  "siteVisits": {
+    "status": {
+      "SCHEDULED": "طے شدہ",
+      "IN_PROGRESS": "جاری",
+      "COMPLETED": "مکمل",
+      "CANCELLED": "منسوخ"
+    },
+    "list": {
+      "title": "سائٹ وزٹس",
+      "subtitle": "ٹیم کی منظوری کے بعد وزٹس طے کی جاتی ہیں۔",
+      "noVisitsYet": "ابھی تک کوئی سائٹ وزٹ نہیں۔",
+      "couldNotLoad": "سائٹ وزٹس لوڈ نہیں ہو سکیں۔",
+      "couldNotLoadMore": "مزید سائٹ وزٹس لوڈ نہیں ہو سکیں۔",
+      "scheduledOn": "{{date}} کو طے شدہ",
+      "notYetScheduled": "ابھی تک طے نہیں کی گئی"
+    },
+    "detail": {
+      "status": "حیثیت",
+      "scheduled": "طے شدہ",
+      "tapToSetDate": "تاریخ مقرر کرنے کے لیے تھپتھپائیں",
+      "started": "شروع ہوا",
+      "completed": "مکمل ہوا",
+      "clearScheduledDate": "طے شدہ تاریخ ہٹائیں",
+      "notYetScheduled": "ابھی تک طے نہیں کی گئی",
+      "couldNotLoadVisit": "یہ سائٹ وزٹ لوڈ نہیں ہو سکی۔",
+      "couldNotUpdateDate": "طے شدہ تاریخ اپ ڈیٹ نہیں ہو سکی۔",
+      "fillVisitForm": "وزٹ فارم پُر کریں",
+      "viewVisitForm": "وزٹ فارم دیکھیں",
+      "discussion": "تبادلہ خیال",
+      "discussionTitle": "{{schemeName}} — تبادلہ خیال",
+      "team": "ٹیم",
+      "viewOnlyNote": "آپ کو اس وزٹ کے فارم، تصاویر، اور کسی بھی رپورٹ شدہ مسئلے تک صرف مطالعہ رسائی حاصل ہے۔"
+    }
+  },
+  "analytics": {
+    "title": "تجزیات",
+    "couldNotLoad": "تجزیات لوڈ نہیں ہو سکے۔",
+    "overallProgress": "ڈویژن کی مجموعی پیش رفت",
+    "progressByDepartment": "محکمے کے لحاظ سے پیش رفت",
+    "statusBreakdown": "صورتحال کی تفصیل",
+    "schemesReportedContext": "{{total}} میں سے {{reported}} اسکیموں کی رپورٹ موصول ہوئی",
+    "notYetReported": "ابھی تک رپورٹ موصول نہیں ہوئی",
+    "noDepartments": "اس ڈویژن میں ابھی تک کوئی اسکیم والا محکمہ نہیں ہے۔",
+    "teams": "ٹیمیں",
+    "visits": "وزٹس",
+    "issues": "مسائل",
+    "issuesBySeverity": "شدت کے لحاظ سے مسائل",
+    "teamStatus": {
+      "DRAFT": "مسودہ",
+      "PENDING_APPROVAL": "منظوری زیر التوا",
+      "APPROVED": "منظور شدہ",
+      "REJECTED": "مسترد شدہ"
+    },
+    "issueStatus": {
+      "OPEN": "کھلا",
+      "ACKNOWLEDGED": "تسلیم شدہ",
+      "IN_PROGRESS": "جاری ہے",
+      "RESOLVED": "حل شدہ"
+    },
+    "issueSeverity": {
+      "LOW": "کم",
+      "MEDIUM": "درمیانہ",
+      "HIGH": "زیادہ",
+      "CRITICAL": "شدید"
+    }
+  },
+  "dateTime": {
+    "justNow": "ابھی ابھی",
+    "minutesAgo_one": "{{count}} منٹ پہلے",
+    "minutesAgo_other": "{{count}} منٹ پہلے",
+    "hoursAgo_one": "{{count}} گھنٹہ پہلے",
+    "hoursAgo_other": "{{count}} گھنٹے پہلے",
+    "daysAgo_one": "{{count}} دن پہلے",
+    "daysAgo_other": "{{count}} دن پہلے",
+    "weeksAgo_one": "{{count}} ہفتہ پہلے",
+    "weeksAgo_other": "{{count}} ہفتے پہلے",
+    "monthsAgo_one": "{{count}} مہینہ پہلے",
+    "monthsAgo_other": "{{count}} مہینے پہلے",
+    "yearsAgo_one": "{{count}} سال پہلے",
+    "yearsAgo_other": "{{count}} سال پہلے"
+  },
+  "calendar": {
+    "title": "وزٹ کیلنڈر",
+    "subtitle": "اگلے {{days}} دن — تاریخ مقرر یا تبدیل کرنے کے لیے وزٹ کو تھپتھپائیں",
+    "needsDateSection": "تاریخ درکار ہے",
+    "noApprovedVisits": "فی الحال منصوبہ بندی کے لیے کوئی منظور شدہ وزٹ نہیں۔",
+    "couldNotLoad": "وزٹ کیلنڈر لوڈ نہیں ہو سکا۔",
+    "couldNotSaveDate": "وہ تاریخ محفوظ نہیں ہو سکی۔",
+    "setDate": "تاریخ مقرر کریں",
+    "change": "تبدیل کریں"
+  },
+  "visitForm": {
+    "templateVersion": "ٹیمپلیٹ ورژن {{version}}",
+    "offlineBanner": {
+      "pending_one": "{{count}} تبدیلی اس آلے پر محفوظ ہے، مطابقت پذیری کی منتظر۔",
+      "pending_other": "{{count}} تبدیلیاں اس آلے پر محفوظ ہیں، مطابقت پذیری کی منتظر۔",
+      "syncNow": "ابھی مطابقت پذیر کریں",
+      "syncing": "مطابقت پذیر ہو رہا ہے…"
+    },
+    "submittedLocked": "جمع اور مقفل: اس رپورٹ میں ترمیم نہیں کی جا سکتی۔",
+    "oneTimeSubmission": {
+      "title": "یک بارہ جمع کرانا",
+      "text": "پیش رفت، چیک لسٹ، تصاویر، اور کسی بھی پائے جانے والے مسئلے کو احتیاط سے پُر کریں۔ آپ یہ وزٹ رپورٹ صرف ایک بار جمع کرا سکتے ہیں۔ جمع کرانے کے بعد، سب کچھ مستقل طور پر مقفل ہو جائے گا۔"
+    },
+    "physicalProgressLabel": "طبعی پیش رفت (%) *",
+    "physicalProgressPlaceholder": "0 - 100",
+    "remarksLabel": "تبصرے",
+    "remarksPlaceholder": "آپ نے جو مشاہدہ کیا اسے بیان کریں",
+    "sectorChecklist": "شعبہ جاتی چیک لسٹ",
+    "progressPhotos": "پیش رفت کی تصاویر",
+    "photoHint": "رپورٹ جمع کرانے سے پہلے واضح ثبوت جمع کریں۔ حتمی جمع کرانے سے پہلے آپ ہر تصویر کا جائزہ لے سکتے ہیں یا ہٹا سکتے ہیں۔",
+    "captionPlaceholder": "تصویر کی وضاحت (اختیاری)",
+    "capturePhoto": "پیش رفت کی تصویر لیں",
+    "capturingLocation": "مقام حاصل کیا جا رہا ہے…",
+    "reviewPhoto": "تصویر کا جائزہ لیں",
+    "progressPhoto": "پیش رفت کی تصویر",
+    "anyIssuesFound": "کوئی مسئلہ پایا گیا؟",
+    "removeIssue": "مسئلہ ہٹائیں",
+    "issueTypeLabel": "مسئلے کی قسم *",
+    "issueTypePlaceholder": "مثلاً تعمیراتی نقص",
+    "severityLabel": "شدت *",
+    "descriptionLabel": "تفصیل *",
+    "descriptionPlaceholder": "مسئلے کی تفصیل بیان کریں",
+    "noIssueReported": "کوئی مسئلہ رپورٹ نہیں کیا گیا۔",
+    "previewSubmittedReport": "جمع کردہ رپورٹ دیکھیں",
+    "saveDraft": "مسودہ محفوظ کریں",
+    "saving": "محفوظ ہو رہا ہے...",
+    "submitForm": "فارم جمع کرائیں",
+    "submitting": "جمع کیا جا رہا ہے...",
+    "couldNotLoadForm": "وزٹ فارم لوڈ نہیں ہو سکا۔",
+    "progressMustBeNumber": "طبعی پیش رفت 0 سے 100 کے درمیان ایک عدد ہونا چاہیے۔",
+    "issueRequiredFields": "مسئلہ رپورٹ کرتے وقت مسئلے کی قسم اور تفصیل لازمی ہیں۔",
+    "offlineIssueBlocked": "آپ آف لائن ہیں — مسئلے کی رپورٹ کے لیے انٹرنیٹ کنکشن درکار ہے۔ آن لائن ہونے کے بعد دوبارہ محفوظ کریں۔",
+    "offlineSubmitSaved": "آف لائن — جمع کرانا اس آلے پر محفوظ ہو گیا ہے اور آن لائن ہونے پر خودکار طور پر مطابقت پذیر ہو جائے گا۔",
+    "offlineDraftSaved": "آف لائن — مسودہ اس آلے پر محفوظ ہو گیا ہے اور آن لائن ہونے پر خودکار طور پر مطابقت پذیر ہو جائے گا۔",
+    "formSubmitted": "فارم کامیابی سے جمع کرا دیا گیا۔",
+    "draftSaved": "مسودہ محفوظ کر دیا گیا۔",
+    "couldNotSaveForm": "وزٹ فارم محفوظ نہیں ہو سکا۔",
+    "couldNotRemoveIssue": "رپورٹ شدہ مسئلہ ہٹایا نہیں جا سکا۔",
+    "cameraPermissionRequired": "پیش رفت کی تصویر لینے کے لیے کیمرے کی اجازت درکار ہے۔",
+    "notSubmittedYet": "یہ وزٹ رپورٹ ابھی تک جمع نہیں کرائی گئی۔ لیڈ ایم ای او کے جمع کراتے ہی یہ یہاں ظاہر ہو گی۔"
+  },
+  "report": {
+    "kicker": "فیلڈ نگرانی رپورٹ",
+    "templateVersionSubmitted": "ٹیمپلیٹ ورژن {{version}} • جمع کرایا اور مقفل",
+    "physicalProgress": "طبعی پیش رفت",
+    "remarks": "تبصرے",
+    "noRemarksProvided": "کوئی تبصرہ فراہم نہیں کیا گیا",
+    "sectorChecklist": "شعبہ جاتی چیک لسٹ",
+    "progressEvidence": "پیش رفت کا ثبوت",
+    "noPhotosAttached": "کوئی تصویر منسلک نہیں کی گئی۔",
+    "issueReports": "مسائل کی رپورٹس ({{count}})",
+    "noIssuesReported": "کوئی مسئلہ رپورٹ نہیں کیا گیا۔",
+    "noReport": "اس وزٹ کے لیے کوئی جمع کردہ رپورٹ موجود نہیں۔",
+    "couldNotLoad": "جمع کردہ رپورٹ لوڈ نہیں ہو سکی۔",
+    "notProvided": "فراہم نہیں کیا گیا",
+    "yes": "جی ہاں",
+    "no": "نہیں"
+  },
+  "comments": {
+    "defaultTitle": "تبادلہ خیال",
+    "noCommentsYet": "ابھی تک کوئی تبصرہ نہیں — نیچے بحث شروع کریں۔",
+    "couldNotLoad": "تبصرے لوڈ نہیں ہو سکے۔",
+    "writeCommentPlaceholder": "ایک تبصرہ لکھیں…",
+    "post": "پوسٹ کریں",
+    "edit": "ترمیم کریں",
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "delete": "حذف کریں",
+    "couldNotPost": "آپ کا تبصرہ پوسٹ نہیں ہو سکا۔",
+    "couldNotSaveEdit": "آپ کی ترمیم محفوظ نہیں ہو سکی۔",
+    "couldNotDelete": "وہ تبصرہ حذف نہیں ہو سکا۔",
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "آر ڈی",
+      "DIRECTOR_GENERAL": "ڈی جی",
+      "MEO": "ایم ای او",
+      "SUPPORT_USER": "معاون"
+    }
+  },
+  "notifications": {
+    "title": "اطلاعات",
+    "subtitle": "ٹیم کے فیصلے، مکمل شدہ وزٹس، اور آپ کی وزٹس پر رپورٹ شدہ مسائل۔",
+    "noNotificationsYet": "ابھی تک کوئی اطلاع نہیں۔",
+    "couldNotLoad": "اطلاعات لوڈ نہیں ہو سکیں۔",
+    "couldNotLoadMore": "مزید اطلاعات لوڈ نہیں ہو سکیں۔"
+  },
+  "security": {
+    "title": "دو مرحلہ توثیق",
+    "enabled": "✅ فعال",
+    "notEnabled": "❌ غیر فعال",
+    "enableButton": "دو مرحلہ توثیق فعال کریں",
+    "removeButton": "دو مرحلہ توثیق ہٹائیں",
+    "instructions": "1۔ اپنی توثیقی ایپ کھولیں (گوگل آتھینٹیکیٹر، آتھی، وغیرہ)\n2۔ \"سیٹ اپ کلید درج کریں\" (دستی اندراج) منتخب کریں\n3۔ اکاؤنٹ: آپ کا ای میل · کلید: نیچے · قسم: وقت پر مبنی",
+    "enterCodeLabel": "دکھایا گیا 6 ہندسوں کا کوڈ درج کریں:",
+    "codePlaceholder": "123456",
+    "verifyButton": "تصدیق کریں اور فعال کریں",
+    "mfaEnabledAlert": "دو مرحلہ توثیق فعال کر دی گئی",
+    "couldNotStartEnrollment": "اندراج شروع نہیں ہو سکا۔",
+    "enterValidCode": "اپنی توثیقی ایپ سے 6 ہندسوں کا کوڈ درج کریں۔",
+    "verificationFailed": "تصدیق ناکام ہو گئی۔",
+    "couldNotRemove": "دو مرحلہ توثیق ہٹائی نہیں جا سکی۔"
+  },
+  "languageSettings": {
+    "title": "زبان",
+    "subtitle": "پوری ایپ میں استعمال ہونے والی زبان منتخب کریں۔",
+    "english": "English",
+    "urdu": "اردو",
+    "sindhi": "سنڌي",
+    "restartNoticeTitle": "دوبارہ آغاز درکار ہے",
+    "restartNoticeBody": "نئی متن کی سمت کو مکمل طور پر لاگو کرنے کے لیے، براہ کرم ایپ بند کر کے دوبارہ کھولیں۔",
+    "restartNowButton": "ابھی دوبارہ شروع کریں",
+    "restartLaterHint": "آپ ایپ استعمال کرتے رہ سکتے ہیں — اگلی بار کھلنے پر لے آؤٹ کی سمت خودکار طور پر اپ ڈیٹ ہو جائے گی۔"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "غلط ای میل یا پاس ورڈ۔",
+    "ACCOUNT_LOCKED": "بہت زیادہ ناکام کوششوں کے بعد یہ اکاؤنٹ عارضی طور پر مقفل ہے۔ بعد میں دوبارہ کوشش کریں۔",
+    "ACCOUNT_DEACTIVATED": "یہ اکاؤنٹ غیر فعال کر دیا گیا ہے۔ اپنے منتظم سے رابطہ کریں۔",
+    "MFA_REQUIRED": "اس اکاؤنٹ کے لیے دو مرحلہ توثیق درکار ہے۔",
+    "VISIT_REPORT_LOCKED": "یہ وزٹ رپورٹ پہلے ہی جمع کرائی جا چکی ہے اور مقفل ہے۔",
+    "EMAIL_TAKEN": "یہ ای میل ایڈریس پہلے ہی استعمال میں ہے۔",
+    "PROVISION_ROLE_DENIED": "آپ کو اس کردار کے ساتھ اکاؤنٹ بنانے کی اجازت نہیں ہے۔",
+    "PROVISION_DIVISION_DENIED": "آپ صرف اپنے ڈویژن کے اندر اکاؤنٹس بنا سکتے ہیں۔",
+    "VISIT_NOT_SCHEDULABLE": "اس وزٹ کو مزید طے نہیں کیا جا سکتا۔",
+    "generic": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔"
+  }
+}

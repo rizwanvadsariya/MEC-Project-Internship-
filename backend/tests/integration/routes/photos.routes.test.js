@@ -73,9 +73,17 @@ maybeDescribe('visit photo routes', () => {
 			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
 			.set('Authorization', `Bearer ${meoToken}`)
 			.field('caption', 'Front elevation')
+			// Geo-tagging (phases.md Step 19) — sent the same way the mobile
+			// client's FormData does, as string fields on the multipart body.
+			.field('geoLat', '24.8607')
+			.field('geoLng', '67.0011')
+			.field('takenAt', '2026-01-01T12:00:00.000Z')
 			.attach('photo', ONE_PIXEL_PNG, { filename: 'visit.png', contentType: 'image/png' });
 		expect(upload.status).toBe(201);
 		expect(upload.body.data.storagePath).toMatch(new RegExp(`^${fixture.visitId}/`));
+		expect(upload.body.data.geoLat).toBeCloseTo(24.8607);
+		expect(upload.body.data.geoLng).toBeCloseTo(67.0011);
+		expect(new Date(upload.body.data.takenAt).toISOString()).toBe('2026-01-01T12:00:00.000Z');
 		fixture.storagePath = upload.body.data.storagePath;
 
 		// Not submitted yet — a draft-in-progress's evidence photos are the lead
@@ -99,9 +107,32 @@ maybeDescribe('visit photo routes', () => {
 		expect(listedByMeo.status).toBe(200);
 		expect(listedByMeo.body.data).toHaveLength(1);
 
-		const stored = (await db.query('select storage_path, caption from visit_photos where site_visit_id = $1', [fixture.visitId])).rows[0];
+		const stored = (await db.query('select storage_path, caption, geo_lat, geo_lng, taken_at from visit_photos where site_visit_id = $1', [fixture.visitId])).rows[0];
 		expect(stored.storage_path).toBe(fixture.storagePath);
 		expect(stored.caption).toBe('Front elevation');
+		expect(Number(stored.geo_lat)).toBeCloseTo(24.8607);
+		expect(Number(stored.geo_lng)).toBeCloseTo(67.0011);
+		expect(stored.taken_at.toISOString()).toBe('2026-01-01T12:00:00.000Z');
+
+		// The lead MEO's own list (the only visibility this fixture's photo has
+		// right now) round-trips the same coordinates back out.
+		expect(listedByMeo.body.data[0].geoLat).toBeCloseTo(24.8607);
+		expect(listedByMeo.body.data[0].geoLng).toBeCloseTo(67.0011);
+	});
+
+	test('uploading with no geo fields at all still succeeds, with null coordinates — geo-tagging is optional', async () => {
+		const upload = await request(app)
+			.post(`/api/v1/site-visits/${fixture.visitId}/photos`)
+			.set('Authorization', `Bearer ${meoToken}`)
+			.attach('photo', ONE_PIXEL_PNG, { filename: 'no-geo.png', contentType: 'image/png' });
+		expect(upload.status).toBe(201);
+		expect(upload.body.data.geoLat).toBeNull();
+		expect(upload.body.data.geoLng).toBeNull();
+		expect(upload.body.data.takenAt).toBeNull();
+
+		await request(app)
+			.delete(`/api/v1/site-visits/${fixture.visitId}/photos/${upload.body.data.id}`)
+			.set('Authorization', `Bearer ${meoToken}`);
 	});
 
 	test('support user and division DG cannot upload; invalid MIME is rejected', async () => {

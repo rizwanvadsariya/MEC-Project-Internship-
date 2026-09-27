@@ -5,29 +5,34 @@
  *  form/photos/issue report flow now. */
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import RoleHomeScreen from '../screens/common/RoleHomeScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
+import LanguageSettingsScreen from '../screens/common/LanguageSettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import VisitFormScreen from '../screens/meo/VisitFormScreen';
 import VisitReportScreen from '../screens/meo/VisitReportScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
+import LanguageSwitcherButton from '../i18n/LanguageSwitcherButton';
 import { stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
 
 export default function SupportUserNavigator() {
+  const { t } = useTranslation();
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
-      <Stack.Screen name="SupportHome" component={RoleHomeScreen} options={{ title: 'Support User' }} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-      <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: 'Security' }} />
-      <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: 'Scheme browser' }} />
-      <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: 'Site visits' }} />
-      <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: 'Site visit' }} />
-      <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: 'Visit form' }} />
-      <Stack.Screen name="VisitReport" component={VisitReportScreen} options={{ title: 'Submitted report' }} />
+    <Stack.Navigator screenOptions={{ ...stackScreenOptions, headerRight: () => <LanguageSwitcherButton /> }}>
+      <Stack.Screen name="SupportHome" component={RoleHomeScreen} options={{ title: t('navigation.supportUser') }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: t('navigation.notifications') }} />
+      <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: t('navigation.security') }} />
+      <Stack.Screen name="Language" component={LanguageSettingsScreen} options={{ title: t('navigation.language') }} />
+      <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: t('navigation.schemeBrowser') }} />
+      <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: t('navigation.siteVisits') }} />
+      <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: t('navigation.siteVisit') }} />
+      <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: t('navigation.visitForm') }} />
+      <Stack.Screen name="VisitReport" component={VisitReportScreen} options={{ title: t('navigation.submittedReport') }} />
     </Stack.Navigator>
   );
 }

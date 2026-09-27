@@ -14,12 +14,23 @@ export type VisitPhoto = {
 	signedUrl: string;
 };
 
-export async function uploadVisitPhoto(visitId: string, token: string, uri: string, caption?: string) {
+export type UploadVisitPhotoOptions = {
+	caption?: string;
+	/** Device GPS at capture time (phases.md Step 19) — omitted when location permission was denied or unavailable. */
+	geoLat?: number;
+	geoLng?: number;
+	takenAt?: string;
+};
+
+export async function uploadVisitPhoto(visitId: string, token: string, uri: string, options: UploadVisitPhotoOptions = {}) {
 	const imageFile = new File(uri);
 	if (!imageFile.exists) throw new Error('Could not read the captured photo.');
 	const form = new FormData();
 	form.append('photo', imageFile, imageFile.name || `visit-${Date.now()}.jpg`);
-	if (caption) form.append('caption', caption);
+	if (options.caption) form.append('caption', options.caption);
+	if (options.geoLat != null) form.append('geoLat', String(options.geoLat));
+	if (options.geoLng != null) form.append('geoLng', String(options.geoLng));
+	if (options.takenAt) form.append('takenAt', options.takenAt);
 	const response = await fetch(`${apiBaseUrl}/site-visits/${visitId}/photos`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}` },

@@ -99,6 +99,32 @@ test('rejects a supporting member who is an RD/DG (neither MEO nor SUPPORT_USER)
 		.rejects.toMatchObject({ statusCode: 400, code: 'INVALID_TEAM_MEMBER' });
 });
 
+test('includeSelf adds the RD as an RD_OBSERVER, on top of the supporting members, with no eligibility check on the RD itself', async () => {
+	userRepo.findById.mockImplementation((id) => Promise.resolve({
+		'lead-1': profile({ id: 'lead-1' }),
+		'support-1': profile({ id: 'support-1', role: 'SUPPORT_USER' }),
+	}[id]));
+
+	await teamService.createDraft(actor, { schemeId: 5, leadMeoId: 'lead-1', supportingMemberIds: ['support-1'], includeSelf: true });
+
+	expect(teamRepo.createDraft).toHaveBeenCalledWith(expect.objectContaining({
+		supportingMembers: expect.arrayContaining([
+			{ id: 'support-1', teamRole: 'DEPT_MEMBER' },
+			{ id: actor.id, teamRole: 'RD_OBSERVER' },
+		]),
+	}));
+	// userRepo.findById is never called for the RD's own id — no eligibility check needed.
+	expect(userRepo.findById).not.toHaveBeenCalledWith(actor.id);
+});
+
+test('omitting includeSelf (or leaving it false) does not add the RD to the team', async () => {
+	userRepo.findById.mockImplementation((id) => Promise.resolve({ 'lead-1': profile({ id: 'lead-1' }) }[id]));
+
+	await teamService.createDraft(actor, { schemeId: 5, leadMeoId: 'lead-1', supportingMemberIds: [] });
+
+	expect(teamRepo.createDraft).toHaveBeenCalledWith(expect.objectContaining({ supportingMembers: [] }));
+});
+
 test('rejects assembling a team for a scheme outside the RD division', async () => {
 	teamRepo.findSchemeDivision.mockResolvedValue({ divisionId: 2 });
 	await expect(teamService.createDraft(actor, { schemeId: 5, leadMeoId: 'lead-1', supportingMemberIds: [] }))

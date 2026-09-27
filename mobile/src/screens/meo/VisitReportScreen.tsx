@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { getVisitForm, type VisitFormContext } from '../../api/visitForms.api';
 import { listVisitPhotos, type VisitPhoto } from '../../api/photos.api';
 import { listIssues, type IssueReport } from '../../api/issues.api';
@@ -8,6 +9,7 @@ import { useAuth } from '../../auth/useAuth';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export default function VisitReportScreen() {
+	const { t } = useTranslation();
 	const { accessToken } = useAuth();
 	const route = useRoute<{ key: string; name: string; params?: { id?: string } }>();
 	const visitId = route.params?.id ?? '';
@@ -21,36 +23,36 @@ export default function VisitReportScreen() {
 		try {
 			const [form, visitPhotos, filedIssues] = await Promise.all([getVisitForm(visitId, accessToken), listVisitPhotos(visitId, accessToken), listIssues(visitId, accessToken)]);
 			setContext(form); setPhotos(visitPhotos); setIssues(filedIssues); setError('');
-		} catch (err) { setError(err instanceof Error ? err.message : 'Could not load the submitted report.'); }
-	}, [accessToken, visitId]);
+		} catch (err) { setError(err instanceof Error ? err.message : t('report.couldNotLoad')); }
+	}, [accessToken, visitId, t]);
 
 	useFocusEffect(useCallback(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]));
 
 	if (error) return <Text style={styles.error}>{error}</Text>;
 	if (!context) return <ActivityIndicator color={colors.primary} style={styles.loader} />;
-	if (!context.form) return <Text style={styles.error}>No submitted report exists for this visit.</Text>;
+	if (!context.form) return <Text style={styles.error}>{t('report.noReport')}</Text>;
 
 	return <ScrollView contentContainerStyle={styles.container}>
-		<Text style={styles.kicker}>FIELD MONITORING REPORT</Text>
+		<Text style={styles.kicker}>{t('report.kicker')}</Text>
 		<Text style={styles.title}>{context.template.name}</Text>
-		<Text style={styles.version}>Template version {context.template.version} • Submitted and locked</Text>
+		<Text style={styles.version}>{t('report.templateVersionSubmitted', { version: context.template.version })}</Text>
 		<View style={styles.summary}>
-			<Row label="Physical progress" value={`${context.form.physicalProgressPct ?? 0}%`} />
-			<Row label="Remarks" value={context.form.remarks || 'No remarks provided'} />
+			<Row label={t('report.physicalProgress')} value={`${context.form.physicalProgressPct ?? 0}%`} />
+			<Row label={t('report.remarks')} value={context.form.remarks || t('report.noRemarksProvided')} />
 		</View>
-		<Text style={styles.sectionTitle}>Sector checklist</Text>
-		<View style={styles.card}>{context.template.fields.map((field) => <Row key={field.id} label={field.label} value={formatValue(context.form?.responses[field.fieldKey])} />)}</View>
-		<Text style={styles.sectionTitle}>Progress evidence</Text>
-		{photos.length ? <View style={styles.photoGrid}>{photos.map((photo) => <View key={photo.id} style={styles.photoCard}><Image source={{ uri: photo.signedUrl }} style={styles.photo} /><Text style={styles.caption}>{photo.caption || 'Progress photo'}</Text></View>)}</View> : <Text style={styles.muted}>No photos were attached.</Text>}
-		<Text style={styles.sectionTitle}>Issue reports ({issues.length})</Text>
-		{issues.length ? issues.map((issue) => <View key={issue.id} style={styles.issueCard}><Row label={issue.issueType} value={`${issue.severity} • ${issue.status.replace('_', ' ')}`} /><Text style={styles.value}>{issue.description}</Text></View>) : <Text style={styles.muted}>No issues were reported.</Text>}
+		<Text style={styles.sectionTitle}>{t('report.sectorChecklist')}</Text>
+		<View style={styles.card}>{context.template.fields.map((field) => <Row key={field.id} label={field.label} value={formatValue(context.form?.responses[field.fieldKey], t)} />)}</View>
+		<Text style={styles.sectionTitle}>{t('report.progressEvidence')}</Text>
+		{photos.length ? <View style={styles.photoGrid}>{photos.map((photo) => <View key={photo.id} style={styles.photoCard}><Image source={{ uri: photo.signedUrl }} style={styles.photo} /><Text style={styles.caption}>{photo.caption || t('visitForm.progressPhoto')}</Text></View>)}</View> : <Text style={styles.muted}>{t('report.noPhotosAttached')}</Text>}
+		<Text style={styles.sectionTitle}>{t('report.issueReports', { count: issues.length })}</Text>
+		{issues.length ? issues.map((issue) => <View key={issue.id} style={styles.issueCard}><Row label={issue.issueType} value={`${issue.severity} • ${issue.status.replace('_', ' ')}`} /><Text style={styles.value}>{issue.description}</Text></View>) : <Text style={styles.muted}>{t('report.noIssuesReported')}</Text>}
 	</ScrollView>;
 }
 
-function formatValue(value: unknown) {
-	if (value === null || value === undefined || value === '') return 'Not provided';
+function formatValue(value: unknown, t: (key: string) => string) {
+	if (value === null || value === undefined || value === '') return t('report.notProvided');
 	if (Array.isArray(value)) return value.join(', ').replaceAll('_', ' ');
-	if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+	if (typeof value === 'boolean') return value ? t('report.yes') : t('report.no');
 	return String(value).replaceAll('_', ' ');
 }
 

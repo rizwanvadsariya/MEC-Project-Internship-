@@ -52,7 +52,7 @@ maybeDescribe('visit form fill routes', () => {
 		const visitId = (await db.query(`insert into site_visits (team_id, scheme_id, status) values ($1, $2, 'SCHEDULED') returning id`, [teamId, scheme.id])).rows[0].id;
 		const template = (await db.query('select id from form_templates where department_id = $1 and is_active = true order by version desc limit 1', [scheme.department_id])).rows[0];
 		if (!template) throw new Error('No active form template found — run `npm run seed:templates`');
-		fixture = { teamId, visitId, templateId: template.id };
+		fixture = { teamId, visitId, templateId: template.id, schemeId: scheme.id };
 	}, 30000);
 
 	afterAll(async () => {
@@ -61,6 +61,10 @@ maybeDescribe('visit form fill routes', () => {
 		await db.query('delete from site_visits where id = $1', [fixture.visitId]);
 		await db.query('delete from visit_team_members where team_id = $1', [fixture.teamId]);
 		await db.query('delete from visit_teams where id = $1', [fixture.teamId]);
+		// This suite's submit test writes a real schemes.physical_progress_pct
+		// rollup value (Step 23) as a side effect — reset it so it doesn't leak
+		// into another suite's "no schemes reported yet" analytics assertions.
+		await db.query('update schemes set physical_progress_pct = null where id = $1', [fixture.schemeId]);
 		await db.close();
 	});
 
@@ -133,6 +137,12 @@ maybeDescribe('visit form fill routes', () => {
 		expect(stored.status).toBe('SUBMITTED');
 		expect(Number(stored.physical_progress_pct)).toBe(40);
 		expect(stored.responses).toEqual(responses);
+
+		// Step 23's whole analytics feature depends on schemes.physical_progress_pct
+		// actually being written on submit — querying schemes directly (not the
+		// response body) proves the repo-layer rollup write actually landed.
+		const scheme = (await db.query('select physical_progress_pct from schemes where id = $1', [fixture.schemeId])).rows[0];
+		expect(Number(scheme.physical_progress_pct)).toBe(40);
 	});
 
 	test('after submission, the support-team member and division DG can still read the now-SUBMITTED form', async () => {

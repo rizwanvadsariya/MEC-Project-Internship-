@@ -128,6 +128,17 @@ maybeDescribe('GET /api/v1/site-visits, GET /api/v1/site-visits/:id', () => {
 		expect(ids).not.toContain(f.visitB);
 	});
 
+	test('list: isLeadMeo (phases.md Step 21\'s calendar hint) is true only for the MEO\'s own visit as lead, and always false for the RD', async () => {
+		const meoToken = await getAccessToken('MEO');
+		const meoRes = await request(app).get('/api/v1/site-visits').set('Authorization', `Bearer ${meoToken}`);
+		const meoVisitA1 = meoRes.body.data.find((v) => v.id === f.visitA1);
+		expect(meoVisitA1.isLeadMeo).toBe(true);
+
+		const rdToken = await getAccessToken('REGIONAL_DIRECTOR');
+		const rdRes = await request(app).get('/api/v1/site-visits').set('Authorization', `Bearer ${rdToken}`);
+		expect(rdRes.body.data.every((v) => v.isLeadMeo === false)).toBe(true);
+	});
+
 	test('SUPPORT_USER (no division) sees only the visit they are a team member of', async () => {
 		const token = await getAccessToken('SUPPORT_USER');
 		const res = await request(app).get('/api/v1/site-visits').set('Authorization', `Bearer ${token}`);
@@ -169,5 +180,107 @@ maybeDescribe('GET /api/v1/site-visits, GET /api/v1/site-visits/:id', () => {
 		const res = await request(app).get(`/api/v1/site-visits/${f.visitB}`).set('Authorization', `Bearer ${token}`);
 
 		expect(res.status).toBe(404);
+	});
+
+	// --- PATCH .../schedule and the calendar query filters (phases.md Step 21) ---
+
+	test('schedule: the in-division RD can plan a date for a visit they are not a team member of', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+		const res = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: '2026-03-10' });
+
+		expect(res.status).toBe(200);
+		expect(res.body.data.scheduledDate).toBe('2026-03-10');
+
+		const stored = (await db.query('select scheduled_date::text as scheduled_date from site_visits where id = $1', [f.visitA1])).rows[0];
+		expect(stored.scheduled_date).toBe('2026-03-10');
+	});
+
+	test('schedule: the visit\'s own lead MEO can also plan/replan it', async () => {
+		const token = await getAccessToken('MEO');
+		const res = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: '2026-03-15' });
+
+		expect(res.status).toBe(200);
+		expect(res.body.data.scheduledDate).toBe('2026-03-15');
+	});
+
+	test('schedule: a non-lead team member and the division DG are both rejected', async () => {
+		const supportToken = await getAccessToken('SUPPORT_USER');
+		const forbiddenSupport = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${supportToken}`)
+			.send({ scheduledDate: '2026-03-20' });
+		expect(forbiddenSupport.status).toBe(403);
+
+		const dgToken = await getAccessToken('DIRECTOR_GENERAL');
+		const forbiddenDg = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${dgToken}`)
+			.send({ scheduledDate: '2026-03-20' });
+		expect(forbiddenDg.status).toBe(403);
+	});
+
+	test('schedule: 404s on a visit the RD cannot see at all (a different division), and 400s on a malformed date', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+
+		const notVisible = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitB}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: '2026-03-20' });
+		expect(notVisible.status).toBe(404);
+
+		const badDate = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: '03/20/2026' });
+		expect(badDate.status).toBe(400);
+	});
+
+	test('schedule: clearing a date back to null is accepted', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+		const res = await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: null });
+
+		expect(res.status).toBe(200);
+		expect(res.body.data.scheduledDate).toBeNull();
+	});
+
+	test('calendar filters: scheduledFrom/scheduledTo narrows to visits planned in that window, unscheduled=true finds the ones still needing a date', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+
+		await request(app)
+			.patch(`/api/v1/site-visits/${f.visitA1}/schedule`)
+			.set('Authorization', `Bearer ${token}`)
+			.send({ scheduledDate: '2026-04-05' });
+
+		const inRange = await request(app)
+			.get(`/api/v1/site-visits?schemeId=${f.schemeA}&scheduledFrom=2026-04-01&scheduledTo=2026-04-30`)
+			.set('Authorization', `Bearer ${token}`);
+		expect(inRange.status).toBe(200);
+		const inRangeIds = inRange.body.data.map((v) => v.id);
+		expect(inRangeIds).toContain(f.visitA1);
+		expect(inRangeIds).not.toContain(f.visitA2); // visitA2 was never scheduled
+
+		const outOfRange = await request(app)
+			.get(`/api/v1/site-visits?schemeId=${f.schemeA}&scheduledFrom=2026-05-01&scheduledTo=2026-05-31`)
+			.set('Authorization', `Bearer ${token}`);
+		expect(outOfRange.body.data.map((v) => v.id)).not.toContain(f.visitA1);
+
+		const unscheduled = await request(app)
+			.get(`/api/v1/site-visits?schemeId=${f.schemeA}&unscheduled=true`)
+			.set('Authorization', `Bearer ${token}`);
+		expect(unscheduled.status).toBe(200);
+		const unscheduledIds = unscheduled.body.data.map((v) => v.id);
+		expect(unscheduledIds).toContain(f.visitA2);
+		expect(unscheduledIds).not.toContain(f.visitA1); // visitA1 now has a date
+
+		await db.query('update site_visits set scheduled_date = null where id = $1', [f.visitA1]);
 	});
 });
