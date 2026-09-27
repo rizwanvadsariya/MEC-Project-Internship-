@@ -10,6 +10,15 @@ jest.mock('../../../src/lib/storage', () => ({
 	remove: jest.fn(),
 	createSignedUrl: jest.fn(),
 }));
+// photo.service.js (unlike most other services) reads config directly, not
+// just through its repo — mock it the same way tests/unit/lib/pushSender.test.js
+// already does, so this test never touches a real backend/.env (it crashes
+// the whole `--runInBand` Jest process via config/index.js's fail-fast
+// process.exit(1) otherwise, which is exactly what broke backend-ci: no
+// .env/secrets are configured there).
+jest.mock('../../../src/config', () => ({
+	config: { STORAGE_BUCKET_VISIT_PHOTOS: 'visit-photos' },
+}));
 
 const photoRepo = require('../../../src/repositories/photo.repo');
 const storage = require('../../../src/lib/storage');
