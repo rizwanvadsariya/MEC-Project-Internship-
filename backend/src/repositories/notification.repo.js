@@ -77,6 +77,21 @@ async function findDivisionLeadership(divisionId) {
 	return result.rows.map((row) => row.id);
 }
 
+/**
+ * Step 25's overdue-escalation trigger targets the DG specifically, not the
+ * whole of divisionLeadership — the RD already knows (they own the issue and
+ * set the due date themselves); the DG is the oversight escalation path for
+ * something that slipped.
+ */
+async function findDivisionDirectorsGeneral(divisionId) {
+	if (!divisionId) return [];
+	const result = await db.query(
+		`select id from users where division_id = $1 and role = 'DIRECTOR_GENERAL' and is_active = true`,
+		[divisionId],
+	);
+	return result.rows.map((row) => row.id);
+}
+
 async function findSchemeBasics(schemeId) {
 	const result = await db.query('select uid, name from schemes where id = $1', [schemeId]);
 	return result.rows[0] || null;
@@ -124,6 +139,7 @@ module.exports = {
 	markRead,
 	countUnread,
 	findDivisionLeadership,
+	findDivisionDirectorsGeneral,
 	findSchemeBasics,
 	findVisitNotificationContext,
 };

@@ -12,7 +12,12 @@ export type IssueReport = {
 	severity: IssueSeverity;
 	description: string;
 	status: IssueStatus;
+	ownerId: string | null;
+	dueDate: string | null;
+	acknowledgedAt: string | null;
+	inProgressAt: string | null;
 	resolvedAt: string | null;
+	escalatedAt: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -21,6 +26,13 @@ export type IssueReportPayload = {
 	issueType: string;
 	severity: IssueSeverity;
 	description: string;
+};
+
+/** Step 24 — at least one field required; `null` clears ownerId/dueDate. */
+export type IssueLifecycleUpdate = {
+	status?: Exclude<IssueStatus, 'OPEN'>;
+	ownerId?: string | null;
+	dueDate?: string | null;
 };
 
 export function listIssues(visitId: string, token: string) {
@@ -33,4 +45,8 @@ export function fileIssue(visitId: string, payload: IssueReportPayload, token: s
 
 export function deleteIssue(visitId: string, issueId: string, token: string) {
 	return apiRequest<void>(`/site-visits/${visitId}/issues/${issueId}`, { method: 'DELETE', token });
+}
+
+export function updateIssueLifecycle(visitId: string, issueId: string, payload: IssueLifecycleUpdate, token: string) {
+	return apiRequest<IssueReport>(`/site-visits/${visitId}/issues/${issueId}`, { method: 'PATCH', body: payload, token });
 }

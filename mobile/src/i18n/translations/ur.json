@@ -363,6 +363,30 @@
     "yes": "جی ہاں",
     "no": "نہیں"
   },
+  "issueLifecycle": {
+    "status": {
+      "OPEN": "کھلا",
+      "ACKNOWLEDGED": "تسلیم شدہ",
+      "IN_PROGRESS": "جاری",
+      "RESOLVED": "حل شدہ"
+    },
+    "owner": "ذمہ دار",
+    "unassigned": "غیر تفویض شدہ",
+    "dueDate": "آخری تاریخ",
+    "noDueDate": "کوئی آخری تاریخ مقرر نہیں",
+    "advanceTo": "{{status}} نشان زد کریں",
+    "assignOwner": "ذمہ دار مقرر کریں",
+    "changeOwner": "ذمہ دار تبدیل کریں",
+    "unassignOwner": "ذمہ داری ہٹائیں",
+    "setDueDate": "آخری تاریخ مقرر کریں",
+    "changeDueDate": "آخری تاریخ تبدیل کریں",
+    "clearDueDate": "آخری تاریخ ہٹائیں",
+    "resolvedLocked": "یہ مسئلہ حل ہو چکا ہے اور اب تبدیل نہیں کیا جا سکتا۔",
+    "couldNotUpdate": "یہ مسئلہ اپ ڈیٹ نہیں ہو سکا۔",
+    "selectOwnerTitle": "ذمہ دار منتخب کریں",
+    "cancel": "منسوخ کریں",
+    "escalatedToDg": "ڈائریکٹر جنرل کو بھیج دیا گیا — میعاد ختم اور حل طلب۔"
+  },
   "comments": {
     "defaultTitle": "تبادلہ خیال",
     "noCommentsYet": "ابھی تک کوئی تبصرہ نہیں — نیچے بحث شروع کریں۔",
@@ -427,6 +451,9 @@
     "PROVISION_ROLE_DENIED": "آپ کو اس کردار کے ساتھ اکاؤنٹ بنانے کی اجازت نہیں ہے۔",
     "PROVISION_DIVISION_DENIED": "آپ صرف اپنے ڈویژن کے اندر اکاؤنٹس بنا سکتے ہیں۔",
     "VISIT_NOT_SCHEDULABLE": "اس وزٹ کو مزید طے نہیں کیا جا سکتا۔",
+    "ISSUE_INVALID_TRANSITION": "یہ مسئلہ اپنی موجودہ حالت سے اس حالت میں منتقل نہیں ہو سکتا۔",
+    "ISSUE_RESOLVED_LOCKED": "یہ مسئلہ حل ہو چکا ہے اور اب تبدیل نہیں کیا جا سکتا۔",
+    "INVALID_ISSUE_OWNER": "مسئلے کا ذمہ دار آپ کے ڈویژن کا فعال ایم ای او یا معاون صارف ہونا چاہیے۔",
     "generic": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔"
   }
 }

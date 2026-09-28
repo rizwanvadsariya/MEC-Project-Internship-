@@ -6,6 +6,7 @@
 'use strict';
 
 const dashboardRepo = require('../repositories/dashboard.repo');
+const notificationService = require('./notification.service');
 const ApiError = require('../lib/ApiError');
 
 const RECENT_LIMIT = 5;
@@ -83,6 +84,11 @@ async function getDivisionSummary(actor) {
 	]);
 
 	if (!division) throw ApiError.notFound('Division not found');
+
+	// Step 25 escalation rule #2 — fire-and-forget, never delays this response.
+	// Lazily checked here (both RD and DG hit this endpoint) since this
+	// project has no cron/queue infra; see notification.service's own comment.
+	notificationService.escalateOverdueIssues(actor.divisionId);
 
 	return {
 		division,

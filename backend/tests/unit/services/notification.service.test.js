@@ -15,6 +15,7 @@ jest.mock('../../../src/repositories/notification.repo', () => ({
 	markRead: jest.fn(),
 	countUnread: jest.fn(),
 	findDivisionLeadership: jest.fn(),
+	findDivisionDirectorsGeneral: jest.fn(),
 	findSchemeBasics: jest.fn(),
 	findVisitNotificationContext: jest.fn(),
 }));
@@ -25,7 +26,7 @@ jest.mock('../../../src/repositories/pushToken.repo', () => ({
 	findTokensForUsers: jest.fn(),
 }));
 jest.mock('../../../src/repositories/team.repo', () => ({ getById: jest.fn() }));
-jest.mock('../../../src/repositories/issue.repo', () => ({ list: jest.fn() }));
+jest.mock('../../../src/repositories/issue.repo', () => ({ list: jest.fn(), findOverdueUnescalated: jest.fn(), markEscalated: jest.fn() }));
 jest.mock('../../../src/lib/pushSender', () => ({ sendPushNotifications: jest.fn() }));
 jest.mock('../../../src/lib/backgroundTask', () => ({ runInBackground: jest.fn((fn) => fn()) }));
 
@@ -176,6 +177,96 @@ describe('notifyVisitCompleted', () => {
 
 		expect(notificationRepo.create).not.toHaveBeenCalled();
 		expect(issueRepo.list).not.toHaveBeenCalled();
+	});
+});
+
+describe('notifyIssueOwnerAssigned (Step 24)', () => {
+	test('notifies only the newly assigned owner', async () => {
+		notificationRepo.findVisitNotificationContext.mockResolvedValue({
+			schemeName: 'Water Scheme', createdBy: 'rd-1', teamMemberIds: ['meo-1', 'support-1'], divisionLeadershipIds: ['dg-1'],
+		});
+
+		notificationService.notifyIssueOwnerAssigned({ id: 'issue-1', siteVisitId: 'visit-1', issueType: 'Leak', ownerId: 'meo-2' });
+		await flush();
+
+		expect(notificationRepo.create).toHaveBeenCalledWith([
+			expect.objectContaining({ userId: 'meo-2', title: 'Issue assigned to you', relatedType: 'ISSUE_REPORT', relatedId: 'issue-1' }),
+		]);
+	});
+
+	test('falls back gracefully when the site visit context can no longer be resolved', async () => {
+		notificationRepo.findVisitNotificationContext.mockResolvedValue(null);
+
+		notificationService.notifyIssueOwnerAssigned({ id: 'issue-1', siteVisitId: 'visit-404', issueType: 'Leak', ownerId: 'meo-2' });
+		await flush();
+
+		expect(notificationRepo.create).toHaveBeenCalledWith([expect.objectContaining({ userId: 'meo-2' })]);
+	});
+});
+
+describe('notifyCriticalIssueFiled (Step 25 escalation rule #1)', () => {
+	test('notifies division leadership (RD+DG), not just the DG alone', async () => {
+		notificationRepo.findVisitNotificationContext.mockResolvedValue({
+			schemeName: 'Water Scheme', createdBy: 'rd-1', teamMemberIds: ['meo-1'], divisionLeadershipIds: ['rd-1', 'dg-1'],
+		});
+
+		notificationService.notifyCriticalIssueFiled({ id: 'issue-1', siteVisitId: 'visit-1', issueType: 'Structural failure' });
+		await flush();
+
+		expect(notificationRepo.create).toHaveBeenCalledWith([
+			expect.objectContaining({ userId: 'rd-1', title: 'CRITICAL issue reported', relatedType: 'ISSUE_REPORT', relatedId: 'issue-1' }),
+			expect.objectContaining({ userId: 'dg-1', title: 'CRITICAL issue reported' }),
+		]);
+	});
+
+	test('a site visit with no resolvable context is a silent no-op', async () => {
+		notificationRepo.findVisitNotificationContext.mockResolvedValue(null);
+
+		notificationService.notifyCriticalIssueFiled({ id: 'issue-1', siteVisitId: 'visit-404', issueType: 'Leak' });
+		await flush();
+
+		expect(notificationRepo.create).not.toHaveBeenCalled();
+	});
+});
+
+describe('escalateOverdueIssues (Step 25 escalation rule #2)', () => {
+	test('escalates every overdue unresolved issue to the DG and marks each escalated', async () => {
+		issueRepo.findOverdueUnescalated.mockResolvedValue([
+			{ id: 'issue-1', siteVisitId: 'visit-1', issueType: 'Drainage', status: 'ACKNOWLEDGED' },
+			{ id: 'issue-2', siteVisitId: 'visit-2', issueType: 'Delay', status: 'OPEN' },
+		]);
+		notificationRepo.findDivisionDirectorsGeneral.mockResolvedValue(['dg-1']);
+		notificationRepo.findVisitNotificationContext.mockResolvedValue({ schemeName: 'Water Scheme' });
+
+		notificationService.escalateOverdueIssues(1);
+		await flush();
+
+		expect(notificationRepo.create).toHaveBeenCalledTimes(2);
+		expect(notificationRepo.create).toHaveBeenNthCalledWith(1, [expect.objectContaining({ userId: 'dg-1', title: 'Issue overdue', relatedId: 'issue-1' })]);
+		expect(notificationRepo.create).toHaveBeenNthCalledWith(2, [expect.objectContaining({ userId: 'dg-1', title: 'Issue overdue', relatedId: 'issue-2' })]);
+		expect(issueRepo.markEscalated).toHaveBeenCalledWith('issue-1');
+		expect(issueRepo.markEscalated).toHaveBeenCalledWith('issue-2');
+	});
+
+	test('no overdue issues means no lookup for a DG and no notification at all', async () => {
+		issueRepo.findOverdueUnescalated.mockResolvedValue([]);
+
+		notificationService.escalateOverdueIssues(1);
+		await flush();
+
+		expect(notificationRepo.findDivisionDirectorsGeneral).not.toHaveBeenCalled();
+		expect(notificationRepo.create).not.toHaveBeenCalled();
+	});
+
+	test('still marks an issue escalated even when the division has no DG to notify', async () => {
+		issueRepo.findOverdueUnescalated.mockResolvedValue([{ id: 'issue-1', siteVisitId: 'visit-1', issueType: 'Drainage', status: 'OPEN' }]);
+		notificationRepo.findDivisionDirectorsGeneral.mockResolvedValue([]);
+
+		notificationService.escalateOverdueIssues(1);
+		await flush();
+
+		expect(notificationRepo.create).not.toHaveBeenCalled();
+		expect(issueRepo.markEscalated).toHaveBeenCalledWith('issue-1');
 	});
 });
 
