@@ -13,7 +13,7 @@ type AuthContextValue = {
   isLoading: boolean;
   user: AuthUser | null;
   accessToken: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, onSuccess?: () => Promise<void>) => Promise<void>;
   signOut: () => Promise<void>;
   /** Swap in a new session (e.g. the aal2 session MFA verify returns) without
    *  a full re-login. */
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     })();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, onSuccess?: () => Promise<void>) => {
     const { session, user: authUser } = await apiLogin(email, password);
     const profile = await fetchMe(session.access_token);
     await saveSession({
@@ -55,6 +55,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       userId: authUser.id,
       email: authUser.email,
     });
+    
+    if (onSuccess) {
+      await onSuccess();
+    }
+    
     setAccessToken(session.access_token);
     setUser(profile);
     void registerForPushNotifications(session.access_token);
