@@ -15,7 +15,7 @@ export function listEligibleMembers(token: string) {
 	return apiRequest<EligibleMember[]>('/teams/eligible-members', { token });
 }
 
-export function createTeam(input: { schemeId: number; leadMeoId: string; supportingMemberIds: string[] }, token: string) {
+export function createTeam(input: { schemeId: number; leadMeoId: string; supportingMemberIds: string[]; includeSelf?: boolean }, token: string) {
 	return apiRequest<Team>('/teams', { method: 'POST', body: input, token });
 }
 

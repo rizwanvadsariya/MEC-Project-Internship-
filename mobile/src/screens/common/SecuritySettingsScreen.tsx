@@ -7,14 +7,17 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
-import { ApiClientError } from '../../api/client';
 import * as mfaApi from '../../api/mfa.api';
+import { ApiClientError } from '../../api/client';
+import { translateApiError } from '../../i18n/apiErrors';
 import { colors, radius, spacing, typography } from '../../theme';
 
 type Stage = 'loading' | 'off' | 'enrolling' | 'on';
 
 export default function SecuritySettingsScreen() {
+  const { t } = useTranslation();
   const { accessToken, updateSession } = useAuth();
   const [stage, setStage] = useState<Stage>('loading');
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -52,7 +55,7 @@ export default function SecuritySettingsScreen() {
       setUri(factor.totp.uri);
       setStage('enrolling');
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not start enrollment.');
+      setError(e instanceof ApiClientError ? translateApiError(t, e, t('security.couldNotStartEnrollment')) : t('security.couldNotStartEnrollment'));
     } finally {
       setBusy(false);
     }
@@ -62,7 +65,7 @@ export default function SecuritySettingsScreen() {
     if (!accessToken || !factorId) return;
     setError(null);
     if (!/^\d{6}$/.test(code.trim())) {
-      setError('Enter the 6-digit code from your authenticator app.');
+      setError(t('security.enterValidCode'));
       return;
     }
     setBusy(true);
@@ -72,9 +75,9 @@ export default function SecuritySettingsScreen() {
       await updateSession(session);
       setCode('');
       setStage('on');
-      Alert.alert('Two-factor authentication enabled');
+      Alert.alert(t('security.mfaEnabledAlert'));
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Verification failed.');
+      setError(e instanceof ApiClientError ? translateApiError(t, e, t('security.verificationFailed')) : t('security.verificationFailed'));
     } finally {
       setBusy(false);
     }
@@ -88,7 +91,7 @@ export default function SecuritySettingsScreen() {
       for (const f of all) await mfaApi.unenroll(accessToken, f.id);
       setStage('off');
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not remove two-factor authentication.');
+      setError(e instanceof ApiClientError ? translateApiError(t, e, t('security.couldNotRemove')) : t('security.couldNotRemove'));
     } finally {
       setBusy(false);
     }
@@ -104,49 +107,45 @@ export default function SecuritySettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Text style={styles.title}>Two-factor authentication</Text>
+      <Text style={styles.title}>{t('security.title')}</Text>
 
       {stage === 'on' && (
         <>
-          <Text style={styles.status}>✅ Enabled</Text>
+          <Text style={styles.status}>{t('security.enabled')}</Text>
           <Pressable style={[styles.button, styles.dangerButton]} onPress={removeMfa} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Remove two-factor authentication</Text>}
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.removeButton')}</Text>}
           </Pressable>
         </>
       )}
 
       {stage === 'off' && (
         <>
-          <Text style={styles.status}>❌ Not enabled</Text>
+          <Text style={styles.status}>{t('security.notEnabled')}</Text>
           <Pressable style={styles.button} onPress={startEnroll} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Enable two-factor authentication</Text>}
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.enableButton')}</Text>}
           </Pressable>
         </>
       )}
 
       {stage === 'enrolling' && secret && (
         <View>
-          <Text style={styles.instructions}>
-            1. Open your authenticator app (Google Authenticator, Authy, etc.){'\n'}
-            2. Choose &ldquo;Enter a setup key&rdquo; (manual entry){'\n'}
-            3. Account: your email · Key: below · Type: Time-based
-          </Text>
+          <Text style={styles.instructions}>{t('security.instructions')}</Text>
           <View style={styles.secretBox}>
             <Text selectable style={styles.secretText}>{secret}</Text>
           </View>
           {uri ? <Text selectable style={styles.uriText}>{uri}</Text> : null}
 
-          <Text style={styles.label}>Enter the 6-digit code it shows:</Text>
+          <Text style={styles.label}>{t('security.enterCodeLabel')}</Text>
           <TextInput
             style={styles.codeInput}
             value={code}
             onChangeText={setCode}
             keyboardType="number-pad"
             maxLength={6}
-            placeholder="123456"
+            placeholder={t('security.codePlaceholder')}
           />
           <Pressable style={styles.button} onPress={confirmCode} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Verify & enable</Text>}
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.verifyButton')}</Text>}
           </Pressable>
         </View>
       )}

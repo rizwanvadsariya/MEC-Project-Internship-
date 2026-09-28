@@ -15,6 +15,7 @@ maybeDescribe('issue report routes', () => {
 	let meoToken;
 	let supportToken;
 	let dgToken;
+	let rdToken;
 	let fixture;
 
 	beforeAll(async () => {
@@ -26,9 +27,10 @@ maybeDescribe('issue report routes', () => {
 		meoToken = await getAccessToken('MEO');
 		supportToken = await getAccessToken('SUPPORT_USER');
 		dgToken = await getAccessToken('DIRECTOR_GENERAL');
+		rdToken = await getAccessToken('REGIONAL_DIRECTOR');
 		const meoId = getUserId('MEO');
 		const supportId = getUserId('SUPPORT_USER');
-		const rdId = (await db.query('select id from users where email = $1', ['rd.test@mec.local'])).rows[0].id;
+		const rdId = getUserId('REGIONAL_DIRECTOR');
 		const divisionId = (await db.query('select division_id from users where id = $1', [meoId])).rows[0].division_id;
 		const scheme = (await db.query(
 			`select s.id from schemes s join scheme_districts sd on sd.scheme_id = s.id
@@ -170,5 +172,141 @@ maybeDescribe('issue report routes', () => {
 		expect(asDg.body.data.map((issue) => issue.id)).toContain(reportIssueId);
 
 		await db.query('delete from visit_forms where site_visit_id = $1', [fixture.visitId]);
+	});
+
+	describe('issue lifecycle (Step 24)', () => {
+		let lifecycleIssueId;
+
+		beforeAll(async () => {
+			const filed = await request(app)
+				.post(`/api/v1/site-visits/${fixture.visitId}/issues`)
+				.set('Authorization', `Bearer ${meoToken}`)
+				.send({ issueType: 'Drainage blockage', severity: 'MEDIUM', description: 'Standing water near the main gate.' });
+			expect(filed.status).toBe(201);
+			lifecycleIssueId = filed.body.data.id;
+		});
+
+		afterAll(async () => {
+			if (lifecycleIssueId) await db.query('delete from issue_reports where id = $1', [lifecycleIssueId]);
+		});
+
+		test('the lead MEO, a support member, and the DG are all forbidden — only the division RD may update lifecycle', async () => {
+			const asMeo = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${meoToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(asMeo.status).toBe(403);
+
+			const asSupport = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${supportToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(asSupport.status).toBe(403);
+
+			const asDg = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${dgToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(asDg.status).toBe(403);
+		});
+
+		test('rejects an empty body and a malformed due date', async () => {
+			const empty = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({});
+			expect(empty.status).toBe(400);
+
+			const badDate = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ dueDate: '12/01/2026' });
+			expect(badDate.status).toBe(400);
+		});
+
+		test('rejects a wrong-role owner (DG) before touching the row', async () => {
+			const dgId = getUserId('DIRECTOR_GENERAL');
+			const res = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ ownerId: dgId });
+			expect(res.status).toBe(400);
+			expect(res.body.error.code).toBe('INVALID_ISSUE_OWNER');
+		});
+
+		test('the RD assigns an in-division MEO as owner and sets a due date in one call', async () => {
+			const meoId = getUserId('MEO');
+			const res = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ ownerId: meoId, dueDate: '2026-12-15' });
+			expect(res.status).toBe(200);
+			expect(res.body.data).toMatchObject({ ownerId: meoId, dueDate: '2026-12-15', status: 'OPEN' });
+
+			const stored = (await db.query('select owner_id, due_date::text as due_date from issue_reports where id = $1', [lifecycleIssueId])).rows[0];
+			expect(stored).toMatchObject({ owner_id: meoId, due_date: '2026-12-15' });
+		});
+
+		test('clearing the due date and unassigning the owner both work via null', async () => {
+			const res = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ ownerId: null, dueDate: null });
+			expect(res.status).toBe(200);
+			expect(res.body.data).toMatchObject({ ownerId: null, dueDate: null });
+		});
+
+		test('advances OPEN -> ACKNOWLEDGED, stamping acknowledged_at, and a same/backward move is rejected', async () => {
+			const advanced = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(advanced.status).toBe(200);
+			expect(advanced.body.data.status).toBe('ACKNOWLEDGED');
+
+			const stored = (await db.query('select acknowledged_at from issue_reports where id = $1', [lifecycleIssueId])).rows[0];
+			expect(stored.acknowledged_at).not.toBeNull();
+
+			const repeat = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(repeat.status).toBe(409);
+			expect(repeat.body.error.code).toBe('ISSUE_INVALID_TRANSITION');
+		});
+
+		test('skips straight to RESOLVED, stamping resolved_at, and locks the issue against any further change', async () => {
+			const resolved = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ status: 'RESOLVED' });
+			expect(resolved.status).toBe(200);
+			expect(resolved.body.data.status).toBe('RESOLVED');
+
+			const stored = (await db.query('select resolved_at, in_progress_at from issue_reports where id = $1', [lifecycleIssueId])).rows[0];
+			expect(stored.resolved_at).not.toBeNull();
+			expect(stored.in_progress_at).toBeNull(); // IN_PROGRESS was skipped entirely, never stamped
+
+			const lockedUpdate = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ dueDate: '2027-01-01' });
+			expect(lockedUpdate.status).toBe(409);
+			expect(lockedUpdate.body.error.code).toBe('ISSUE_RESOLVED_LOCKED');
+		});
+
+		test('404s for a nonexistent issue id and a nonexistent site visit id', async () => {
+			const fakeIssue = await request(app)
+				.patch(`/api/v1/site-visits/${fixture.visitId}/issues/00000000-0000-0000-0000-000000000000`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(fakeIssue.status).toBe(404);
+
+			const fakeVisit = await request(app)
+				.patch(`/api/v1/site-visits/00000000-0000-0000-0000-000000000000/issues/${lifecycleIssueId}`)
+				.set('Authorization', `Bearer ${rdToken}`)
+				.send({ status: 'ACKNOWLEDGED' });
+			expect(fakeVisit.status).toBe(404);
+		});
 	});
 });

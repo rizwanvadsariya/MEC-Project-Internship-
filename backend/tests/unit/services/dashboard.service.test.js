@@ -9,6 +9,7 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 	countTeamsByStatus: jest.fn(),
 	countVisitsByStatus: jest.fn(),
 	countIssuesByStatusAndSeverity: jest.fn(),
+	countProgressByDepartment: jest.fn(),
 	listRecentVisits: jest.fn(),
 	listRecentOpenIssues: jest.fn(),
 	countVisitsByStatusForMember: jest.fn(),
@@ -19,8 +20,15 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 	listRecentVisitsForMember: jest.fn(),
 	listRecentVisibleIssuesForMember: jest.fn(),
 }));
+// Step 25: getDivisionSummary fires the overdue-escalation trigger — mocked
+// here so this stays a pure unit test of dashboard.service's own shaping
+// logic (no real repos/db.config touched), same as every other service test
+// in this suite. notification.service's own trigger logic is covered by
+// tests/unit/services/notification.service.test.js.
+jest.mock('../../../src/services/notification.service', () => ({ escalateOverdueIssues: jest.fn() }));
 
 const dashboardRepo = require('../../../src/repositories/dashboard.repo');
+const notificationService = require('../../../src/services/notification.service');
 const dashboardService = require('../../../src/services/dashboard.service');
 const ApiError = require('../../../src/lib/ApiError');
 
@@ -31,6 +39,7 @@ function stubDefaults() {
 	dashboardRepo.countTeamsByStatus.mockResolvedValue([]);
 	dashboardRepo.countVisitsByStatus.mockResolvedValue([]);
 	dashboardRepo.countIssuesByStatusAndSeverity.mockResolvedValue([]);
+	dashboardRepo.countProgressByDepartment.mockResolvedValue([]);
 	dashboardRepo.listRecentVisits.mockResolvedValue([]);
 	dashboardRepo.listRecentOpenIssues.mockResolvedValue([]);
 }
@@ -46,8 +55,70 @@ test('getDivisionSummary queries every rollup scoped by the actor\'s division', 
 	expect(dashboardRepo.countTeamsByStatus).toHaveBeenCalledWith(1);
 	expect(dashboardRepo.countVisitsByStatus).toHaveBeenCalledWith(1);
 	expect(dashboardRepo.countIssuesByStatusAndSeverity).toHaveBeenCalledWith(1);
+	expect(dashboardRepo.countProgressByDepartment).toHaveBeenCalledWith(1);
 	expect(dashboardRepo.listRecentVisits).toHaveBeenCalledWith(1, 5);
 	expect(dashboardRepo.listRecentOpenIssues).toHaveBeenCalledWith(1, 5);
+});
+
+describe('progressByDepartment / overallProgress (Step 23 analytics)', () => {
+	test('passes the per-department rows straight through as progressByDepartment', async () => {
+		stubDefaults();
+		const rows = [
+			{ departmentId: 1, departmentName: 'Health', schemesTotal: 10, schemesReported: 4, avgProgressPct: 50 },
+			{ departmentId: 2, departmentName: 'Education', schemesTotal: 5, schemesReported: 0, avgProgressPct: null },
+		];
+		dashboardRepo.countProgressByDepartment.mockResolvedValue(rows);
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		expect(result.progressByDepartment).toEqual(rows);
+	});
+
+	test('a department with zero reported schemes shows avgProgressPct: null, never 0 or NaN', async () => {
+		stubDefaults();
+		dashboardRepo.countProgressByDepartment.mockResolvedValue([
+			{ departmentId: 1, departmentName: 'Health', schemesTotal: 3, schemesReported: 0, avgProgressPct: null },
+		]);
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		expect(result.progressByDepartment[0].avgProgressPct).toBeNull();
+	});
+
+	test('overallProgress is a weighted average by schemesReported, not a naive average-of-averages', async () => {
+		stubDefaults();
+		dashboardRepo.countProgressByDepartment.mockResolvedValue([
+			{ departmentId: 1, departmentName: 'Health', schemesTotal: 10, schemesReported: 8, avgProgressPct: 90 },
+			{ departmentId: 2, departmentName: 'Education', schemesTotal: 5, schemesReported: 2, avgProgressPct: 10 },
+		]);
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		// naive average-of-averages would be (90+10)/2 = 50; weighted by
+		// schemesReported (8 vs 2) is (90*8 + 10*2) / 10 = 74.
+		expect(result.overallProgress).toEqual({ avgProgressPct: 74, schemesReported: 10, schemesTotal: 15 });
+	});
+
+	test('overallProgress.avgProgressPct is null when no scheme in the division has been reported on yet', async () => {
+		stubDefaults();
+		dashboardRepo.countProgressByDepartment.mockResolvedValue([
+			{ departmentId: 1, departmentName: 'Health', schemesTotal: 3, schemesReported: 0, avgProgressPct: null },
+			{ departmentId: 2, departmentName: 'Education', schemesTotal: 2, schemesReported: 0, avgProgressPct: null },
+		]);
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		expect(result.overallProgress).toEqual({ avgProgressPct: null, schemesReported: 0, schemesTotal: 5 });
+	});
+
+	test('overallProgress on a division with no schemes at all is all zeros/null', async () => {
+		stubDefaults();
+		dashboardRepo.countProgressByDepartment.mockResolvedValue([]);
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		expect(result.overallProgress).toEqual({ avgProgressPct: null, schemesReported: 0, schemesTotal: 0 });
+	});
 });
 
 test('teams/visits are zero-filled across every known status, not just the ones with rows', async () => {
@@ -109,6 +180,26 @@ test('throws 404 if the division row itself cannot be found', async () => {
 
 	await expect(dashboardService.getDivisionSummary(actor)).rejects.toMatchObject({ statusCode: 404 });
 	await expect(dashboardService.getDivisionSummary(actor)).rejects.toBeInstanceOf(ApiError);
+});
+
+describe('overdue-escalation trigger (Step 25)', () => {
+	test('fires escalateOverdueIssues for the actor\'s division on a successful load', async () => {
+		stubDefaults();
+
+		await dashboardService.getDivisionSummary(actor);
+
+		expect(notificationService.escalateOverdueIssues).toHaveBeenCalledWith(1);
+		expect(notificationService.escalateOverdueIssues).toHaveBeenCalledTimes(1);
+	});
+
+	test('never fires when the division cannot be found', async () => {
+		stubDefaults();
+		dashboardRepo.findDivision.mockResolvedValue(null);
+
+		await expect(dashboardService.getDivisionSummary(actor)).rejects.toMatchObject({ statusCode: 404 });
+
+		expect(notificationService.escalateOverdueIssues).not.toHaveBeenCalled();
+	});
 });
 
 describe('getMemberSummary (MEO/Support, team-membership scoped)', () => {

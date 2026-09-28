@@ -3,11 +3,12 @@
  * secure storage on launch. This is the single source of truth RootNavigator
  * branches on (auth state -> role).
  */
-import React, { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { login as apiLogin, fetchMe, type AuthUser } from '../api/auth.api';
 import { ApiClientError } from '../api/client';
 import { saveSession, loadSession, clearSession } from './secureStorage';
 import { registerForPushNotifications } from '../notifications/registerForPushNotifications';
+import { startAutoSync } from '../offline/syncManager';
 
 type AuthContextValue = {
   isLoading: boolean;
@@ -26,6 +27,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const accessTokenRef = useRef<string | null>(null);
+  useEffect(() => { accessTokenRef.current = accessToken; }, [accessToken]);
+
+  // Started once for the app's lifetime — a NetInfo listener outlives any
+  // single render, so it reads the token through a ref, never a closure.
+  useEffect(() => startAutoSync(() => accessTokenRef.current), []);
 
   // On launch: if a session was saved, confirm it's still valid by fetching
   // the profile; drop it silently if not (expired / deactivated / revoked).

@@ -1,0 +1,459 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "selectDate": "Select date",
+    "enterResponse": "Enter response",
+    "notProvided": "Not provided",
+    "notSpecified": "Not specified",
+    "unspecified": "Unspecified",
+    "search": "Search",
+    "clearFilters": "Clear filters",
+    "allOf": "All {{label}}",
+    "division": "Division {{id}}",
+    "provinceWideAccess": "Province-wide access",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "navigation": {
+    "regionalDirector": "Regional Director",
+    "directorGeneral": "Director General",
+    "leadMeo": "Lead MEO",
+    "supportUser": "Support User",
+    "notifications": "Notifications",
+    "security": "Security",
+    "schemeBrowser": "Scheme browser",
+    "assembleTeam": "Assemble team",
+    "siteVisits": "Site visits",
+    "siteVisit": "Site visit",
+    "visitCalendar": "Visit calendar",
+    "visitForm": "Visit form",
+    "submittedReport": "Submitted report",
+    "discussion": "Discussion",
+    "approvalQueue": "Approval queue",
+    "language": "Language",
+    "analytics": "Analytics",
+    "unknownRole": "Unknown role: {{role}}"
+  },
+  "auth": {
+    "brandTitle": "Smart Provincial M&E",
+    "brandSubtitle": "Sindh Secretariat — Scheme Monitoring",
+    "signInTitle": "Sign in",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "emailPlaceholder": "you@mec.local",
+    "logIn": "Log in",
+    "loggingIn": "Logging in…",
+    "enterEmailAndPassword": "Enter your email and password.",
+    "apiHint": "API: {{url}}"
+  },
+  "roleHome": {
+    "welcomeBack": "Welcome back,",
+    "eyebrow": {
+      "rd": "Division workspace",
+      "dg": "Division oversight",
+      "meo": "Fieldwork workspace",
+      "support": "Read-only workspace"
+    },
+    "title": {
+      "rd": "Your monitoring overview",
+      "dg": "Your approval overview",
+      "meo": "Your visit overview",
+      "support": "Monitoring at a glance"
+    },
+    "description": {
+      "rd": "Assemble teams and keep field visits moving across your division.",
+      "dg": "Review proposed teams and track delivery across your division.",
+      "meo": "See assigned work and keep field reports up to date.",
+      "support": "Follow scheme progress and visit activity without changing records."
+    },
+    "metrics": {
+      "activeTeams": "Active teams",
+      "awaitingApproval": "Awaiting approval",
+      "upcomingVisits": "Upcoming visits",
+      "pendingApprovals": "Pending approvals",
+      "activeVisits": "Active visits",
+      "openIssues": "Open issues",
+      "assignedVisits": "Assigned visits",
+      "formsDue": "Forms due",
+      "issuesReported": "Issues reported",
+      "schemesMonitored": "Schemes monitored",
+      "recentUpdates": "Recent updates"
+    },
+    "empty": {
+      "rd": {
+        "titleActive": "Division activity in progress",
+        "titleNone": "No monitoring activity yet",
+        "messageActive_one": "{{count}} team tracked across {{division}}.",
+        "messageActive_other": "{{count}} teams tracked across {{division}}.",
+        "messageNone": "Browse a scheme to create your first field monitoring team."
+      },
+      "dg": {
+        "titleActive": "Teams awaiting your decision",
+        "titleNone": "Approval queue is clear",
+        "messageActive_one": "{{count}} team in {{division}} needs a decision.",
+        "messageActive_other": "{{count}} teams in {{division}} need a decision.",
+        "messageNone": "New team proposals will appear here when an RD submits them."
+      },
+      "meo": {
+        "titleActive": "Fieldwork in progress",
+        "titleNone": "No visits assigned",
+        "messageActive_one": "{{visitCount}} visit assigned to you, {{formCount}} form still due.",
+        "messageActive_other": "{{visitCount}} visits assigned to you, {{formCount}} forms still due.",
+        "messageNone": "Approved team assignments will appear here when you are added to a visit."
+      },
+      "support": {
+        "titleActive": "Monitoring in progress",
+        "titleNone": "Nothing to review yet",
+        "messageActive_one": "{{count}} scheme being tracked through your team assignments.",
+        "messageActive_other": "{{count}} schemes being tracked through your team assignments.",
+        "messageNone": "Scheme and visit updates will appear here as monitoring work begins."
+      }
+    },
+    "nextWorkspace": {
+      "schemes": "Next workspace: Scheme browser",
+      "approvalQueue": "Next workspace: Approval queue",
+      "assignedVisits": "Next workspace: Assigned visits"
+    },
+    "primaryAction": {
+      "rd": "Browse schemes & assign a new team",
+      "dg": "View pending team approvals"
+    },
+    "activityTitle": {
+      "division": "Recent division activity",
+      "visits": "Recent activity on your visits"
+    },
+    "profile": {
+      "signedInAs": "Signed in as"
+    },
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "Regional Director",
+      "DIRECTOR_GENERAL": "Director General",
+      "MEO": "Lead MEO",
+      "SUPPORT_USER": "Support User"
+    },
+    "buttons": {
+      "siteVisits": "Site visits",
+      "visitCalendar": "Visit calendar",
+      "notifications": "Notifications",
+      "security": "Security settings",
+      "language": "Language",
+      "analytics": "Analytics",
+      "logOut": "Log out"
+    },
+    "errorLoadActivity": "Could not load your activity."
+  },
+  "schemes": {
+    "title": "Scheme browser",
+    "subtitle": "Read-only ADP scheme register",
+    "searchPlaceholder": "Search scheme name or UID",
+    "filters": {
+      "division": "Division",
+      "district": "District",
+      "department": "Department",
+      "subSector": "Sub-sector",
+      "status": "Status"
+    },
+    "noSchemesMatch": "No schemes match these filters.",
+    "couldNotLoad": "Could not load schemes.",
+    "couldNotLoadFilters": "Could not load filter options.",
+    "districtNotSpecified": "District not specified",
+    "physicalProgress": "Physical {{pct}}%",
+    "financialProgress": "Financial {{pct}}%",
+    "assembleTeam": "Assemble team",
+    "discussion": "Discussion",
+    "discussionTitle": "{{schemeName}} — Discussion"
+  },
+  "teams": {
+    "eyebrow": "Team assembly",
+    "title": "Build a monitoring team",
+    "subtitle": "Scheme #{{schemeId}} · Select one lead MEO and any supporting MEOs or support staff.",
+    "couldNotLoadMembers": "Could not load eligible MEOs.",
+    "noEligibleMembers": "No active MEOs or support users are available in your division.",
+    "leadMeo": "Lead MEO",
+    "support": "Support",
+    "meoLabel": "MEO",
+    "supportUserLabel": "Support user",
+    "addMyself": "Add myself to this team",
+    "addMyselfHint": "Optional — accompany the team as an observer alongside the MEOs.",
+    "submitForApproval": "Submit for DG approval",
+    "submittedMessage": "Team submitted for DG approval.",
+    "couldNotSubmit": "Could not submit the team.",
+    "selectLeadMeoFirst": "Select a lead MEO before submitting."
+  },
+  "approvals": {
+    "title": "Approval queue",
+    "subtitle": "Review proposed monitoring teams in submission order.",
+    "noTeamsWaiting": "No teams are waiting for approval.",
+    "couldNotLoad": "Could not load approval queue.",
+    "submittedBy": "Submitted by {{name}} · Version {{version}}",
+    "submittedAt": "Submitted {{date}}",
+    "pendingCountInMonth_one": "{{count}} pending request",
+    "pendingCountInMonth_other": "{{count}} pending requests",
+    "reviewProposal": "Review proposal",
+    "reviewTeam": "Review team",
+    "remarksPlaceholder": "Remarks, required for rejection",
+    "reject": "Reject",
+    "approve": "Approve",
+    "close": "Close",
+    "remarksRequiredForRejection": "Add remarks before rejecting a team.",
+    "couldNotDecide": "Could not record the decision."
+  },
+  "siteVisits": {
+    "status": {
+      "SCHEDULED": "Scheduled",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "list": {
+      "title": "Site visits",
+      "subtitle": "Visits scheduled once a team is approved.",
+      "noVisitsYet": "No site visits yet.",
+      "couldNotLoad": "Could not load site visits.",
+      "couldNotLoadMore": "Could not load more site visits.",
+      "scheduledOn": "Scheduled {{date}}",
+      "notYetScheduled": "Not yet scheduled"
+    },
+    "detail": {
+      "status": "Status",
+      "scheduled": "Scheduled",
+      "tapToSetDate": "Tap to set a date",
+      "started": "Started",
+      "completed": "Completed",
+      "clearScheduledDate": "Clear scheduled date",
+      "notYetScheduled": "Not yet scheduled",
+      "couldNotLoadVisit": "Could not load this site visit.",
+      "couldNotUpdateDate": "Could not update the scheduled date.",
+      "fillVisitForm": "Fill visit form",
+      "viewVisitForm": "View visit form",
+      "discussion": "Discussion",
+      "discussionTitle": "{{schemeName}} — Discussion",
+      "team": "Team",
+      "viewOnlyNote": "You have view-only access to this visit's form, photos, and any reported issue."
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "couldNotLoad": "Could not load analytics.",
+    "overallProgress": "Overall division progress",
+    "progressByDepartment": "Progress by department",
+    "statusBreakdown": "Status breakdown",
+    "schemesReportedContext": "{{reported}} of {{total}} schemes reported",
+    "notYetReported": "Not yet reported",
+    "noDepartments": "No departments with schemes in this division yet.",
+    "teams": "Teams",
+    "visits": "Visits",
+    "issues": "Issues",
+    "issuesBySeverity": "Issues by severity",
+    "teamStatus": {
+      "DRAFT": "Draft",
+      "PENDING_APPROVAL": "Pending approval",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "issueStatus": {
+      "OPEN": "Open",
+      "ACKNOWLEDGED": "Acknowledged",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved"
+    },
+    "issueSeverity": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
+    }
+  },
+  "dateTime": {
+    "justNow": "Just now",
+    "minutesAgo_one": "{{count}} minute ago",
+    "minutesAgo_other": "{{count}} minutes ago",
+    "hoursAgo_one": "{{count}} hour ago",
+    "hoursAgo_other": "{{count}} hours ago",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "weeksAgo_one": "{{count}} week ago",
+    "weeksAgo_other": "{{count}} weeks ago",
+    "monthsAgo_one": "{{count}} month ago",
+    "monthsAgo_other": "{{count}} months ago",
+    "yearsAgo_one": "{{count}} year ago",
+    "yearsAgo_other": "{{count}} years ago"
+  },
+  "calendar": {
+    "title": "Visit calendar",
+    "subtitle": "Next {{days}} days — tap a visit to set or change its date",
+    "needsDateSection": "Needs a date",
+    "noApprovedVisits": "No approved visits to plan right now.",
+    "couldNotLoad": "Could not load the visit calendar.",
+    "couldNotSaveDate": "Could not save that date.",
+    "setDate": "Set date",
+    "change": "Change"
+  },
+  "visitForm": {
+    "templateVersion": "Template version {{version}}",
+    "offlineBanner": {
+      "pending_one": "{{count}} change saved on this device, waiting to sync.",
+      "pending_other": "{{count}} changes saved on this device, waiting to sync.",
+      "syncNow": "Sync now",
+      "syncing": "Syncing…"
+    },
+    "submittedLocked": "SUBMITTED AND LOCKED: this report cannot be edited.",
+    "oneTimeSubmission": {
+      "title": "ONE-TIME SUBMISSION",
+      "text": "Fill in the progress, checklist, photos, and any issue found carefully. You can submit this visit report only once. After submission, everything is permanently locked."
+    },
+    "physicalProgressLabel": "Physical progress (%) *",
+    "physicalProgressPlaceholder": "0 - 100",
+    "remarksLabel": "Remarks",
+    "remarksPlaceholder": "Describe what you observed",
+    "sectorChecklist": "Sector checklist",
+    "progressPhotos": "Progress photos",
+    "photoHint": "Capture clear evidence before submitting the report. You can preview or remove each photo before final submission.",
+    "captionPlaceholder": "Photo caption (optional)",
+    "capturePhoto": "Capture progress photo",
+    "capturingLocation": "Capturing location…",
+    "reviewPhoto": "Review photo",
+    "progressPhoto": "Progress photo",
+    "anyIssuesFound": "Any issues found?",
+    "removeIssue": "Remove issue",
+    "issueTypeLabel": "Issue type *",
+    "issueTypePlaceholder": "e.g. Construction defect",
+    "severityLabel": "Severity *",
+    "descriptionLabel": "Description *",
+    "descriptionPlaceholder": "Describe the issue in detail",
+    "noIssueReported": "No issue was reported.",
+    "previewSubmittedReport": "Preview submitted report",
+    "saveDraft": "Save draft",
+    "saving": "Saving...",
+    "submitForm": "Submit form",
+    "submitting": "Submitting...",
+    "couldNotLoadForm": "Could not load the visit form.",
+    "progressMustBeNumber": "Physical progress must be a number from 0 to 100.",
+    "issueRequiredFields": "Issue type and description are required when reporting an issue.",
+    "offlineIssueBlocked": "You are offline — issue reports need a connection. Save again once you are back online.",
+    "offlineSubmitSaved": "Offline — submission saved on this device and will sync automatically once you are back online.",
+    "offlineDraftSaved": "Offline — draft saved on this device and will sync automatically once you are back online.",
+    "formSubmitted": "Form submitted successfully.",
+    "draftSaved": "Draft saved.",
+    "couldNotSaveForm": "Could not save the visit form.",
+    "couldNotRemoveIssue": "Could not remove the reported issue.",
+    "cameraPermissionRequired": "Camera permission is required to capture a progress photo.",
+    "notSubmittedYet": "This visit report has not been submitted yet. It will appear here once the lead MEO submits it."
+  },
+  "report": {
+    "kicker": "FIELD MONITORING REPORT",
+    "templateVersionSubmitted": "Template version {{version}} • Submitted and locked",
+    "physicalProgress": "Physical progress",
+    "remarks": "Remarks",
+    "noRemarksProvided": "No remarks provided",
+    "sectorChecklist": "Sector checklist",
+    "progressEvidence": "Progress evidence",
+    "noPhotosAttached": "No photos were attached.",
+    "issueReports": "Issue reports ({{count}})",
+    "noIssuesReported": "No issues were reported.",
+    "noReport": "No submitted report exists for this visit.",
+    "couldNotLoad": "Could not load the submitted report.",
+    "notProvided": "Not provided",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "issueLifecycle": {
+    "status": {
+      "OPEN": "Open",
+      "ACKNOWLEDGED": "Acknowledged",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved"
+    },
+    "owner": "Owner",
+    "unassigned": "Unassigned",
+    "dueDate": "Due date",
+    "noDueDate": "No due date set",
+    "advanceTo": "Mark {{status}}",
+    "assignOwner": "Assign owner",
+    "changeOwner": "Change owner",
+    "unassignOwner": "Unassign owner",
+    "setDueDate": "Set due date",
+    "changeDueDate": "Change due date",
+    "clearDueDate": "Clear due date",
+    "resolvedLocked": "This issue is resolved and can no longer be changed.",
+    "couldNotUpdate": "Could not update this issue.",
+    "selectOwnerTitle": "Select an owner",
+    "cancel": "Cancel",
+    "escalatedToDg": "Escalated to the Director General — overdue and unresolved."
+  },
+  "comments": {
+    "defaultTitle": "Discussion",
+    "noCommentsYet": "No comments yet — start the discussion below.",
+    "couldNotLoad": "Could not load comments.",
+    "writeCommentPlaceholder": "Write a comment…",
+    "post": "Post",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "couldNotPost": "Could not post your comment.",
+    "couldNotSaveEdit": "Could not save your edit.",
+    "couldNotDelete": "Could not delete that comment.",
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "RD",
+      "DIRECTOR_GENERAL": "DG",
+      "MEO": "MEO",
+      "SUPPORT_USER": "Support"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Team decisions, completed visits, and issues filed on your visits.",
+    "noNotificationsYet": "No notifications yet.",
+    "couldNotLoad": "Could not load notifications.",
+    "couldNotLoadMore": "Could not load more notifications."
+  },
+  "security": {
+    "title": "Two-factor authentication",
+    "enabled": "✅ Enabled",
+    "notEnabled": "❌ Not enabled",
+    "enableButton": "Enable two-factor authentication",
+    "removeButton": "Remove two-factor authentication",
+    "instructions": "1. Open your authenticator app (Google Authenticator, Authy, etc.)\n2. Choose \"Enter a setup key\" (manual entry)\n3. Account: your email · Key: below · Type: Time-based",
+    "enterCodeLabel": "Enter the 6-digit code it shows:",
+    "codePlaceholder": "123456",
+    "verifyButton": "Verify & enable",
+    "mfaEnabledAlert": "Two-factor authentication enabled",
+    "couldNotStartEnrollment": "Could not start enrollment.",
+    "enterValidCode": "Enter the 6-digit code from your authenticator app.",
+    "verificationFailed": "Verification failed.",
+    "couldNotRemove": "Could not remove two-factor authentication."
+  },
+  "languageSettings": {
+    "title": "Language",
+    "subtitle": "Choose the language used throughout the app.",
+    "english": "English",
+    "urdu": "اردو",
+    "sindhi": "سنڌي",
+    "restartNoticeTitle": "Restart needed",
+    "restartNoticeBody": "To fully apply the new text direction, please close and reopen the app.",
+    "restartNowButton": "Restart now",
+    "restartLaterHint": "You can keep using the app — the layout direction will update the next time it opens."
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "ACCOUNT_LOCKED": "This account is temporarily locked after too many failed attempts. Try again later.",
+    "ACCOUNT_DEACTIVATED": "This account has been deactivated. Contact your administrator.",
+    "MFA_REQUIRED": "Two-factor verification is required for this account.",
+    "VISIT_REPORT_LOCKED": "This visit report has already been submitted and is locked.",
+    "EMAIL_TAKEN": "That email address is already in use.",
+    "PROVISION_ROLE_DENIED": "You are not allowed to create an account with that role.",
+    "PROVISION_DIVISION_DENIED": "You can only create accounts within your own division.",
+    "VISIT_NOT_SCHEDULABLE": "This visit can no longer be scheduled.",
+    "ISSUE_INVALID_TRANSITION": "This issue cannot move to that status from its current one.",
+    "ISSUE_RESOLVED_LOCKED": "This issue is resolved and can no longer be changed.",
+    "INVALID_ISSUE_OWNER": "Issue owner must be an active MEO or support user in your division.",
+    "generic": "Something went wrong. Please try again."
+  }
+}

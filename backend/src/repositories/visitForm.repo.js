@@ -112,6 +112,17 @@ async function save(siteVisitId, actorId, templateId, payload, status) {
 				`update site_visits set status = 'COMPLETED', completed_at = now() where id = $1 and status <> 'CANCELLED'`,
 				[siteVisitId],
 			);
+			// The scheme-level rollup (schemes.physical_progress_pct, read by
+			// scheme.repo/dashboard analytics) always reflects the most
+			// recently SUBMITTED visit report for that scheme -- same
+			// transaction as the form upsert + visit completion above, so a
+			// crash between the two can never leave the rollup stale relative
+			// to what was actually persisted.
+			await client.query(
+				`update schemes set physical_progress_pct = $1
+				 where id = (select scheme_id from site_visits where id = $2)`,
+				[payload.physicalProgressPct, siteVisitId],
+			);
 		}
 		await client.query('commit');
 		return result.rows[0];

@@ -29,4 +29,30 @@ async function getById(actor, id) {
 	return visit;
 }
 
-module.exports = { list, getById };
+const NOT_SCHEDULABLE_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
+
+/**
+ * Plan (or clear) a visit's date (phases.md Step 21 — "RD / lead MEO plan
+ * upcoming visits"). visibilityClause already restricts which visits an RD
+ * can even see to their own division, so once the visit is visible at all, a
+ * REGIONAL_DIRECTOR actor is guaranteed to be in-division for it — no second
+ * division check needed here. DG is deliberately excluded even though DG can
+ * also see the visit, per the step's own "RD / lead MEO" wording; so is any
+ * non-lead team member.
+ */
+async function schedule(actor, id, scheduledDate) {
+	const visit = await siteVisitRepo.findByIdForActor(actor, id);
+	if (!visit) throw ApiError.notFound('Site visit not found');
+
+	const isLeadMeo = visit.members.some((member) => member.userId === actor.id && member.teamRole === 'LEAD_MEO');
+	if (actor.role !== 'REGIONAL_DIRECTOR' && !isLeadMeo) {
+		throw ApiError.forbidden('Only the regional director or the lead MEO can schedule this visit');
+	}
+	if (NOT_SCHEDULABLE_STATUSES.has(visit.status)) {
+		throw ApiError.conflict(`Cannot schedule a visit that is already ${visit.status.toLowerCase()}`, undefined, 'VISIT_NOT_SCHEDULABLE');
+	}
+
+	return siteVisitRepo.updateScheduledDate(id, scheduledDate);
+}
+
+module.exports = { list, getById, schedule };

@@ -89,6 +89,31 @@ async function listRecentVisits(divisionId, limit) {
 	return rows;
 }
 
+/**
+ * One row per department that has at least one scheme in the division —
+ * schemesTotal/schemesReported/avgProgressPct for the "progress % by
+ * department" analytics (Step 23). avg()/count() already ignore NULLs, and
+ * avg() returns SQL NULL (-> JS null once cast) when a department has zero
+ * reported schemes, which is the correct "no data yet" signal — never
+ * coalesced to 0, per the numeric-as-string cast convention (Steps 19/21),
+ * avgProgressPct is cast to ::float8 in the SQL itself.
+ */
+async function countProgressByDepartment(divisionId) {
+	const { rows } = await db.query(
+		`select dep.id as "departmentId", dep.name as "departmentName",
+				count(s.id)::int as "schemesTotal",
+				count(s.id) filter (where s.physical_progress_pct is not null)::int as "schemesReported",
+				avg(s.physical_progress_pct)::float8 as "avgProgressPct"
+		 from schemes s
+		 join departments dep on dep.id = s.department_id
+		 where ${SCHEME_IN_DIVISION.replace('%SCHEME_ID%', 's.id')}
+		 group by dep.id, dep.name
+		 order by dep.name`,
+		[divisionId],
+	);
+	return rows;
+}
+
 async function listRecentOpenIssues(divisionId, limit) {
 	const { rows } = await db.query(
 		`select ir.id, ir.site_visit_id as "siteVisitId", ir.issue_type as "issueType",
@@ -227,6 +252,7 @@ module.exports = {
 	countTeamsByStatus,
 	countVisitsByStatus,
 	countIssuesByStatusAndSeverity,
+	countProgressByDepartment,
 	listRecentVisits,
 	listRecentOpenIssues,
 	countVisitsByStatusForMember,

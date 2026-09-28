@@ -17,10 +17,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+<<<<<<< HEAD
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../auth/useAuth';
 import { ApiClientError, apiBaseUrl } from '../../api/client';
 import { colors, spacing } from '../../theme';
+=======
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../auth/useAuth';
+import { apiBaseUrl } from '../../api/client';
+import { translateApiError } from '../../i18n/apiErrors';
+import LanguageSwitcherButton from '../../i18n/LanguageSwitcherButton';
+import { colors, radius, spacing, typography } from '../../theme';
+>>>>>>> origin/Main
 
 const BACKGROUND_IMAGES = [
   require('../../../assets/images/login/site-1.png'),
@@ -354,7 +363,41 @@ function AnimatedBackground() {
   );
 }
 
+<<<<<<< HEAD
+=======
+function LoginButton({ onPress, disabled, submitting }: { onPress: () => void; disabled: boolean; submitting: boolean }) {
+  const [pressScale] = useState(() => new Animated.Value(1));
+  const { t } = useTranslation();
+
+  return (
+    <Animated.View style={{ transform: [{ scale: pressScale }] }}>
+      <Pressable
+        style={[styles.button, disabled && styles.buttonDisabled]}
+        onPress={onPress}
+        disabled={disabled}
+        onPressIn={() => {
+          Animated.timing(pressScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+        }}
+        onPressOut={() => {
+          Animated.timing(pressScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+        }}
+      >
+        {submitting ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <>
+            <Text style={styles.buttonText}>{t('auth.logIn')}</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.white} style={styles.buttonIcon} />
+          </>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+>>>>>>> origin/Main
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -435,7 +478,11 @@ export default function LoginScreen() {
     if (submitting) return;
     setError(null);
     if (!email.trim() || !password) {
+<<<<<<< HEAD
       setError('Please enter your credentials.');
+=======
+      setError(t('auth.enterEmailAndPassword'));
+>>>>>>> origin/Main
       return;
     }
     setSubmitting(true);
@@ -457,6 +504,7 @@ export default function LoginScreen() {
       });
 
     } catch (e) {
+<<<<<<< HEAD
       setVerificationStatus('error');
 
       if (e instanceof ApiClientError) setError(e.message);
@@ -466,6 +514,11 @@ export default function LoginScreen() {
         setVerificationStatus('idle');
         setSubmitting(false);
       }, 1800);
+=======
+      setError(translateApiError(t, e));
+    } finally {
+      setSubmitting(false);
+>>>>>>> origin/Main
     }
   };
 
@@ -473,12 +526,20 @@ export default function LoginScreen() {
     <View style={styles.root}>
       <AnimatedBackground />
 
+<<<<<<< HEAD
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+=======
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+        <View style={styles.languageButtonWrap}>
+          <LanguageSwitcherButton variant="floating" />
+        </View>
+>>>>>>> origin/Main
         <KeyboardAvoidingView
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
+<<<<<<< HEAD
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.headerContainer}>
               <Animated.View
@@ -496,6 +557,16 @@ export default function LoginScreen() {
                   />
                 </View>
               </Animated.View>
+=======
+          <View style={styles.brandArea}>
+            <Animated.View style={{ opacity: brandOpacity, transform: [{ translateY: brandTranslate }] }}>
+              <View style={styles.logoBadge}>
+                <Text style={styles.logoText}>M&E</Text>
+              </View>
+              <Text style={styles.title}>{t('auth.brandTitle')}</Text>
+              <Text style={styles.subtitle}>{t('auth.brandSubtitle')}</Text>
+            </Animated.View>
+>>>>>>> origin/Main
 
               <Animated.View
                 style={{
@@ -510,6 +581,7 @@ export default function LoginScreen() {
               </Animated.View>
             </View>
 
+<<<<<<< HEAD
             <Animated.View
               style={[
                 styles.card,
@@ -532,6 +604,21 @@ export default function LoginScreen() {
                   style={styles.textInput}
                   placeholder="Username"
                   placeholderTextColor="#7f9986"
+=======
+          <Animated.View style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}>
+            <BlurView intensity={55} tint="light" style={StyleSheet.absoluteFill} />
+            <View style={styles.cardOverlay} />
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>{t('auth.signInTitle')}</Text>
+
+              <Text style={styles.label}>{t('auth.emailLabel')}</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder={t('auth.emailPlaceholder')}
+                  placeholderTextColor={colors.textSecondary}
+>>>>>>> origin/Main
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -541,6 +628,7 @@ export default function LoginScreen() {
                 />
               </View>
 
+<<<<<<< HEAD
               <View style={[styles.inputContainer, { marginTop: spacing.md }]}>
                 <Ionicons
                   name="lock-closed-outline"
@@ -548,6 +636,11 @@ export default function LoginScreen() {
                   color="#5a7a63"
                   style={styles.inputIcon}
                 />
+=======
+              <Text style={styles.label}>{t('auth.passwordLabel')}</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+>>>>>>> origin/Main
                 <TextInput
                   style={styles.textInput}
                   placeholder="Password"
@@ -605,7 +698,6 @@ export default function LoginScreen() {
                 </Pressable>
               </Animated.View>
             </Animated.View>
-
             <Text style={styles.apiHint}>API: {apiBaseUrl}</Text>
           </ScrollView>
         </KeyboardAvoidingView>

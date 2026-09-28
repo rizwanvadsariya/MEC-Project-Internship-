@@ -3,8 +3,11 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 import type { FormField } from '../../api/visitForms.api';
 import { colors, radius, spacing, typography } from '../../theme';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translateFieldLabel, translateOptionLabel } from '../../i18n/translations/dynamicFormFields';
 
 type Props = {
 	fields: FormField[];
@@ -14,11 +17,12 @@ type Props = {
 };
 
 export default function DynamicFormRenderer({ fields, values, onChange, disabled = false }: Props) {
+	const { language } = useLanguage();
 	return (
 		<View>
 			{fields.map((field) => (
 				<View key={field.id} style={styles.field}>
-					<Text style={styles.label}>{field.label}{field.isRequired ? ' *' : ''}</Text>
+					<Text style={styles.label}>{translateFieldLabel(field.fieldKey, field.label, language)}{field.isRequired ? ' *' : ''}</Text>
 					<FieldInput field={field} value={values[field.fieldKey]} disabled={disabled} onChange={(value) => onChange(field.fieldKey, value)} />
 				</View>
 			))}
@@ -28,24 +32,30 @@ export default function DynamicFormRenderer({ fields, values, onChange, disabled
 
 function FieldInput({ field, value, disabled, onChange }: { field: FormField; value: unknown; disabled: boolean; onChange: (value: unknown) => void }) {
 	const [datePickerOpen, setDatePickerOpen] = React.useState(false);
+	const { t } = useTranslation();
+	const { language } = useLanguage();
 
 	if (field.fieldType === 'date') {
 		const dateValue = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseIsoDate(value) : new Date();
 		return (
 			<View>
 				<Pressable disabled={disabled} style={styles.input} onPress={() => setDatePickerOpen(true)}>
-					<Text style={value ? styles.dateText : styles.placeholderText}>{value ? formatDate(dateValue) : 'Select date'}</Text>
+					<Text style={value ? styles.dateText : styles.placeholderText}>{value ? formatDate(dateValue) : t('common.selectDate')}</Text>
 				</Pressable>
 				{datePickerOpen ? <DateTimePicker value={dateValue} mode="date" display="default" onChange={(event, selectedDate) => handleDateChange(event, selectedDate, setDatePickerOpen, onChange)} /> : null}
 			</View>
 		);
 	}
 	if (field.fieldType === 'boolean') {
+		const options: { label: string; boolValue: boolean }[] = [
+			{ label: t('common.yes'), boolValue: true },
+			{ label: t('common.no'), boolValue: false },
+		];
 		return (
 			<View style={styles.optionRow}>
-				{['Yes', 'No'].map((label) => {
-					const selected = value === (label === 'Yes');
-					return <Pressable key={label} disabled={disabled} style={[styles.option, selected && styles.optionSelected]} onPress={() => onChange(label === 'Yes')}><Text style={[styles.optionText, selected && styles.optionTextSelected]}>{label}</Text></Pressable>;
+				{options.map((option) => {
+					const selected = value === option.boolValue;
+					return <Pressable key={option.label} disabled={disabled} style={[styles.option, selected && styles.optionSelected]} onPress={() => onChange(option.boolValue)}><Text style={[styles.optionText, selected && styles.optionTextSelected]}>{option.label}</Text></Pressable>;
 				})}
 			</View>
 		);
@@ -56,12 +66,12 @@ function FieldInput({ field, value, disabled, onChange }: { field: FormField; va
 			<View style={styles.optionRow}>
 				{(field.options ?? []).map((option) => {
 					const selected = field.fieldType === 'multiselect' ? selectedValues.includes(option) : value === option;
-					return <Pressable key={option} disabled={disabled} style={[styles.option, selected && styles.optionSelected]} onPress={() => onChange(field.fieldType === 'multiselect' ? (selected ? selectedValues.filter((item) => item !== option) : [...selectedValues, option]) : option)}><Text style={[styles.optionText, selected && styles.optionTextSelected]}>{option.replaceAll('_', ' ')}</Text></Pressable>;
+					return <Pressable key={option} disabled={disabled} style={[styles.option, selected && styles.optionSelected]} onPress={() => onChange(field.fieldType === 'multiselect' ? (selected ? selectedValues.filter((item) => item !== option) : [...selectedValues, option]) : option)}><Text style={[styles.optionText, selected && styles.optionTextSelected]}>{translateOptionLabel(option, language)}</Text></Pressable>;
 				})}
 			</View>
 		);
 	}
-	return <TextInput editable={!disabled} value={value == null ? '' : String(value)} keyboardType={field.fieldType === 'number' ? 'numeric' : 'default'} placeholder="Enter response" placeholderTextColor={colors.textSecondary} multiline={field.fieldType === 'text'} onChangeText={(text) => onChange(field.fieldType === 'number' ? (text === '' ? null : Number(text)) : text)} style={[styles.input, field.fieldType === 'text' && styles.multiline]} />;
+	return <TextInput editable={!disabled} value={value == null ? '' : String(value)} keyboardType={field.fieldType === 'number' ? 'numeric' : 'default'} placeholder={t('common.enterResponse')} placeholderTextColor={colors.textSecondary} multiline={field.fieldType === 'text'} onChangeText={(text) => onChange(field.fieldType === 'number' ? (text === '' ? null : Number(text)) : text)} style={[styles.input, field.fieldType === 'text' && styles.multiline]} />;
 }
 
 function parseIsoDate(value: string) {

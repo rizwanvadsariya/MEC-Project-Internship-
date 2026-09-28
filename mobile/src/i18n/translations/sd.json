@@ -1,0 +1,459 @@
+{
+  "common": {
+    "loading": "لوڊ ٿي رهيو آهي…",
+    "retry": "ٻيهر ڪوشش ڪريو",
+    "save": "محفوظ ڪريو",
+    "cancel": "رد ڪريو",
+    "close": "بند ڪريو",
+    "ok": "ٺيڪ آهي",
+    "yes": "هائو",
+    "no": "نه",
+    "selectDate": "تاريخ چونڊيو",
+    "enterResponse": "جواب داخل ڪريو",
+    "notProvided": "فراهم نه ڪيل",
+    "notSpecified": "واضح ناهي",
+    "unspecified": "غير واضح",
+    "search": "ڳوليو",
+    "clearFilters": "فلٽر صاف ڪريو",
+    "allOf": "سڀ {{label}}",
+    "division": "ڊويزن {{id}}",
+    "provinceWideAccess": "صوبي جي سطح تي رسائي",
+    "genericError": "ڪجهه غلط ٿي ويو. مهرباني ڪري ٻيهر ڪوشش ڪريو."
+  },
+  "navigation": {
+    "regionalDirector": "ريجنل ڊائريڪٽر",
+    "directorGeneral": "ڊائريڪٽر جنرل",
+    "leadMeo": "ليڊ ايم اي او",
+    "supportUser": "مددگار صارف",
+    "notifications": "اطلاعون",
+    "security": "سيڪيورٽي",
+    "schemeBrowser": "اسڪيم برائوزر",
+    "assembleTeam": "ٽيم ٺاهيو",
+    "siteVisits": "سائيٽ ورزٽون",
+    "siteVisit": "سائيٽ ورزٽ",
+    "visitCalendar": "ورزٽ ڪئلينڊر",
+    "visitForm": "ورزٽ فارم",
+    "submittedReport": "جمع ٿيل رپورٽ",
+    "discussion": "بحث",
+    "approvalQueue": "منظوري جي قطار",
+    "language": "ٻولي",
+    "analytics": "تجزيا",
+    "unknownRole": "اڻڄاتل ڪردار: {{role}}"
+  },
+  "auth": {
+    "brandTitle": "اسمارٽ صوبائي ايم اينڊ اي",
+    "brandSubtitle": "سنڌ سيڪريٽريٽ — اسڪيم نگراني",
+    "signInTitle": "سائن ان ڪريو",
+    "emailLabel": "اي ميل",
+    "passwordLabel": "پاس ورڊ",
+    "emailPlaceholder": "توهان@mec.local",
+    "logIn": "لاگ ان ڪريو",
+    "loggingIn": "لاگ ان ٿي رهيو آهي…",
+    "enterEmailAndPassword": "پنهنجو اي ميل ۽ پاس ورڊ داخل ڪريو.",
+    "apiHint": "اي پي آئي: {{url}}"
+  },
+  "roleHome": {
+    "welcomeBack": "ڀلي ڪري آيا،",
+    "eyebrow": {
+      "rd": "ڊويزن ورڪ اسپيس",
+      "dg": "ڊويزن جي نگراني",
+      "meo": "فيلڊ ورڪ اسپيس",
+      "support": "صرف پڙهڻ لاءِ ورڪ اسپيس"
+    },
+    "title": {
+      "rd": "توهان جو نگراني جو جائزو",
+      "dg": "توهان جو منظوري جو جائزو",
+      "meo": "توهان جي ورزٽن جو جائزو",
+      "support": "هڪ نظر ۾ نگراني"
+    },
+    "description": {
+      "rd": "پنهنجي ڊويزن ۾ ٽيمون ٺاهيو ۽ فيلڊ ورزٽون هلندڙ رکو.",
+      "dg": "تجويز ڪيل ٽيمن جو جائزو وٺو ۽ پنهنجي ڊويزن ۾ ترقي جو ڏس رکو.",
+      "meo": "مقرر ڪيل ڪم ڏسو ۽ فيلڊ رپورٽون تازيون رکو.",
+      "support": "رڪارڊ ۾ تبديلي ڪرڻ کان سواءِ اسڪيم جي ترقي ۽ ورزٽ سرگرمي تي نظر رکو."
+    },
+    "metrics": {
+      "activeTeams": "فعال ٽيمون",
+      "awaitingApproval": "منظوري جي انتظار ۾",
+      "upcomingVisits": "ايندڙ ورزٽون",
+      "pendingApprovals": "باقي منظوريون",
+      "activeVisits": "فعال ورزٽون",
+      "openIssues": "کليل مسئلا",
+      "assignedVisits": "مقرر ٿيل ورزٽون",
+      "formsDue": "باقي فارم",
+      "issuesReported": "رپورٽ ٿيل مسئلا",
+      "schemesMonitored": "نگراني هيٺ اسڪيمون",
+      "recentUpdates": "تازيون تبديليون"
+    },
+    "empty": {
+      "rd": {
+        "titleActive": "ڊويزن ۾ سرگرمي جاري آهي",
+        "titleNone": "اڃا تائين ڪا به نگراني سرگرمي ناهي",
+        "messageActive_one": "{{division}} ۾ {{count}} ٽيم جو ڏس رکيو پيو وڃي.",
+        "messageActive_other": "{{division}} ۾ {{count}} ٽيمن جو ڏس رکيو پيو وڃي.",
+        "messageNone": "پنهنجي پهرين فيلڊ نگراني ٽيم ٺاهڻ لاءِ ڪا اسڪيم ڏسو."
+      },
+      "dg": {
+        "titleActive": "ٽيمون توهان جي فيصلي جي منتظر آهن",
+        "titleNone": "منظوري جي قطار خالي آهي",
+        "messageActive_one": "{{division}} ۾ {{count}} ٽيم کي فيصلي جي ضرورت آهي.",
+        "messageActive_other": "{{division}} ۾ {{count}} ٽيمن کي فيصلي جي ضرورت آهي.",
+        "messageNone": "جڏهن ڪو ريجنل ڊائريڪٽر تجويز جمع ڪرائيندو ته نيون ٽيم تجويزون هتي ظاهر ٿينديون."
+      },
+      "meo": {
+        "titleActive": "فيلڊ ورڪ جاري آهي",
+        "titleNone": "ڪا به ورزٽ مقرر ناهي ٿيل",
+        "messageActive_one": "توهان کي {{visitCount}} ورزٽ مقرر ٿيل آهي، {{formCount}} فارم اڃا تائين باقي آهي.",
+        "messageActive_other": "توهان کي {{visitCount}} ورزٽون مقرر ٿيل آهن، {{formCount}} فارم اڃا تائين باقي آهن.",
+        "messageNone": "جڏهن توهان کي ڪنهن ورزٽ ۾ شامل ڪيو ويندو ته منظور ٿيل ٽيم مقرريون هتي ظاهر ٿينديون."
+      },
+      "support": {
+        "titleActive": "نگراني جاري آهي",
+        "titleNone": "هاڻي جائزي لاءِ ڪجهه به ناهي",
+        "messageActive_one": "توهان جي ٽيم مقررين ذريعي {{count}} اسڪيم جو ڏس رکيو پيو وڃي.",
+        "messageActive_other": "توهان جي ٽيم مقررين ذريعي {{count}} اسڪيمن جو ڏس رکيو پيو وڃي.",
+        "messageNone": "نگراني جو ڪم شروع ٿيندي ئي اسڪيم ۽ ورزٽ جون تازيون خبرون هتي ظاهر ٿينديون."
+      }
+    },
+    "nextWorkspace": {
+      "schemes": "ايندڙ ورڪ اسپيس: اسڪيم برائوزر",
+      "approvalQueue": "ايندڙ ورڪ اسپيس: منظوري جي قطار",
+      "assignedVisits": "ايندڙ ورڪ اسپيس: مقرر ٿيل ورزٽون"
+    },
+    "primaryAction": {
+      "rd": "اسڪيمون ڏسو ۽ نئين ٽيم مقرر ڪريو",
+      "dg": "باقي ٽيم منظوريون ڏسو"
+    },
+    "activityTitle": {
+      "division": "ڊويزن جي تازي سرگرمي",
+      "visits": "توهان جي ورزٽن تي تازي سرگرمي"
+    },
+    "profile": {
+      "signedInAs": "طور سائن ان"
+    },
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "ريجنل ڊائريڪٽر",
+      "DIRECTOR_GENERAL": "ڊائريڪٽر جنرل",
+      "MEO": "ليڊ ايم اي او",
+      "SUPPORT_USER": "مددگار صارف"
+    },
+    "buttons": {
+      "siteVisits": "سائيٽ ورزٽون",
+      "visitCalendar": "ورزٽ ڪئلينڊر",
+      "notifications": "اطلاعون",
+      "security": "سيڪيورٽي سيٽنگون",
+      "language": "ٻولي",
+      "analytics": "تجزيا",
+      "logOut": "لاگ آئوٽ"
+    },
+    "errorLoadActivity": "توهان جي سرگرمي لوڊ نه ٿي سگهي."
+  },
+  "schemes": {
+    "title": "اسڪيم برائوزر",
+    "subtitle": "صرف پڙهڻ لاءِ اي ڊي پي اسڪيم رجسٽر",
+    "searchPlaceholder": "اسڪيم جو نالو يا يو آءِ ڊي ڳوليو",
+    "filters": {
+      "division": "ڊويزن",
+      "district": "ضلعو",
+      "department": "کاتو",
+      "subSector": "ذيلي شعبو",
+      "status": "حيثيت"
+    },
+    "noSchemesMatch": "انهن فلٽرن سان ڪا اسڪيم نه ملي.",
+    "couldNotLoad": "اسڪيمون لوڊ نه ٿي سگهيون.",
+    "couldNotLoadFilters": "فلٽر اختيار لوڊ نه ٿي سگهيا.",
+    "districtNotSpecified": "ضلعو واضح ناهي",
+    "physicalProgress": "جسماني {{pct}}%",
+    "financialProgress": "مالي {{pct}}%",
+    "assembleTeam": "ٽيم ٺاهيو",
+    "discussion": "بحث",
+    "discussionTitle": "{{schemeName}} — بحث"
+  },
+  "teams": {
+    "eyebrow": "ٽيم جي تشڪيل",
+    "title": "نگراني ٽيم ٺاهيو",
+    "subtitle": "اسڪيم #{{schemeId}} · هڪ ليڊ ايم اي او ۽ ڪا به مددگار ايم اي او يا مددگار عملو چونڊيو.",
+    "couldNotLoadMembers": "لائق ايم اي او لوڊ نه ٿي سگهيا.",
+    "noEligibleMembers": "توهان جي ڊويزن ۾ ڪو به فعال ايم اي او يا مددگار صارف موجود ناهي.",
+    "leadMeo": "ليڊ ايم اي او",
+    "support": "مددگار",
+    "meoLabel": "ايم اي او",
+    "supportUserLabel": "مددگار صارف",
+    "addMyself": "پاڻ کي هن ٽيم ۾ شامل ڪريو",
+    "addMyselfHint": "اختياري — ايم اي اون سان گڏ مبصر طور ٽيم سان گڏ وڃو.",
+    "submitForApproval": "ڊي جي جي منظوري لاءِ جمع ڪريو",
+    "submittedMessage": "ٽيم ڊي جي جي منظوري لاءِ جمع ٿي وئي.",
+    "couldNotSubmit": "ٽيم جمع نه ٿي سگهي.",
+    "selectLeadMeoFirst": "جمع ڪرائڻ کان اڳ هڪ ليڊ ايم اي او چونڊيو."
+  },
+  "approvals": {
+    "title": "منظوري جي قطار",
+    "subtitle": "تجويز ٿيل نگراني ٽيمن جو جمع ڪرائڻ جي ترتيب ۾ جائزو وٺو.",
+    "noTeamsWaiting": "ڪا به ٽيم منظوري جي منتظر ناهي.",
+    "couldNotLoad": "منظوري جي قطار لوڊ نه ٿي سگهي.",
+    "submittedBy": "{{name}} پاران جمع ڪرايل · نسخو {{version}}",
+    "submittedAt": "{{date}} تي جمع ڪرايو ويو",
+    "pendingCountInMonth_one": "{{count}} زير التوا درخواست",
+    "pendingCountInMonth_other": "{{count}} زير التوا درخواستون",
+    "reviewProposal": "تجويز جو جائزو وٺو",
+    "reviewTeam": "ٽيم جو جائزو وٺو",
+    "remarksPlaceholder": "رايا، رد ڪرڻ لاءِ لازمي آهن",
+    "reject": "رد ڪريو",
+    "approve": "منظور ڪريو",
+    "close": "بند ڪريو",
+    "remarksRequiredForRejection": "ٽيم رد ڪرڻ کان اڳ رايو شامل ڪريو.",
+    "couldNotDecide": "فيصلو محفوظ نه ٿي سگهيو."
+  },
+  "siteVisits": {
+    "status": {
+      "SCHEDULED": "مقرر ٿيل",
+      "IN_PROGRESS": "جاري",
+      "COMPLETED": "مڪمل",
+      "CANCELLED": "رد ٿيل"
+    },
+    "list": {
+      "title": "سائيٽ ورزٽون",
+      "subtitle": "ٽيم جي منظوري کان پوءِ ورزٽون مقرر ٿينديون آهن.",
+      "noVisitsYet": "اڃا تائين ڪا سائيٽ ورزٽ ناهي.",
+      "couldNotLoad": "سائيٽ ورزٽون لوڊ نه ٿي سگهيون.",
+      "couldNotLoadMore": "وڌيڪ سائيٽ ورزٽون لوڊ نه ٿي سگهيون.",
+      "scheduledOn": "{{date}} تي مقرر ٿيل",
+      "notYetScheduled": "اڃا تائين مقرر ناهي"
+    },
+    "detail": {
+      "status": "حيثيت",
+      "scheduled": "مقرر ٿيل",
+      "tapToSetDate": "تاريخ مقرر ڪرڻ لاءِ ٽيپ ڪريو",
+      "started": "شروع ٿيل",
+      "completed": "مڪمل ٿيل",
+      "clearScheduledDate": "مقرر ٿيل تاريخ صاف ڪريو",
+      "notYetScheduled": "اڃا تائين مقرر ناهي",
+      "couldNotLoadVisit": "هي سائيٽ ورزٽ لوڊ نه ٿي سگهي.",
+      "couldNotUpdateDate": "مقرر ٿيل تاريخ اپڊيٽ نه ٿي سگهي.",
+      "fillVisitForm": "ورزٽ فارم ڀريو",
+      "viewVisitForm": "ورزٽ فارم ڏسو",
+      "discussion": "بحث",
+      "discussionTitle": "{{schemeName}} — بحث",
+      "team": "ٽيم",
+      "viewOnlyNote": "توهان کي هن ورزٽ جي فارم، تصويرن، ۽ ڪنهن به رپورٽ ٿيل مسئلي تائين صرف ڏسڻ جي رسائي آهي."
+    }
+  },
+  "analytics": {
+    "title": "تجزيا",
+    "couldNotLoad": "تجزيا لوڊ نه ٿي سگھيا.",
+    "overallProgress": "ڊويزن جي مجموعي ترقي",
+    "progressByDepartment": "کاتي جي حساب سان ترقي",
+    "statusBreakdown": "حالت جي تفصيل",
+    "schemesReportedContext": "{{total}} مان {{reported}} اسڪيمن جي رپورٽ ملي آهي",
+    "notYetReported": "اڃا تائين رپورٽ نه ملي آهي",
+    "noDepartments": "هن ڊويزن ۾ اڃا تائين اسڪيمن سان ڪو کاتو ناهي.",
+    "teams": "ٽيمون",
+    "visits": "ورزٽون",
+    "issues": "مسئلا",
+    "issuesBySeverity": "شدت جي حساب سان مسئلا",
+    "teamStatus": {
+      "DRAFT": "مسودو",
+      "PENDING_APPROVAL": "منظوري زير التوا",
+      "APPROVED": "منظور ٿيل",
+      "REJECTED": "رد ٿيل"
+    },
+    "issueStatus": {
+      "OPEN": "کليل",
+      "ACKNOWLEDGED": "قبول ٿيل",
+      "IN_PROGRESS": "جاري آهي",
+      "RESOLVED": "حل ٿيل"
+    },
+    "issueSeverity": {
+      "LOW": "گهٽ",
+      "MEDIUM": "وچولي",
+      "HIGH": "وڌيڪ",
+      "CRITICAL": "شديد"
+    }
+  },
+  "dateTime": {
+    "justNow": "هاڻي هاڻي",
+    "minutesAgo_one": "{{count}} منٽ اڳ",
+    "minutesAgo_other": "{{count}} منٽ اڳ",
+    "hoursAgo_one": "{{count}} ڪلاڪ اڳ",
+    "hoursAgo_other": "{{count}} ڪلاڪ اڳ",
+    "daysAgo_one": "{{count}} ڏينهن اڳ",
+    "daysAgo_other": "{{count}} ڏينهن اڳ",
+    "weeksAgo_one": "{{count}} هفتو اڳ",
+    "weeksAgo_other": "{{count}} هفتا اڳ",
+    "monthsAgo_one": "{{count}} مهينو اڳ",
+    "monthsAgo_other": "{{count}} مهينا اڳ",
+    "yearsAgo_one": "{{count}} سال اڳ",
+    "yearsAgo_other": "{{count}} سال اڳ"
+  },
+  "calendar": {
+    "title": "ورزٽ ڪئلينڊر",
+    "subtitle": "ايندڙ {{days}} ڏينهن — تاريخ مقرر يا تبديل ڪرڻ لاءِ ورزٽ کي ٽيپ ڪريو",
+    "needsDateSection": "تاريخ گهربل آهي",
+    "noApprovedVisits": "هن وقت منصوبابندي لاءِ ڪا منظور ٿيل ورزٽ ناهي.",
+    "couldNotLoad": "ورزٽ ڪئلينڊر لوڊ نه ٿي سگهيو.",
+    "couldNotSaveDate": "اها تاريخ محفوظ نه ٿي سگهي.",
+    "setDate": "تاريخ مقرر ڪريو",
+    "change": "تبديل ڪريو"
+  },
+  "visitForm": {
+    "templateVersion": "ٽيمپليٽ نسخو {{version}}",
+    "offlineBanner": {
+      "pending_one": "{{count}} تبديلي هن ڊوائيس تي محفوظ آهي، مطابقت جي انتظار ۾.",
+      "pending_other": "{{count}} تبديليون هن ڊوائيس تي محفوظ آهن، مطابقت جي انتظار ۾.",
+      "syncNow": "هاڻي مطابقت ڪريو",
+      "syncing": "مطابقت ٿي رهي آهي…"
+    },
+    "submittedLocked": "جمع ۽ بند ٿيل: هن رپورٽ ۾ ترميم نه ٿي سگهي.",
+    "oneTimeSubmission": {
+      "title": "هڪ ڀيرو جمع ڪرائڻ",
+      "text": "ترقي، چيڪ لسٽ، تصويرون، ۽ ڪو به مليل مسئلو احتياط سان ڀريو. توهان هي ورزٽ رپورٽ فقط هڪ دفعو جمع ڪرائي سگهو ٿا. جمع ڪرائڻ کان پوءِ، سڀ ڪجهه مستقل طور تي بند ٿي ويندو."
+    },
+    "physicalProgressLabel": "جسماني ترقي (%) *",
+    "physicalProgressPlaceholder": "0 - 100",
+    "remarksLabel": "رايا",
+    "remarksPlaceholder": "جيڪو توهان مشاهدو ڪيو اهو بيان ڪريو",
+    "sectorChecklist": "شعبيوار چيڪ لسٽ",
+    "progressPhotos": "ترقي جون تصويرون",
+    "photoHint": "رپورٽ جمع ڪرائڻ کان اڳ واضح ثبوت گڏ ڪريو. آخري جمع ڪرائڻ کان اڳ توهان هر تصوير جو جائزو وٺي يا هٽائي سگهو ٿا.",
+    "captionPlaceholder": "تصوير جي وضاحت (اختياري)",
+    "capturePhoto": "ترقي جي تصوير ڪڍو",
+    "capturingLocation": "مقام حاصل ڪيو پيو وڃي…",
+    "reviewPhoto": "تصوير جو جائزو وٺو",
+    "progressPhoto": "ترقي جي تصوير",
+    "anyIssuesFound": "ڪو مسئلو مليو؟",
+    "removeIssue": "مسئلو هٽايو",
+    "issueTypeLabel": "مسئلي جو قسم *",
+    "issueTypePlaceholder": "مثال طور تعميراتي خرابي",
+    "severityLabel": "شدت *",
+    "descriptionLabel": "تفصيل *",
+    "descriptionPlaceholder": "مسئلي جي تفصيل بيان ڪريو",
+    "noIssueReported": "ڪو مسئلو رپورٽ نه ڪيو ويو.",
+    "previewSubmittedReport": "جمع ٿيل رپورٽ ڏسو",
+    "saveDraft": "مسودو محفوظ ڪريو",
+    "saving": "محفوظ ٿي رهيو آهي...",
+    "submitForm": "فارم جمع ڪريو",
+    "submitting": "جمع ٿي رهيو آهي...",
+    "couldNotLoadForm": "ورزٽ فارم لوڊ نه ٿي سگهيو.",
+    "progressMustBeNumber": "جسماني ترقي 0 کان 100 جي وچ ۾ نمبر هجڻ گهرجي.",
+    "issueRequiredFields": "مسئلو رپورٽ ڪرڻ وقت مسئلي جو قسم ۽ تفصيل لازمي آهن.",
+    "offlineIssueBlocked": "توهان آف لائن آهيو — مسئلي جي رپورٽ لاءِ ڪنيڪشن گهربل آهي. آن لائن ٿيڻ کان پوءِ ٻيهر محفوظ ڪريو.",
+    "offlineSubmitSaved": "آف لائن — جمع ڪرائڻ هن ڊوائيس تي محفوظ ٿي ويو آهي ۽ آن لائن ٿيڻ تي خودڪار طور مطابقت ٿي ويندو.",
+    "offlineDraftSaved": "آف لائن — مسودو هن ڊوائيس تي محفوظ ٿي ويو آهي ۽ آن لائن ٿيڻ تي خودڪار طور مطابقت ٿي ويندو.",
+    "formSubmitted": "فارم ڪاميابي سان جمع ٿي ويو.",
+    "draftSaved": "مسودو محفوظ ٿي ويو.",
+    "couldNotSaveForm": "ورزٽ فارم محفوظ نه ٿي سگهيو.",
+    "couldNotRemoveIssue": "رپورٽ ٿيل مسئلو هٽايو نه ٿي سگهيو.",
+    "cameraPermissionRequired": "ترقي جي تصوير ڪڍڻ لاءِ ڪئميرا جي اجازت گهربل آهي.",
+    "notSubmittedYet": "هي ورزٽ رپورٽ اڃا تائين جمع نه ڪرائي وئي آهي. ليڊ ايم اي او جي جمع ڪرائڻ سان ئي اها هتي ظاهر ٿيندي."
+  },
+  "report": {
+    "kicker": "فيلڊ نگراني رپورٽ",
+    "templateVersionSubmitted": "ٽيمپليٽ نسخو {{version}} • جمع ۽ بند ٿيل",
+    "physicalProgress": "جسماني ترقي",
+    "remarks": "رايا",
+    "noRemarksProvided": "ڪو رايو فراهم نه ڪيو ويو",
+    "sectorChecklist": "شعبيوار چيڪ لسٽ",
+    "progressEvidence": "ترقي جو ثبوت",
+    "noPhotosAttached": "ڪا به تصوير منسلڪ نه ڪئي وئي.",
+    "issueReports": "مسئلن جون رپورٽون ({{count}})",
+    "noIssuesReported": "ڪو مسئلو رپورٽ نه ڪيو ويو.",
+    "noReport": "هن ورزٽ لاءِ ڪا جمع ٿيل رپورٽ موجود ناهي.",
+    "couldNotLoad": "جمع ٿيل رپورٽ لوڊ نه ٿي سگهي.",
+    "notProvided": "فراهم نه ڪيل",
+    "yes": "هائو",
+    "no": "نه"
+  },
+  "issueLifecycle": {
+    "status": {
+      "OPEN": "کليل",
+      "ACKNOWLEDGED": "مڃيل",
+      "IN_PROGRESS": "جاري",
+      "RESOLVED": "حل ٿيل"
+    },
+    "owner": "ذميوار",
+    "unassigned": "غير مقرر ٿيل",
+    "dueDate": "آخري تاريخ",
+    "noDueDate": "ڪا آخري تاريخ مقرر ناهي",
+    "advanceTo": "{{status}} نشان ڪريو",
+    "assignOwner": "ذميوار مقرر ڪريو",
+    "changeOwner": "ذميوار تبديل ڪريو",
+    "unassignOwner": "ذميواري هٽايو",
+    "setDueDate": "آخري تاريخ مقرر ڪريو",
+    "changeDueDate": "آخري تاريخ تبديل ڪريو",
+    "clearDueDate": "آخري تاريخ هٽايو",
+    "resolvedLocked": "هي مسئلو حل ٿي چڪو آهي ۽ هاڻي تبديل نه ٿي سگهجي.",
+    "couldNotUpdate": "هي مسئلو اپڊيٽ نه ٿي سگهيو.",
+    "selectOwnerTitle": "ذميوار چونڊيو",
+    "cancel": "منسوخ ڪريو",
+    "escalatedToDg": "ڊائريڪٽر جنرل ڏانهن موڪليو ويو — مدت پوري ۽ اڻحل ٿيل."
+  },
+  "comments": {
+    "defaultTitle": "بحث",
+    "noCommentsYet": "اڃا تائين ڪو تبصرو ناهي — هيٺ بحث شروع ڪريو.",
+    "couldNotLoad": "تبصرا لوڊ نه ٿي سگهيا.",
+    "writeCommentPlaceholder": "هڪ تبصرو لکو…",
+    "post": "پوسٽ ڪريو",
+    "edit": "ترميم ڪريو",
+    "cancel": "رد ڪريو",
+    "save": "محفوظ ڪريو",
+    "delete": "خارج ڪريو",
+    "couldNotPost": "توهان جو تبصرو پوسٽ نه ٿي سگهيو.",
+    "couldNotSaveEdit": "توهان جي ترميم محفوظ نه ٿي سگهي.",
+    "couldNotDelete": "اهو تبصرو خارج نه ٿي سگهيو.",
+    "roleLabel": {
+      "REGIONAL_DIRECTOR": "آر ڊي",
+      "DIRECTOR_GENERAL": "ڊي جي",
+      "MEO": "ايم اي او",
+      "SUPPORT_USER": "مددگار"
+    }
+  },
+  "notifications": {
+    "title": "اطلاعون",
+    "subtitle": "ٽيم جا فيصلا، مڪمل ٿيل ورزٽون، ۽ توهان جي ورزٽن تي رپورٽ ٿيل مسئلا.",
+    "noNotificationsYet": "اڃا تائين ڪا اطلاع ناهي.",
+    "couldNotLoad": "اطلاعون لوڊ نه ٿي سگهيون.",
+    "couldNotLoadMore": "وڌيڪ اطلاعون لوڊ نه ٿي سگهيون."
+  },
+  "security": {
+    "title": "ٻه مرحلا تصديق",
+    "enabled": "✅ فعال",
+    "notEnabled": "❌ غير فعال",
+    "enableButton": "ٻه مرحلا تصديق فعال ڪريو",
+    "removeButton": "ٻه مرحلا تصديق هٽايو",
+    "instructions": "1. پنهنجي تصديقي ايپ کوليو (گوگل آٿينٽيڪيٽر، آٿي، وغيره)\n2. \"سيٽ اپ ڪنجي داخل ڪريو\" (دستي داخلا) چونڊيو\n3. اڪائونٽ: توهان جو اي ميل · ڪنجي: هيٺ · قسم: وقت تي ٻڌل",
+    "enterCodeLabel": "ڏيکاريل 6 عددن جو ڪوڊ داخل ڪريو:",
+    "codePlaceholder": "123456",
+    "verifyButton": "تصديق ڪريو ۽ فعال ڪريو",
+    "mfaEnabledAlert": "ٻه مرحلا تصديق فعال ٿي وئي",
+    "couldNotStartEnrollment": "داخلا شروع نه ٿي سگهي.",
+    "enterValidCode": "پنهنجي تصديقي ايپ مان 6 عددن جو ڪوڊ داخل ڪريو.",
+    "verificationFailed": "تصديق ناڪام ٿي.",
+    "couldNotRemove": "ٻه مرحلا تصديق هٽائي نه سگهجي."
+  },
+  "languageSettings": {
+    "title": "ٻولي",
+    "subtitle": "پوري ايپ ۾ استعمال ٿيندڙ ٻولي چونڊيو.",
+    "english": "English",
+    "urdu": "اردو",
+    "sindhi": "سنڌي",
+    "restartNoticeTitle": "ٻيهر شروع ڪرڻ گهربل آهي",
+    "restartNoticeBody": "نئين متن جي طرف کي مڪمل طور تي لاڳو ڪرڻ لاءِ، مهرباني ڪري ايپ بند ڪري ٻيهر کوليو.",
+    "restartNowButton": "هاڻي ٻيهر شروع ڪريو",
+    "restartLaterHint": "توهان ايپ استعمال ڪندا رهي سگهو ٿا — ايندڙ ڀيري کلڻ تي ليئائوٽ جي طرف پاڻمرادو تازي ٿي ويندي."
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "غلط اي ميل يا پاس ورڊ.",
+    "ACCOUNT_LOCKED": "تمام گهڻيون ناڪام ڪوششن کان پوءِ هي اڪائونٽ عارضي طور بند آهي. بعد ۾ ٻيهر ڪوشش ڪريو.",
+    "ACCOUNT_DEACTIVATED": "هي اڪائونٽ غير فعال ڪيو ويو آهي. پنهنجي منتظم سان رابطو ڪريو.",
+    "MFA_REQUIRED": "هن اڪائونٽ لاءِ ٻه مرحلا تصديق گهربل آهي.",
+    "VISIT_REPORT_LOCKED": "هي ورزٽ رپورٽ اڳ ئي جمع ٿي چڪي آهي ۽ بند آهي.",
+    "EMAIL_TAKEN": "اهو اي ميل ائڊريس اڳ ئي استعمال ۾ آهي.",
+    "PROVISION_ROLE_DENIED": "توهان کي ان ڪردار سان اڪائونٽ ٺاهڻ جي اجازت ناهي.",
+    "PROVISION_DIVISION_DENIED": "توهان فقط پنهنجي ڊويزن اندر اڪائونٽ ٺاهي سگهو ٿا.",
+    "VISIT_NOT_SCHEDULABLE": "هن ورزٽ کي وڌيڪ مقرر نه ٿي سگهجي.",
+    "ISSUE_INVALID_TRANSITION": "هي مسئلو پنهنجي موجوده حالت مان هن حالت ۾ منتقل نه ٿي سگهي.",
+    "ISSUE_RESOLVED_LOCKED": "هي مسئلو حل ٿي چڪو آهي ۽ هاڻي تبديل نه ٿي سگهجي.",
+    "INVALID_ISSUE_OWNER": "مسئلي جو ذميوار توهان جي ڊويزن جو هڪ سرگرم ايم اي او يا سپورٽ يوزر هجڻ گهرجي.",
+    "generic": "ڪجهه غلط ٿي ويو. مهرباني ڪري ٻيهر ڪوشش ڪريو."
+  }
+}

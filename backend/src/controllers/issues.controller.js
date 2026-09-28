@@ -14,5 +14,8 @@ const remove = asyncHandler(async (req, res) => {
 	await issueService.remove(req.authUser, req.params.id, req.params.issueId);
 	ApiResponse.noContent(res);
 });
+const updateLifecycle = asyncHandler(async (req, res) =>
+	ApiResponse.ok(res, await issueService.updateLifecycle(req.authUser, req.params.id, req.params.issueId, req.body)),
+);
 
-module.exports = { file, list, remove };
+module.exports = { file, list, remove, updateLifecycle };

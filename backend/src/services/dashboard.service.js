@@ -6,6 +6,7 @@
 'use strict';
 
 const dashboardRepo = require('../repositories/dashboard.repo');
+const notificationService = require('./notification.service');
 const ApiError = require('../lib/ApiError');
 
 const RECENT_LIMIT = 5;
@@ -43,27 +44,59 @@ function issueBreakdown(rows) {
 	return { total, open, byStatus: byStatusCounts, bySeverity: bySeverityCounts };
 }
 
+/**
+ * Aggregates the per-department progress rows into one division-wide figure,
+ * weighted by each department's own schemesReported count (not a naive
+ * average-of-averages) — a department with 40 reported schemes should count
+ * for more than one with 2. Departments with zero reported schemes
+ * contribute schemesTotal but no weight to the average. avgProgressPct is
+ * null (not 0) when nothing in the whole division has been reported yet.
+ */
+function overallProgress(departmentRows) {
+	let schemesTotal = 0;
+	let schemesReported = 0;
+	let weightedSum = 0;
+	for (const row of departmentRows) {
+		schemesTotal += row.schemesTotal;
+		schemesReported += row.schemesReported;
+		if (row.avgProgressPct != null) weightedSum += row.avgProgressPct * row.schemesReported;
+	}
+	return {
+		avgProgressPct: schemesReported > 0 ? weightedSum / schemesReported : null,
+		schemesReported,
+		schemesTotal,
+	};
+}
+
 async function getDivisionSummary(actor) {
 	if (actor.divisionId == null) {
 		throw ApiError.badRequest('This account has no division assigned');
 	}
 
-	const [division, teamRows, visitRows, issueRows, recentVisits, recentIssues] = await Promise.all([
+	const [division, teamRows, visitRows, issueRows, progressByDepartment, recentVisits, recentIssues] = await Promise.all([
 		dashboardRepo.findDivision(actor.divisionId),
 		dashboardRepo.countTeamsByStatus(actor.divisionId),
 		dashboardRepo.countVisitsByStatus(actor.divisionId),
 		dashboardRepo.countIssuesByStatusAndSeverity(actor.divisionId),
+		dashboardRepo.countProgressByDepartment(actor.divisionId),
 		dashboardRepo.listRecentVisits(actor.divisionId, RECENT_LIMIT),
 		dashboardRepo.listRecentOpenIssues(actor.divisionId, RECENT_LIMIT),
 	]);
 
 	if (!division) throw ApiError.notFound('Division not found');
 
+	// Step 25 escalation rule #2 — fire-and-forget, never delays this response.
+	// Lazily checked here (both RD and DG hit this endpoint) since this
+	// project has no cron/queue infra; see notification.service's own comment.
+	notificationService.escalateOverdueIssues(actor.divisionId);
+
 	return {
 		division,
 		teams: byStatus(teamRows, TEAM_STATUSES),
 		visits: byStatus(visitRows, VISIT_STATUSES),
 		issues: issueBreakdown(issueRows),
+		progressByDepartment,
+		overallProgress: overallProgress(progressByDepartment),
 		recentVisits,
 		recentIssues,
 	};

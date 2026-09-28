@@ -39,11 +39,27 @@ export type RecentIssue = {
 	schemeName: string;
 };
 
+export type DepartmentProgress = {
+	departmentId: number;
+	departmentName: string;
+	schemesTotal: number;
+	schemesReported: number;
+	avgProgressPct: number | null;
+};
+
+export type OverallProgress = {
+	avgProgressPct: number | null;
+	schemesReported: number;
+	schemesTotal: number;
+};
+
 export type DivisionDashboard = {
 	division: DivisionSummary;
 	teams: StatusBreakdown<TeamStatus>;
 	visits: StatusBreakdown<VisitStatus>;
 	issues: IssueBreakdown;
+	progressByDepartment: DepartmentProgress[];
+	overallProgress: OverallProgress;
 	recentVisits: RecentVisit[];
 	recentIssues: RecentIssue[];
 };
