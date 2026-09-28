@@ -26,7 +26,7 @@ import { SUPPORTED_LANGUAGES } from '../../../src/i18n/languages';
 function loadRealFieldSets(): Record<string, Array<{ fieldKey: string; fieldType: string; options?: string[] }>> {
 	const seedFilePath = path.resolve(__dirname, '../../../../backend/db/seeds/seedFormTemplates.js');
 	const source = fs.readFileSync(seedFilePath, 'utf8');
-	const match = source.match(/const FIELD_SETS = (\{[\s\S]*?\n\});\n/);
+	const match = source.match(/const FIELD_SETS = (\{[\s\S]*?\r?\n\});\r?\n/);
 	if (!match) throw new Error('Could not locate the FIELD_SETS object literal in seedFormTemplates.js — has its shape changed?');
 	// eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func -- evaluating a static object literal read from our own repo's source file, not external input.
 	return new Function(`return (${match[1]});`)();
