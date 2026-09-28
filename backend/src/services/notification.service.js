@@ -140,6 +140,86 @@ function notifyVisitCompleted(siteVisitId) {
 	}, { trigger: 'visitCompleted', siteVisitId });
 }
 
+/**
+ * Trigger: an RD assigns (or reassigns) an issue's owner (Step 24). Notifies
+ * only the new owner — the rest of the team/division already saw the issue
+ * via notifyIssueFiled once the report was submitted, this is purely "you've
+ * been given this to fix."
+ */
+function notifyIssueOwnerAssigned(issue) {
+	runInBackground(async () => {
+		const context = await notificationRepo.findVisitNotificationContext(issue.siteVisitId);
+		const schemeName = context?.schemeName ?? 'a scheme';
+		await dispatch([issue.ownerId], {
+			title: 'Issue assigned to you',
+			body: `${issue.issueType} — ${schemeName}`,
+			relatedType: 'ISSUE_REPORT',
+			relatedId: issue.id,
+		});
+	}, { trigger: 'issueOwnerAssigned', issueId: issue.id, ownerId: issue.ownerId });
+}
+
+/**
+ * Escalation trigger #1 (Step 25): a CRITICAL issue notifies division
+ * leadership (RD+DG) the instant it's filed, regardless of team membership
+ * and regardless of whether the visit report has been submitted yet —
+ * bypassing notifyIssueFiled's usual "wait for submission" gate entirely
+ * (Step 15). Called from issue.service.file(), never from notifyVisitCompleted
+ * — a CRITICAL issue must not wait for the rest of the report to be done.
+ * This is notification-only: read access to the underlying draft issue is
+ * untouched, since the app has no notification deep-linking anywhere to
+ * expose it through anyway — the notification text itself is the escalation.
+ */
+function notifyCriticalIssueFiled(issue) {
+	runInBackground(async () => {
+		const context = await notificationRepo.findVisitNotificationContext(issue.siteVisitId);
+		if (!context) return;
+		await dispatch(context.divisionLeadershipIds, {
+			title: 'CRITICAL issue reported',
+			body: `${issue.issueType} — ${context.schemeName}. Immediate attention required.`,
+			relatedType: 'ISSUE_REPORT',
+			relatedId: issue.id,
+		});
+	}, { trigger: 'criticalIssueFiled', issueId: issue.id, siteVisitId: issue.siteVisitId });
+}
+
+/**
+ * Escalation trigger #2 (Step 25): any issue (any severity) whose due date
+ * has passed while still unresolved escalates to the division's DG, not the
+ * RD — the RD already knows (they own the issue and set that due date
+ * themselves via issue.service.updateLifecycle); the DG is the oversight
+ * escalation path for something that slipped. Lazily checked whenever the
+ * division dashboard loads (dashboard.service.getDivisionSummary, hit by
+ * both RD and DG) since this project has no cron/queue infra
+ * (architecture.md §6) — issueRepo's escalated_at makes each issue escalate
+ * exactly once, never re-fired on a later dashboard load.
+ */
+function escalateOverdueIssues(divisionId) {
+	runInBackground(async () => {
+		const overdue = await issueRepo.findOverdueUnescalated(divisionId);
+		if (!overdue.length) return;
+
+		const dgIds = await notificationRepo.findDivisionDirectorsGeneral(divisionId);
+		for (const issue of overdue) {
+			// Marked escalated *before* the notification is dispatched, not
+			// after — if the process died between the two steps, an issue
+			// should fail safe as "already escalated, no duplicate next time"
+			// rather than risk re-notifying the DG for the same overdue issue
+			// on every subsequent dashboard load.
+			await issueRepo.markEscalated(issue.id);
+			if (dgIds.length) {
+				const context = await notificationRepo.findVisitNotificationContext(issue.siteVisitId);
+				await dispatch(dgIds, {
+					title: 'Issue overdue',
+					body: `${issue.issueType} — ${context?.schemeName ?? 'a scheme'} is past its due date and still ${issue.status.replace('_', ' ').toLowerCase()}.`,
+					relatedType: 'ISSUE_REPORT',
+					relatedId: issue.id,
+				});
+			}
+		}
+	}, { trigger: 'overdueEscalation', divisionId });
+}
+
 module.exports = {
 	registerPushToken,
 	removePushToken,
@@ -148,4 +228,7 @@ module.exports = {
 	notifyTeamDecision,
 	notifyIssueFiled,
 	notifyVisitCompleted,
+	notifyIssueOwnerAssigned,
+	notifyCriticalIssueFiled,
+	escalateOverdueIssues,
 };

@@ -15,4 +15,8 @@ router.use(authenticate, authorize());
 router.get('/:id/issues', validate(schema.idParam), controller.list);
 router.post('/:id/issues', validate(schema.idParam), validate(schema.file), controller.file);
 router.delete('/:id/issues/:issueId', validate(schema.issueParam), controller.remove);
+// Step 24 — lifecycle update (status/owner/due date). RD-only, enforced in
+// issue.service.updateLifecycle (mirrors file/remove's own isLeadMeo check,
+// which is also service-layer, not route-layer, in this router).
+router.patch('/:id/issues/:issueId', validate(schema.issueParam), validate(schema.updateLifecycle), controller.updateLifecycle);
 module.exports = router;

@@ -20,8 +20,15 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 	listRecentVisitsForMember: jest.fn(),
 	listRecentVisibleIssuesForMember: jest.fn(),
 }));
+// Step 25: getDivisionSummary fires the overdue-escalation trigger — mocked
+// here so this stays a pure unit test of dashboard.service's own shaping
+// logic (no real repos/db.config touched), same as every other service test
+// in this suite. notification.service's own trigger logic is covered by
+// tests/unit/services/notification.service.test.js.
+jest.mock('../../../src/services/notification.service', () => ({ escalateOverdueIssues: jest.fn() }));
 
 const dashboardRepo = require('../../../src/repositories/dashboard.repo');
+const notificationService = require('../../../src/services/notification.service');
 const dashboardService = require('../../../src/services/dashboard.service');
 const ApiError = require('../../../src/lib/ApiError');
 
@@ -173,6 +180,26 @@ test('throws 404 if the division row itself cannot be found', async () => {
 
 	await expect(dashboardService.getDivisionSummary(actor)).rejects.toMatchObject({ statusCode: 404 });
 	await expect(dashboardService.getDivisionSummary(actor)).rejects.toBeInstanceOf(ApiError);
+});
+
+describe('overdue-escalation trigger (Step 25)', () => {
+	test('fires escalateOverdueIssues for the actor\'s division on a successful load', async () => {
+		stubDefaults();
+
+		await dashboardService.getDivisionSummary(actor);
+
+		expect(notificationService.escalateOverdueIssues).toHaveBeenCalledWith(1);
+		expect(notificationService.escalateOverdueIssues).toHaveBeenCalledTimes(1);
+	});
+
+	test('never fires when the division cannot be found', async () => {
+		stubDefaults();
+		dashboardRepo.findDivision.mockResolvedValue(null);
+
+		await expect(dashboardService.getDivisionSummary(actor)).rejects.toMatchObject({ statusCode: 404 });
+
+		expect(notificationService.escalateOverdueIssues).not.toHaveBeenCalled();
+	});
 });
 
 describe('getMemberSummary (MEO/Support, team-membership scoped)', () => {

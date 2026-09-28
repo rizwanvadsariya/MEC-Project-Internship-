@@ -363,6 +363,30 @@
     "yes": "Yes",
     "no": "No"
   },
+  "issueLifecycle": {
+    "status": {
+      "OPEN": "Open",
+      "ACKNOWLEDGED": "Acknowledged",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved"
+    },
+    "owner": "Owner",
+    "unassigned": "Unassigned",
+    "dueDate": "Due date",
+    "noDueDate": "No due date set",
+    "advanceTo": "Mark {{status}}",
+    "assignOwner": "Assign owner",
+    "changeOwner": "Change owner",
+    "unassignOwner": "Unassign owner",
+    "setDueDate": "Set due date",
+    "changeDueDate": "Change due date",
+    "clearDueDate": "Clear due date",
+    "resolvedLocked": "This issue is resolved and can no longer be changed.",
+    "couldNotUpdate": "Could not update this issue.",
+    "selectOwnerTitle": "Select an owner",
+    "cancel": "Cancel",
+    "escalatedToDg": "Escalated to the Director General — overdue and unresolved."
+  },
   "comments": {
     "defaultTitle": "Discussion",
     "noCommentsYet": "No comments yet — start the discussion below.",
@@ -427,6 +451,9 @@
     "PROVISION_ROLE_DENIED": "You are not allowed to create an account with that role.",
     "PROVISION_DIVISION_DENIED": "You can only create accounts within your own division.",
     "VISIT_NOT_SCHEDULABLE": "This visit can no longer be scheduled.",
+    "ISSUE_INVALID_TRANSITION": "This issue cannot move to that status from its current one.",
+    "ISSUE_RESOLVED_LOCKED": "This issue is resolved and can no longer be changed.",
+    "INVALID_ISSUE_OWNER": "Issue owner must be an active MEO or support user in your division.",
     "generic": "Something went wrong. Please try again."
   }
 }

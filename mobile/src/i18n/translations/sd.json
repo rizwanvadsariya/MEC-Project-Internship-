@@ -363,6 +363,30 @@
     "yes": "هائو",
     "no": "نه"
   },
+  "issueLifecycle": {
+    "status": {
+      "OPEN": "کليل",
+      "ACKNOWLEDGED": "مڃيل",
+      "IN_PROGRESS": "جاري",
+      "RESOLVED": "حل ٿيل"
+    },
+    "owner": "ذميوار",
+    "unassigned": "غير مقرر ٿيل",
+    "dueDate": "آخري تاريخ",
+    "noDueDate": "ڪا آخري تاريخ مقرر ناهي",
+    "advanceTo": "{{status}} نشان ڪريو",
+    "assignOwner": "ذميوار مقرر ڪريو",
+    "changeOwner": "ذميوار تبديل ڪريو",
+    "unassignOwner": "ذميواري هٽايو",
+    "setDueDate": "آخري تاريخ مقرر ڪريو",
+    "changeDueDate": "آخري تاريخ تبديل ڪريو",
+    "clearDueDate": "آخري تاريخ هٽايو",
+    "resolvedLocked": "هي مسئلو حل ٿي چڪو آهي ۽ هاڻي تبديل نه ٿي سگهجي.",
+    "couldNotUpdate": "هي مسئلو اپڊيٽ نه ٿي سگهيو.",
+    "selectOwnerTitle": "ذميوار چونڊيو",
+    "cancel": "منسوخ ڪريو",
+    "escalatedToDg": "ڊائريڪٽر جنرل ڏانهن موڪليو ويو — مدت پوري ۽ اڻحل ٿيل."
+  },
   "comments": {
     "defaultTitle": "بحث",
     "noCommentsYet": "اڃا تائين ڪو تبصرو ناهي — هيٺ بحث شروع ڪريو.",
@@ -427,6 +451,9 @@
     "PROVISION_ROLE_DENIED": "توهان کي ان ڪردار سان اڪائونٽ ٺاهڻ جي اجازت ناهي.",
     "PROVISION_DIVISION_DENIED": "توهان فقط پنهنجي ڊويزن اندر اڪائونٽ ٺاهي سگهو ٿا.",
     "VISIT_NOT_SCHEDULABLE": "هن ورزٽ کي وڌيڪ مقرر نه ٿي سگهجي.",
+    "ISSUE_INVALID_TRANSITION": "هي مسئلو پنهنجي موجوده حالت مان هن حالت ۾ منتقل نه ٿي سگهي.",
+    "ISSUE_RESOLVED_LOCKED": "هي مسئلو حل ٿي چڪو آهي ۽ هاڻي تبديل نه ٿي سگهجي.",
+    "INVALID_ISSUE_OWNER": "مسئلي جو ذميوار توهان جي ڊويزن جو هڪ سرگرم ايم اي او يا سپورٽ يوزر هجڻ گهرجي.",
     "generic": "ڪجهه غلط ٿي ويو. مهرباني ڪري ٻيهر ڪوشش ڪريو."
   }
 }
