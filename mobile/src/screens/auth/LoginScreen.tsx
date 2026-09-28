@@ -44,13 +44,13 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
   const [isVisible, setIsVisible] = useState(false);
   const [displayedText, setDisplayedText] = useState("Verifying...");
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  
+
   const spinValue = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(0)).current;
   const shakeX = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(1)).current;
   const textTranslateY = useRef(new Animated.Value(0)).current;
-  
+
   // Track vs Full Ring Opacity
   const ringOpacity = useRef(new Animated.Value(0)).current;
   const ringScale = useRef(new Animated.Value(0.9)).current;
@@ -89,13 +89,13 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
       const isError = status === 'error';
       const isSuccess = status === 'success';
       const nextText = isSuccess ? "Verified" : "Incorrect Password";
-      
+
       setTimeout(() => {
         setDisplayedText(nextText);
       }, 120);
-      
+
       const sequence = [];
-      
+
       sequence.push(
         Animated.parallel([
           Animated.timing(spinnerOpacity, {
@@ -143,7 +143,7 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
           ])
         );
       }
-      
+
       Animated.sequence(sequence).start(() => {
         spinAnimation.stop();
       });
@@ -172,18 +172,18 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
   return (
     <Animated.View style={[styles.overlayContainer, { opacity: overlayOpacity }]} pointerEvents="auto">
       <Animated.View style={[styles.centerContainer, { transform: [{ translateX: shakeX }] }]}>
-        
+
         <View style={styles.neonRingContainer}>
           {/* Base Static Track */}
           <View style={[styles.ringBase, styles.ringTrack]} />
-          
+
           {/* Spinning Arc */}
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.ringBase, 
-              styles.ringSpinner, 
-              { 
-                opacity: spinnerOpacity, 
+              styles.ringBase,
+              styles.ringSpinner,
+              {
+                opacity: spinnerOpacity,
                 transform: [{ rotate: spin }],
                 ...Platform.select({
                   ios: {
@@ -197,15 +197,15 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
                   },
                 }),
               }
-            ]} 
+            ]}
           />
-          
+
           {/* Solid Colored Ring (Fades in) */}
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.ringBase, 
-              { 
-                borderColor: finalColor, 
+              styles.ringBase,
+              {
+                borderColor: finalColor,
                 opacity: ringOpacity,
                 transform: [{ scale: ringScale }],
                 ...Platform.select({
@@ -216,19 +216,19 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
                     shadowRadius: 10,
                   },
                   android: {
-                    elevation: 0, 
+                    elevation: 0,
                   },
                 }),
               }
-            ]} 
+            ]}
           />
 
           {/* Center Icon */}
           <Animated.View style={[StyleSheet.absoluteFill, styles.iconCenter, { transform: [{ scale: iconScale }] }]}>
-            <Ionicons 
-              name={isSuccess ? "checkmark" : "close"} 
-              size={82} 
-              color={finalColor} 
+            <Ionicons
+              name={isSuccess ? "checkmark" : "close"}
+              size={82}
+              color={finalColor}
               style={{
                 textShadowColor: finalColor,
                 textShadowOffset: { width: 0, height: 0 },
@@ -244,7 +244,7 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
             {displayedText}
           </Animated.Text>
         </View>
-        
+
       </Animated.View>
     </Animated.View>
   );
@@ -364,7 +364,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('idle');
-  
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -381,7 +381,7 @@ export default function LoginScreen() {
         // ignore
       }
     })();
-    
+
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
@@ -462,7 +462,7 @@ export default function LoginScreen() {
 
       if (e instanceof ApiClientError) setError(e.message);
       else setError('Invalid email or password. Please try again.');
-      
+
       timeoutRef.current = setTimeout(() => {
         setVerificationStatus('idle');
         setSubmitting(false);
@@ -656,13 +656,20 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
   },
-  logoRing: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // logoRing: {
+  //   width: 112,
+  //   height: 112,
+  //   borderRadius: 56,              // 👈 Half of 112 to make the border a circle
+  //   borderWidth: 3,                // 👈 Border thickness
+  //   borderColor: '#cce6d2',        // 👈 Border color (or 'rgba(255,255,255,0.8)')
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   overflow: 'hidden'
+  // },
   logoImage: {
     width: 100,
     height: 100,
+    borderRadius: 50
   },
   mainTitle: {
     fontSize: 34,
