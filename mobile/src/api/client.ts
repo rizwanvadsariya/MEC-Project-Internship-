@@ -6,8 +6,13 @@
  */
 import Constants from 'expo-constants';
 
-const BASE_URL: string = (Constants.expoConfig?.extra as { apiBaseUrl?: string } | undefined)?.apiBaseUrl
-  ?? 'http://localhost:4000/api/v1';
+let dynamicIp = 'localhost';
+const hostUri = Constants.expoConfig?.hostUri;
+if (hostUri) {
+  dynamicIp = hostUri.split(':')[0];
+}
+
+const BASE_URL: string = `http://${dynamicIp}:4000/api/v1`;
 
 export class ApiClientError extends Error {
   status: number;

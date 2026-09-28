@@ -16,7 +16,7 @@ function validate(schemas) {
       if (!schema) continue;
       const result = schema.safeParse(req[part]);
       if (!result.success) {
-        throw ApiError.badRequest('Validation failed', result.error.flatten().fieldErrors);
+        throw ApiError.badRequest('', result.error.flatten().fieldErrors);
       }
       // Express 5 defines req.query as a read-only getter (parsed lazily from
       // the URL) — a plain `req.query = ...` throws ("Cannot set property

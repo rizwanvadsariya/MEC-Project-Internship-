@@ -1,23 +1,3 @@
-/** Email/password -> AuthProvider.signIn. Backend applies its own rate limits
- *  and lockout policy (Memory.md "Supabase Auth setup" points #5/#8).
- *
- *  Background per ui-implementation.md §2: full-bleed real scheme photos
- *  (water treatment plant, a government school, a highway toll plaza — see
- *  mobile/assets/images/login) crossfading on a loop, with a slow Ken Burns
- *  zoom for a cinematic feel, a bottom scrim for legibility, and a frosted
- *  glass card holding the form so the photos stay the visual lead instead of
- *  a barely-visible texture.
- *
- *  Animated with React Native's built-in `Animated` API, not a third-party
- *  animation library — see Memory.md "Mobile UI theme". Moti pulled in
- *  framer-motion (a DOM-only library with its own mismatched React copy) and
- *  crashed on render. react-native-reanimated was tried next, but it needs a
- *  babel plugin transform that only takes effect after a full Metro
- *  cache-clear restart, and its v4/worklets split has native-module version
- *  requirements that can't be verified without a real device — not something
- *  worth debugging blind. Core `Animated` needs neither a babel plugin nor
- *  any native module beyond what every RN app already has, so it can't be
- *  the reason images fail to show. */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -25,41 +5,246 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Animated,
   Easing,
+  Image,
+  TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../auth/useAuth';
 import { ApiClientError, apiBaseUrl } from '../../api/client';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 const BACKGROUND_IMAGES = [
-  require('../../../assets/images/login/site-1.webp'),
-  require('../../../assets/images/login/site-2.webp'),
-  require('../../../assets/images/login/site-3.webp'),
+  require('../../../assets/images/login/site-1.png'),
+  require('../../../assets/images/login/site-2.png'),
+  require('../../../assets/images/login/site-3.png'),
 ];
 
-const CROSSFADE_INTERVAL_MS = 5500;
-const CROSSFADE_DURATION_MS = 1500;
-const KEN_BURNS_MAX_SCALE = 1.12;
+const CROSSFADE_INTERVAL_MS = 8000;
+const CROSSFADE_DURATION_MS = 2500;
+const KEN_BURNS_MAX_SCALE = 1.08;
 
-/** Two stacked, fully-visible image layers that swap which one is "front" on
- *  each tick, each slowly zooming for the whole time it's shown. `onActiveImageChange`
- *  reports which of the 3 source images is currently front, for the dot indicator. */
-function AnimatedBackground({ onActiveImageChange }: { onActiveImageChange: (index: number) => void }) {
-  const [layerImages, setLayerImages] = useState<[number, number]>([0, 1]);
+interface BackgroundLayers {
+  layerA: number;
+  layerB: number;
+}
+
+export type VerificationStatus = 'idle' | 'verifying' | 'success' | 'error';
+
+function VerificationOverlay({ status }: { status: VerificationStatus }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [displayedText, setDisplayedText] = useState("Verifying...");
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const iconScale = useRef(new Animated.Value(0)).current;
+  const shakeX = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(1)).current;
+  const textTranslateY = useRef(new Animated.Value(0)).current;
+
+  // Track vs Full Ring Opacity
+  const ringOpacity = useRef(new Animated.Value(0)).current;
+  const ringScale = useRef(new Animated.Value(0.9)).current;
+  const spinnerOpacity = useRef(new Animated.Value(1)).current;
+
+  const spinAnimation = useRef(
+    Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 900,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    )
+  ).current;
+
+  useEffect(() => {
+    if (status === 'verifying') {
+      setIsVisible(true);
+      setDisplayedText("Verifying...");
+      iconScale.setValue(0);
+      shakeX.setValue(0);
+      ringOpacity.setValue(0);
+      ringScale.setValue(0.9);
+      spinnerOpacity.setValue(1);
+      textOpacity.setValue(1);
+      textTranslateY.setValue(0);
+
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+      spinAnimation.start();
+    } else if (status === 'success' || status === 'error') {
+      const isError = status === 'error';
+      const isSuccess = status === 'success';
+      const nextText = isSuccess ? "Verified" : "Incorrect Password";
+
+      setTimeout(() => {
+        setDisplayedText(nextText);
+      }, 120);
+
+      const sequence = [];
+
+      sequence.push(
+        Animated.parallel([
+          Animated.timing(spinnerOpacity, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(ringOpacity, {
+            toValue: 1,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+          Animated.spring(ringScale, {
+            toValue: 1,
+            friction: 6,
+            tension: 70,
+            useNativeDriver: true,
+          }),
+          Animated.sequence([
+            Animated.timing(textOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+            Animated.timing(textTranslateY, { toValue: 8, duration: 0, useNativeDriver: true }),
+            Animated.parallel([
+              Animated.timing(textOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+              Animated.timing(textTranslateY, { toValue: 0, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            ])
+          ]),
+          Animated.spring(iconScale, {
+            toValue: 1,
+            friction: 5,
+            tension: 65,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      if (isError) {
+        sequence.push(
+          Animated.sequence([
+            Animated.timing(shakeX, { toValue: 12, duration: 45, useNativeDriver: true }),
+            Animated.timing(shakeX, { toValue: -12, duration: 45, useNativeDriver: true }),
+            Animated.timing(shakeX, { toValue: 12, duration: 45, useNativeDriver: true }),
+            Animated.timing(shakeX, { toValue: -12, duration: 45, useNativeDriver: true }),
+            Animated.timing(shakeX, { toValue: 12, duration: 45, useNativeDriver: true }),
+            Animated.timing(shakeX, { toValue: 0, duration: 45, useNativeDriver: true }),
+          ])
+        );
+      }
+
+      Animated.sequence(sequence).start(() => {
+        spinAnimation.stop();
+      });
+    } else if (status === 'idle') {
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsVisible(false);
+        spinAnimation.stop();
+      });
+    }
+  }, [status, overlayOpacity, iconScale, shakeX, ringOpacity, ringScale, spinnerOpacity, spinAnimation, textOpacity, textTranslateY]);
+
+  if (!isVisible && status === 'idle') return null;
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const isSuccess = status === 'success';
+  const finalColor = isSuccess ? '#34C759' : '#FF3B30';
+
+  return (
+    <Animated.View style={[styles.overlayContainer, { opacity: overlayOpacity }]} pointerEvents="auto">
+      <Animated.View style={[styles.centerContainer, { transform: [{ translateX: shakeX }] }]}>
+
+        <View style={styles.neonRingContainer}>
+          {/* Base Static Track */}
+          <View style={[styles.ringBase, styles.ringTrack]} />
+
+          {/* Spinning Arc */}
+          <Animated.View
+            style={[
+              styles.ringBase,
+              styles.ringSpinner,
+              { opacity: spinnerOpacity, transform: [{ rotate: spin }] }
+            ]}
+          />
+
+          {/* Solid Colored Ring (Fades in) */}
+          <Animated.View
+            style={[
+              styles.ringBase,
+              {
+                borderColor: finalColor,
+                opacity: ringOpacity,
+                transform: [{ scale: ringScale }],
+                ...Platform.select({
+                  ios: {
+                    shadowColor: finalColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 1.0,
+                    shadowRadius: 22,
+                  },
+                  android: {
+                    elevation: 0,
+                  },
+                }),
+              }
+            ]}
+          />
+
+          {/* Center Icon */}
+          <Animated.View style={[StyleSheet.absoluteFill, styles.iconCenter, { transform: [{ scale: iconScale }] }]}>
+            <Ionicons
+              name={isSuccess ? "checkmark" : "close"}
+              size={70}
+              color={finalColor}
+            />
+          </Animated.View>
+        </View>
+
+        {/* Text Container: Always present in layout */}
+        <View style={styles.textContainer}>
+          <Animated.Text style={[styles.neonText, { opacity: textOpacity, transform: [{ translateY: textTranslateY }] }]}>
+            {displayedText}
+          </Animated.Text>
+        </View>
+
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+/** Background crossfade with continuous Ken Burns zoom */
+function AnimatedBackground() {
+  const [layers, setLayers] = useState<BackgroundLayers>({
+    layerA: 0,
+    layerB: 1,
+  });
+
   const frontIsLayerA = useRef(true);
   const nextImageIndex = useRef(2 % BACKGROUND_IMAGES.length);
-  const [opacityA] = useState(() => new Animated.Value(1));
-  const [opacityB] = useState(() => new Animated.Value(0));
-  const [scaleA] = useState(() => new Animated.Value(1));
-  const [scaleB] = useState(() => new Animated.Value(1.03));
+
+  const opacityA = useRef(new Animated.Value(1)).current;
+  const opacityB = useRef(new Animated.Value(0)).current;
+  const scaleA = useRef(new Animated.Value(1)).current;
+  const scaleB = useRef(new Animated.Value(1.03)).current;
+  const gradientOpacity = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
     const zoom = (value: Animated.Value) =>
@@ -71,20 +256,39 @@ function AnimatedBackground({ onActiveImageChange }: { onActiveImageChange: (ind
       });
 
     zoom(scaleA).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(gradientOpacity, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(gradientOpacity, {
+          toValue: 0.7,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
 
     const id = setInterval(() => {
       const aBecomesFront = !frontIsLayerA.current;
       const upcoming = nextImageIndex.current;
       nextImageIndex.current = (upcoming + 1) % BACKGROUND_IMAGES.length;
-      onActiveImageChange(upcoming);
 
-      setLayerImages((prev) => {
-        const updated: [number, number] = [...prev];
-        updated[aBecomesFront ? 0 : 1] = upcoming;
-        return updated;
-      });
+      setLayers((prev) => ({
+        layerA: aBecomesFront ? upcoming : prev.layerA,
+        layerB: aBecomesFront ? prev.layerB : upcoming,
+      }));
 
-      const fadeOptions = { duration: CROSSFADE_DURATION_MS, easing: Easing.inOut(Easing.ease), useNativeDriver: true };
+      const fadeOptions = {
+        duration: CROSSFADE_DURATION_MS,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      };
+
       Animated.timing(opacityA, { ...fadeOptions, toValue: aBecomesFront ? 1 : 0 }).start();
       Animated.timing(opacityB, { ...fadeOptions, toValue: aBecomesFront ? 0 : 1 }).start();
 
@@ -94,58 +298,40 @@ function AnimatedBackground({ onActiveImageChange }: { onActiveImageChange: (ind
 
       frontIsLayerA.current = aBecomesFront;
     }, CROSSFADE_INTERVAL_MS);
+
     return () => clearInterval(id);
-  }, [onActiveImageChange, opacityA, opacityB, scaleA, scaleB]);
+  }, [opacityA, opacityB, scaleA, scaleB]);
+
+  const defaultImage = BACKGROUND_IMAGES[0];
+  const sourceA = BACKGROUND_IMAGES[layers.layerA] ?? defaultImage;
+  const sourceB = BACKGROUND_IMAGES[layers.layerB] ?? defaultImage;
 
   return (
     <View style={styles.backgroundRoot} pointerEvents="none">
-      <Animated.Image
-        source={BACKGROUND_IMAGES[layerImages[0]]}
-        resizeMode="cover"
-        style={[styles.backgroundImage, { opacity: opacityA, transform: [{ scale: scaleA }] }]}
-        onError={(e) => console.warn('[LoginScreen] background image A failed to load:', e.nativeEvent)}
-      />
-      <Animated.Image
-        source={BACKGROUND_IMAGES[layerImages[1]]}
-        resizeMode="cover"
-        style={[styles.backgroundImage, { opacity: opacityB, transform: [{ scale: scaleB }] }]}
-        onError={(e) => console.warn('[LoginScreen] background image B failed to load:', e.nativeEvent)}
-      />
-      <LinearGradient
-        style={styles.backgroundImage}
-        colors={['rgba(27,46,30,0.55)', 'rgba(27,46,30,0.15)', 'rgba(27,46,30,0.15)', 'rgba(15,26,17,0.92)']}
-        locations={[0, 0.32, 0.55, 1]}
-      />
+      <Animated.View style={[styles.backgroundImage, { opacity: opacityA, transform: [{ scale: scaleA }] }]}>
+        <Image
+          source={sourceA}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      <Animated.View style={[styles.backgroundImage, { opacity: opacityB, transform: [{ scale: scaleB }] }]}>
+        <Image
+          source={sourceB}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientOpacity }]}>
+        <LinearGradient
+          colors={['rgba(9, 43, 25, 1)', 'transparent', 'transparent', 'rgba(9, 43, 25, 1)']}
+          locations={[0, 0.45, 0.55, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </View>
-  );
-}
-
-function LoginButton({ onPress, disabled, submitting }: { onPress: () => void; disabled: boolean; submitting: boolean }) {
-  const [pressScale] = useState(() => new Animated.Value(1));
-
-  return (
-    <Animated.View style={{ transform: [{ scale: pressScale }] }}>
-      <Pressable
-        style={[styles.button, disabled && styles.buttonDisabled]}
-        onPress={onPress}
-        disabled={disabled}
-        onPressIn={() => {
-          Animated.timing(pressScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
-        }}
-        onPressOut={() => {
-          Animated.timing(pressScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-        }}
-      >
-        {submitting ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <>
-            <Text style={styles.buttonText}>Log in</Text>
-            <Ionicons name="arrow-forward" size={18} color={colors.white} style={styles.buttonIcon} />
-          </>
-        )}
-      </Pressable>
-    </Animated.View>
   );
 }
 
@@ -154,82 +340,179 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('idle');
 
-  const [brandOpacity] = useState(() => new Animated.Value(0));
-  const [brandTranslate] = useState(() => new Animated.Value(-12));
-  const [cardOpacity] = useState(() => new Animated.Value(0));
-  const [cardTranslate] = useState(() => new Animated.Value(28));
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const entrance = (value: Animated.Value, toValue: number, duration: number, delay: number) =>
-      Animated.timing(value, { toValue, duration, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    (async () => {
+      try {
+        const storedEmail = await SecureStore.getItemAsync('rememberedEmail');
+        if (storedEmail) {
+          setEmail(storedEmail);
+          setRememberMe(true);
+        } else {
+          setRememberMe(false);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
 
-    Animated.parallel([
-      entrance(brandOpacity, 1, 700, 0),
-      entrance(brandTranslate, 0, 700, 0),
-      entrance(cardOpacity, 1, 650, 180),
-      entrance(cardTranslate, 0, 650, 180),
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const logoScale = useRef(new Animated.Value(1.8)).current;
+  const logoTranslateY = useRef(new Animated.Value(180)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(15)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(100)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const initialButtonWidth = Dimensions.get('window').width - (spacing.lg * 4);
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(logoOpacity, { toValue: 1, duration: 960, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(logoScale, { toValue: 1, friction: 7, tension: 30, useNativeDriver: true }),
+        Animated.spring(logoTranslateY, { toValue: 0, friction: 8, tension: 30, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(textOpacity, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(textTranslateY, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(cardOpacity, { toValue: 1, duration: 720, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(cardTranslateY, { toValue: 0, friction: 7, tension: 30, useNativeDriver: true }),
+      ]),
     ]).start();
-  }, [brandOpacity, brandTranslate, cardOpacity, cardTranslate]);
+  }, [logoOpacity, logoScale, textOpacity, textTranslateY, cardOpacity, cardTranslateY]);
+
+  const handlePressIn = () => {
+    if (submitting) return;
+    Animated.spring(buttonScale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    if (submitting) return;
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const onSubmit = async () => {
+    if (submitting) return;
     setError(null);
     if (!email.trim() || !password) {
-      setError('Enter your email and password.');
+      setError('Please enter your credentials.');
       return;
     }
     setSubmitting(true);
+    setVerificationStatus('verifying');
+
     try {
-      await signIn(email.trim().toLowerCase(), password);
+      if (rememberMe) {
+        await SecureStore.setItemAsync('rememberedEmail', email.trim().toLowerCase());
+      } else {
+        await SecureStore.deleteItemAsync('rememberedEmail');
+      }
+
+      const startTime = Date.now();
+      await signIn(email.trim().toLowerCase(), password, async () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 1200) await new Promise(r => setTimeout(r, 1200 - elapsed));
+        setVerificationStatus('success');
+        await new Promise(r => setTimeout(r, 1400));
+      });
+
     } catch (e) {
+      setVerificationStatus('error');
+
       if (e instanceof ApiClientError) setError(e.message);
-      else setError('Something went wrong. Please try again.');
-    } finally {
-      setSubmitting(false);
+      else setError('Invalid email or password. Please try again.');
+
+      timeoutRef.current = setTimeout(() => {
+        setVerificationStatus('idle');
+        setSubmitting(false);
+      }, 1800);
     }
   };
 
   return (
-    <View style={styles.flex}>
-      <AnimatedBackground onActiveImageChange={setActiveImage} />
+    <View style={styles.root}>
+      <AnimatedBackground />
 
-      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <View style={styles.brandArea}>
-            <Animated.View style={{ opacity: brandOpacity, transform: [{ translateY: brandTranslate }] }}>
-              <View style={styles.logoBadge}>
-                <Text style={styles.logoText}>M&E</Text>
-              </View>
-              <Text style={styles.title}>Smart Provincial M&E</Text>
-              <Text style={styles.subtitle}>Sindh Secretariat — Scheme Monitoring</Text>
-            </Animated.View>
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={styles.headerContainer}>
+              <Animated.View
+                style={{
+                  opacity: logoOpacity,
+                  transform: [{ translateY: logoTranslateY }, { scale: logoScale }],
+                  alignItems: 'center',
+                }}
+              >
+                <View style={styles.logoRing}>
+                  <Image
+                    source={require('../../../assets/images/login/edit_logo.png')}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </Animated.View>
 
-            <View style={styles.dotsRow}>
-              {BACKGROUND_IMAGES.map((_, i) => (
-                <View key={i} style={[styles.dot, i === activeImage && styles.dotActive]} />
-              ))}
+              <Animated.View
+                style={{
+                  opacity: textOpacity,
+                  transform: [{ translateY: textTranslateY }],
+                  alignItems: 'center',
+                  marginTop: spacing.md,
+                }}
+              >
+                <Text style={styles.mainTitle}>Smart Provincial M&E</Text>
+                <Text style={styles.subtitle}>Sindh Secretariat</Text>
+              </Animated.View>
             </View>
-          </View>
 
-          <Animated.View style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}>
-            <BlurView intensity={55} tint="light" style={StyleSheet.absoluteFill} />
-            <View style={styles.cardOverlay} />
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Sign in</Text>
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: cardOpacity,
+                  transform: [{ translateY: cardTranslateY }],
+                },
+              ]}
+            >
+              <Text style={styles.cardHeader}>Sign in</Text>
 
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="person-outline"
+                  size={18}
+                  color="#5a7a63"
+                  style={styles.inputIcon}
+                />
                 <TextInput
-                  style={styles.input}
-                  placeholder="you@mec.local"
-                  placeholderTextColor={colors.textSecondary}
+                  style={styles.textInput}
+                  placeholder="Username"
+                  placeholderTextColor="#7f9986"
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -239,169 +522,307 @@ export default function LoginScreen() {
                 />
               </View>
 
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { marginTop: spacing.md }]}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color="#5a7a63"
+                  style={styles.inputIcon}
+                />
                 <TextInput
-                  style={[styles.input, styles.inputWithTrailingIcon]}
-                  placeholder="••••••••"
-                  placeholderTextColor={colors.textSecondary}
+                  style={styles.textInput}
+                  placeholder="Password"
+                  placeholderTextColor="#7f9986"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                   editable={!submitting}
                 />
-                <Pressable
-                  hitSlop={10}
-                  style={styles.inputTrailingIcon}
-                  onPress={() => setShowPassword((v) => !v)}
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.eyeIcon}
                 >
                   <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={18}
-                    color={colors.textSecondary}
+                    color="#5a7a63"
                   />
-                </Pressable>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberMeContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={rememberMe ? 'checkbox' : 'square-outline'}
+                    size={18}
+                    color={rememberMe ? '#1e6b37' : '#7f9986'}
+                  />
+                  <Text style={styles.rememberText}>Remember me</Text>
+                </TouchableOpacity>
               </View>
 
               {error ? (
-                <View style={styles.errorBox}>
+                <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
-                  <Text style={styles.error}>{error}</Text>
+                  <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
 
-              <LoginButton onPress={onSubmit} disabled={submitting} submitting={submitting} />
-            </View>
-          </Animated.View>
+              <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: spacing.lg, alignItems: 'center' }}>
+                <Pressable
+                  onPress={onSubmit}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  disabled={submitting}
+                >
+                  <Animated.View style={[styles.loginButton, submitting && styles.loginButtonDisabled, { width: initialButtonWidth, borderRadius: 12 }]}>
+                    <Text style={styles.loginButtonText}>Log in</Text>
+                  </Animated.View>
+                </Pressable>
+              </Animated.View>
+            </Animated.View>
 
-          <Text style={styles.hint}>API: {apiBaseUrl}</Text>
+            <Text style={styles.apiHint}>API: {apiBaseUrl}</Text>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <VerificationOverlay status={verificationStatus} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.textPrimary },
-  backgroundRoot: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#0d1a10' },
-  backgroundImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-
-  brandArea: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: spacing.lg },
-  logoBadge: {
-    alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
+  root: {
+    flex: 1,
+    backgroundColor: '#0a1a0f',
   },
-  logoText: { color: colors.white, fontWeight: typography.weight.bold, fontSize: typography.size.md, letterSpacing: 0.5 },
-  title: {
-    fontSize: typography.size.xxl,
-    fontWeight: typography.weight.bold,
-    color: colors.white,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.35)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  subtitle: {
-    fontSize: typography.size.sm,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    marginTop: spacing.xs,
+  keyboardView: {
+    flex: 1,
   },
-  dotsRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.lg },
-  dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.4)' },
-  dotActive: { backgroundColor: colors.white, width: 18 },
-
-  card: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'space-around',
+    paddingBottom: spacing.md,
   },
-  cardOverlay: {
+  backgroundRoot: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: '#0a1a0f',
+    overflow: 'hidden',
   },
-  cardContent: { padding: spacing.lg },
-  cardTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.bold,
-    color: colors.primaryDark,
-    marginBottom: spacing.sm,
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    marginBottom: spacing.xs + 2,
-    marginTop: spacing.md,
+
+  headerContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
-  inputWrapper: {
+  logoRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#cce6d2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoImage: {
+    width: 82,
+    height: 82,
+    borderRadius: 90,
+  },
+  mainTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderRadius: 24,
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  cardHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a3322',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(241,248,242,0.9)',
-    borderRadius: radius.sm,
+    backgroundColor: '#f1f8f2',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md - 4,
+    borderColor: '#dbeade',
+    paddingHorizontal: spacing.md,
+    height: 48,
   },
-  inputIcon: { marginRight: spacing.xs },
-  input: {
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  textInput: {
     flex: 1,
-    color: colors.textPrimary,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm + 2,
-    fontSize: typography.size.md,
+    fontSize: 15,
+    color: '#1a2e1f',
+    paddingVertical: 0,
   },
-  inputWithTrailingIcon: { paddingRight: 0 },
-  inputTrailingIcon: { padding: spacing.xs },
-  errorBox: {
+  eyeIcon: {
+    padding: spacing.xs,
+  },
+
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    paddingHorizontal: 2,
+  },
+  rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
+  },
+  rememberText: {
+    fontSize: 13,
+    color: '#55725e',
+  },
+
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginTop: spacing.md,
   },
-  error: { color: colors.error, fontSize: typography.size.sm, flexShrink: 1 },
-  button: {
-    flexDirection: 'row',
-    backgroundColor: colors.primary,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md - 4,
+  errorText: {
+    color: colors.error,
+    fontSize: 13,
+    flexShrink: 1,
+  },
+
+  loginButton: {
+    backgroundColor: '#1e6b37',
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
-    shadowColor: colors.primaryDark,
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
+    shadowColor: '#1e6b37',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: colors.white, fontWeight: typography.weight.medium, fontSize: typography.size.md },
-  buttonIcon: { marginLeft: spacing.xs },
-  hint: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: typography.size.xs,
+  loginButtonDisabled: {
+    opacity: 0.65,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+  },
+
+  apiHint: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
     textAlign: 'center',
     marginTop: spacing.md,
-    marginBottom: spacing.sm,
+  },
+
+  overlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  neonRingContainer: {
+    width: 110,
+    height: 110,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  ringBase: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 4,
+  },
+  ringTrack: {
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  ringSpinner: {
+    borderColor: 'transparent',
+    borderTopColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
+  },
+  iconCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textContainer: {
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  neonText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 });
