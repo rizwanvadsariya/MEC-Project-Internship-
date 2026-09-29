@@ -21,8 +21,17 @@ async function getById(user, id) {
 	return scheme;
 }
 
+/** Step 28 — QR scan-to-open. Same open, province-wide access as getById
+ *  above (this app's scheme browsing has no division restriction, Step 7) —
+ *  a scanned code opens exactly what browsing to that scheme would show. */
+async function getByUid(user, uid) {
+	const scheme = await schemeRepo.findByUid(uid);
+	if (!scheme) throw ApiError.notFound('Scheme not found');
+	return scheme;
+}
+
 async function getFilterOptions() {
 	return schemeRepo.filterOptions();
 }
 
-module.exports = { list, getById, getFilterOptions };
+module.exports = { list, getById, getByUid, getFilterOptions };

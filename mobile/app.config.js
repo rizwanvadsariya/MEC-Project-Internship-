@@ -47,6 +47,12 @@ module.exports = {
           locationWhenInUsePermission: 'MEC uses your location to geo-tag progress photos taken during a site visit.',
         },
       ],
+      [
+        'expo-camera',
+        {
+          cameraPermission: 'MEC uses your camera to scan a scheme\'s printed ADP QR code and open its record.',
+        },
+      ],
     ],
     extra: {
       apiBaseUrl,

@@ -23,4 +23,10 @@ const query = {
 
 const idParam = { params: z.object({ id: positiveInt }) };
 
-module.exports = { query, idParam };
+// Step 28 — a scanned QR code's raw text, or a manually retyped scheme uid
+// (e.g. "AGRAE-PP-16-0003"). Deliberately lenient (no format regex) — the
+// exact-match lookup itself in scheme.repo.findByUid is what determines
+// whether it's a real scheme, not validation here.
+const uidParam = { params: z.object({ uid: z.string().trim().min(1).max(100) }) };
+
+module.exports = { query, idParam, uidParam };

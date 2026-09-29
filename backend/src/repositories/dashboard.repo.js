@@ -247,6 +247,86 @@ async function listRecentVisibleIssuesForMember(userId, limit) {
 	return rows;
 }
 
+/**
+ * Step 27 — physical vs. financial progress reconciliation. Both percentages
+ * already live directly on `schemes` (physical_progress_pct is the app's own
+ * rollup from visit_forms, per Step 23; financial_progress_pct comes from the
+ * ADP booklet import and is never written by the app — schema.md §4.1) — no
+ * new columns needed, only a query that compares them. `gap` is
+ * financial - physical: positive means money is reported spent ahead of
+ * field-verified physical work (the concerning direction for oversight),
+ * negative means the reverse. Only schemes where BOTH values are known are
+ * ever included — there's nothing to reconcile otherwise, and
+ * countProgressReconciliationSummary reports how many schemes that excludes.
+ * WHERE can't reference a SELECT-list alias in Postgres, so PHYSICAL/FINANCIAL/
+ * GAP/ABS_GAP are repeated as raw expressions everywhere they're needed
+ * (select, filter, cursor, order by) rather than referenced by alias.
+ */
+const PHYSICAL_PCT = 's.physical_progress_pct::float8';
+const FINANCIAL_PCT = 's.financial_progress_pct::float8';
+const GAP_EXPR = `(${FINANCIAL_PCT} - ${PHYSICAL_PCT})`;
+const ABS_GAP_EXPR = `abs(${GAP_EXPR})`;
+const BOTH_VALUES_KNOWN = 's.physical_progress_pct is not null and s.financial_progress_pct is not null';
+
+async function countProgressReconciliationSummary(divisionId, flagThresholdPct) {
+	const { rows } = await db.query(
+		`select
+				count(*)::int as "schemesTotal",
+				count(*) filter (where ${BOTH_VALUES_KNOWN})::int as "schemesWithBothValues",
+				count(*) filter (where ${BOTH_VALUES_KNOWN} and ${ABS_GAP_EXPR} >= $2)::int as "schemesFlagged"
+		 from schemes s
+		 where ${SCHEME_IN_DIVISION.replace('%SCHEME_ID%', 's.id')}`,
+		[divisionId, flagThresholdPct],
+	);
+	return rows[0];
+}
+
+/**
+ * Biggest divergence first (abs(gap) desc) — the whole point of an oversight
+ * list like this is surfacing the worst mismatches, not an arbitrary order.
+ * `(abs_gap, id)` composite cursor, same shape as every other keyset-paginated
+ * list in this app, tie-broken by id since abs(gap) alone isn't unique.
+ */
+async function listProgressReconciliation(divisionId, filters) {
+	const params = [divisionId];
+	const clauses = [SCHEME_IN_DIVISION.replace('%SCHEME_ID%', 's.id'), BOTH_VALUES_KNOWN];
+
+	if (filters.minGap != null) {
+		params.push(filters.minGap);
+		clauses.push(`${ABS_GAP_EXPR} >= $${params.length}`);
+	}
+	if (filters.cursor) {
+		params.push(filters.cursor.absGap);
+		const absGapIdx = params.length;
+		params.push(filters.cursor.id);
+		const idIdx = params.length;
+		clauses.push(`(${ABS_GAP_EXPR}, s.id) < ($${absGapIdx}, $${idIdx})`);
+	}
+
+	const limit = Number.isInteger(filters.limit) ? filters.limit : 20;
+	params.push(limit + 1);
+
+	const result = await db.query(
+		`select s.id, s.uid, s.name, dep.name as "departmentName",
+				${PHYSICAL_PCT} as "physicalProgressPct", ${FINANCIAL_PCT} as "financialProgressPct",
+				${GAP_EXPR} as "gap"
+		 from schemes s
+		 join departments dep on dep.id = s.department_id
+		 where ${clauses.join(' and ')}
+		 order by ${ABS_GAP_EXPR} desc, s.id desc
+		 limit $${params.length}`,
+		params,
+	);
+
+	const hasMore = result.rows.length > limit;
+	const rows = result.rows.slice(0, limit);
+	const last = rows[rows.length - 1];
+	return {
+		rows,
+		nextCursor: hasMore && last ? `${Math.abs(last.gap)}_${last.id}` : null,
+	};
+}
+
 module.exports = {
 	findDivision,
 	countTeamsByStatus,
@@ -262,4 +342,6 @@ module.exports = {
 	countDistinctSchemesForMember,
 	listRecentVisitsForMember,
 	listRecentVisibleIssuesForMember,
+	countProgressReconciliationSummary,
+	listProgressReconciliation,
 };

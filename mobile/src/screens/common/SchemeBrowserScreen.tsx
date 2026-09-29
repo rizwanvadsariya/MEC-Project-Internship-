@@ -87,8 +87,15 @@ export default function SchemeBrowserScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>{t('schemes.title')}</Text>
-				<Text style={styles.subtitle}>{t('schemes.subtitle')}</Text>
+				<View style={styles.headerTop}>
+					<View style={styles.headerText}>
+						<Text style={styles.title}>{t('schemes.title')}</Text>
+						<Text style={styles.subtitle}>{t('schemes.subtitle')}</Text>
+					</View>
+					<Pressable style={styles.scanButton} onPress={() => navigation.navigate('QrScan')}>
+						<Text style={styles.scanButtonText}>{t('schemes.scanQr')}</Text>
+					</Pressable>
+				</View>
 			</View>
 			<TextInput
 				value={search}
@@ -118,6 +125,7 @@ export default function SchemeBrowserScreen() {
 				renderItem={({ item }) => (
 					<SchemeCard
 						scheme={item}
+						onViewDetails={() => navigation.navigate('SchemeDetail', { schemeId: item.id })}
 						onAssemble={() => navigation.navigate('TeamAssembly', { schemeId: item.id })}
 						onDiscuss={canDiscuss ? () => navigation.navigate('Comments', { commentableType: 'SCHEME', commentableId: String(item.id), title: t('schemes.discussionTitle', { schemeName: item.name }) }) : undefined}
 					/>
@@ -151,7 +159,7 @@ export default function SchemeBrowserScreen() {
 	);
 }
 
-function SchemeCard({ scheme, onAssemble, onDiscuss }: { scheme: Scheme; onAssemble: () => void; onDiscuss?: () => void }) {
+function SchemeCard({ scheme, onViewDetails, onAssemble, onDiscuss }: { scheme: Scheme; onViewDetails: () => void; onAssemble: () => void; onDiscuss?: () => void }) {
 	const { t } = useTranslation();
 	return (
 		<View style={styles.card}>
@@ -167,6 +175,9 @@ function SchemeCard({ scheme, onAssemble, onDiscuss }: { scheme: Scheme; onAssem
 				<Text style={styles.progress}>{t('schemes.financialProgress', { pct: scheme.financialProgressPct ?? 0 })}</Text>
 			</View>
 			<View style={styles.cardActions}>
+				<Pressable style={styles.detailsButton} onPress={onViewDetails}>
+					<Text style={styles.detailsButtonText}>{t('schemes.viewDetails')}</Text>
+				</Pressable>
 				<Pressable style={styles.teamButton} onPress={onAssemble}>
 					<Text style={styles.teamButtonText}>{t('schemes.assembleTeam')}</Text>
 				</Pressable>
@@ -207,8 +218,12 @@ function filterTitle(key: FilterKey, t: TFunction) {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: colors.background, padding: spacing.md },
 	header: { marginBottom: spacing.md },
+	headerTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+	headerText: { flex: 1 },
 	title: { color: colors.textPrimary, fontSize: typography.size.xxl, fontWeight: typography.weight.bold },
 	subtitle: { color: colors.textSecondary, fontSize: typography.size.sm, marginTop: spacing.xs },
+	scanButton: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+	scanButtonText: { color: colors.white, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
 	search: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.sm, color: colors.textPrimary, padding: spacing.md, fontSize: typography.size.md },
 	filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
 	filterChip: { backgroundColor: colors.primaryLight, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
@@ -227,7 +242,9 @@ const styles = StyleSheet.create({
 	meta: { color: colors.textSecondary, fontSize: typography.size.xs, lineHeight: typography.lineHeight.sm, marginTop: spacing.xs },
 	progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
 	progress: { color: colors.textPrimary, fontSize: typography.size.xs, fontWeight: typography.weight.medium },
-	cardActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+	cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+	detailsButton: { alignSelf: 'flex-start', backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+	detailsButtonText: { color: colors.textPrimary, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
 	teamButton: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
 	teamButtonText: { color: colors.white, fontSize: typography.size.xs, fontWeight: typography.weight.bold },
 	discussButton: { alignSelf: 'flex-start', backgroundColor: colors.background, borderColor: colors.primary, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },

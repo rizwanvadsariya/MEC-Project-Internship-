@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiRequest, apiRequestWithMeta } from './client';
 
 export type DivisionSummary = { id: number; name: string };
 
@@ -79,4 +79,32 @@ export function getDivisionDashboard(token: string) {
 
 export function getMemberDashboard(token: string) {
 	return apiRequest<MemberDashboard>('/dashboards/member', { token });
+}
+
+/** Step 27 — physical (MEO-reported) vs. financial (ADP-booklet) progress reconciliation, RD/DG only. */
+export type ReconciliationRow = {
+	id: number;
+	uid: string;
+	name: string;
+	departmentName: string;
+	physicalProgressPct: number;
+	financialProgressPct: number;
+	gap: number;
+};
+
+export type ReconciliationFilters = { flaggedOnly?: boolean; cursor?: string };
+
+export async function getProgressReconciliation(token: string, filters: ReconciliationFilters = {}) {
+	const params = new URLSearchParams();
+	if (filters.flaggedOnly) params.set('flaggedOnly', 'true');
+	if (filters.cursor) params.set('cursor', filters.cursor);
+	const qs = params.toString();
+	const { data, meta } = await apiRequestWithMeta<{
+		schemesTotal: number;
+		schemesWithBothValues: number;
+		schemesFlagged: number;
+		flagThresholdPct: number;
+		rows: ReconciliationRow[];
+	}>(`/dashboards/reconciliation${qs ? `?${qs}` : ''}`, { token });
+	return { ...data, nextCursor: (meta?.nextCursor as string | null) ?? null };
 }

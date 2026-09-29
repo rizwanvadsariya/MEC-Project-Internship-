@@ -39,6 +39,9 @@
     "language": "Language",
     "analytics": "Analytics",
     "auditTrail": "Audit trail",
+    "reconciliation": "Progress reconciliation",
+    "qrScan": "Scan QR",
+    "schemeDetail": "Scheme record",
     "unknownRole": "Unknown role: {{role}}"
   },
   "auth": {
@@ -146,6 +149,7 @@
       "language": "Language",
       "analytics": "Analytics",
       "auditTrail": "Audit trail",
+      "reconciliation": "Progress reconciliation",
       "logOut": "Log out"
     },
     "errorLoadActivity": "Could not load your activity."
@@ -169,7 +173,9 @@
     "financialProgress": "Financial {{pct}}%",
     "assembleTeam": "Assemble team",
     "discussion": "Discussion",
-    "discussionTitle": "{{schemeName}} — Discussion"
+    "discussionTitle": "{{schemeName}} — Discussion",
+    "scanQr": "Scan QR",
+    "viewDetails": "View details"
   },
   "teams": {
     "eyebrow": "Team assembly",
@@ -294,6 +300,45 @@
       "APPROVED": "Approved",
       "REJECTED": "Rejected"
     }
+  },
+  "reconciliation": {
+    "title": "Progress reconciliation",
+    "subtitle": "MEO-reported physical progress vs. ADP-booklet financial progress, by scheme",
+    "couldNotLoad": "Could not load the reconciliation list.",
+    "couldNotLoadMore": "Could not load more schemes.",
+    "noSchemesYet": "No schemes with both physical and financial progress reported yet.",
+    "coverage": "{{withBoth}} of {{total}} schemes have both figures reported",
+    "flaggedCount": "{{count}} scheme(s) flagged — gap of {{threshold}} percentage points or more",
+    "filter": {
+      "all": "All schemes",
+      "flaggedOnly": "Flagged only"
+    },
+    "physical": "Physical",
+    "financial": "Financial",
+    "financialAhead": "Financial progress is ahead of physical progress",
+    "physicalAhead": "Physical progress is ahead of financial progress"
+  },
+  "qrScan": {
+    "permissionTitle": "Camera access needed",
+    "permissionBody": "MEC needs your camera to scan a scheme's printed ADP QR code.",
+    "grantPermission": "Grant camera access",
+    "hint": "Hold closer and keep only one QR code inside the frame",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "lookingUp": "Looking up scheme…",
+    "schemeNotFound": "No scheme found for code: {{code}}",
+    "couldNotLookUp": "Could not look up this code. Please try again.",
+    "scanAgain": "Scan again"
+  },
+  "schemeDetail": {
+    "couldNotLoad": "Could not load this scheme.",
+    "department": "Department",
+    "subSector": "Sub-sector",
+    "districts": "Districts",
+    "divisions": "Divisions",
+    "targetCompletion": "Target completion",
+    "estimatedCost": "Estimated cost",
+    "progress": "Progress"
   },
   "dateTime": {
     "justNow": "Just now",

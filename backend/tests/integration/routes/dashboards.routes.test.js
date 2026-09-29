@@ -87,13 +87,23 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 		// Self-heal: reset every scheme in both fixture departments to NULL
 		// progress first (in case a prior crashed run left values behind), then
 		// write only the exact values this test controls.
-		await db.query('update schemes set physical_progress_pct = null where id = any($1::bigint[])', [[...deptProgress.schemeIds, ...deptNoProgress.schemeIds]]);
+		await db.query('update schemes set physical_progress_pct = null, financial_progress_pct = null where id = any($1::bigint[])', [[...deptProgress.schemeIds, ...deptNoProgress.schemeIds]]);
 		const [progressSchemeA, progressSchemeB] = deptProgress.schemeIds;
 		await db.query('update schemes set physical_progress_pct = 80 where id = $1', [progressSchemeA]);
 		await db.query('update schemes set physical_progress_pct = 20 where id = $1', [progressSchemeB]);
 		// A distinctive value on the OTHER division's scheme — must never leak
 		// into divisionA's progressByDepartment/overallProgress numbers below.
-		await db.query('update schemes set physical_progress_pct = 99 where id = $1', [schemeB]);
+		await db.query('update schemes set physical_progress_pct = 99, financial_progress_pct = null where id = $1', [schemeB]);
+
+		// Step 27 reconciliation fixtures: progressSchemeA's gap (95-80=15) stays
+		// under the 25pp flag threshold; progressSchemeB's gap (90-20=70) clears
+		// it — one flagged, one not, and 70 > 15 so ordering-by-worst-gap is
+		// exercised too. schemeB gets a matching financial value (99) so its
+		// gap is 0 — division B must still never leak into division A's list
+		// regardless of how small or large its own gap is.
+		await db.query('update schemes set financial_progress_pct = 95 where id = $1', [progressSchemeA]);
+		await db.query('update schemes set financial_progress_pct = 90 where id = $1', [progressSchemeB]);
+		await db.query('update schemes set financial_progress_pct = 99 where id = $1', [schemeB]);
 
 		// Matches dashboard.repo's own EXISTS-based SCHEME_IN_DIVISION pattern
 		// (not a join) — a scheme linked to multiple districts within the same
@@ -146,7 +156,7 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 			deptNoProgress: { ...deptNoProgress, schemesTotal: totalsByDeptId[deptNoProgress.departmentId] },
 			progressSchemeA, progressSchemeB,
 		};
-	}, 30000); // several sequential round trips to the remote Supabase pooler + JWKS fetch on first login
+	}, 45000); // several sequential round trips to the remote Supabase pooler + JWKS fetch on first login — bumped from 30000 once the Step 27 reconciliation fixture writes pushed it over that budget
 
 	afterAll(async () => {
 		if (!db) return; // beforeAll failed before db was even assigned — nothing to clean up
@@ -155,8 +165,8 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 			await db.query('delete from site_visits where id in ($1,$2)', [f.visitScheduled, f.visitB]);
 			await db.query('delete from visit_team_members where team_id = $1', [f.teamApproved]);
 			await db.query('delete from visit_teams where id in ($1,$2,$3,$4,$5)', [f.teamDraft, f.teamPending, f.teamApproved, f.teamRejected, f.teamB]);
-			// Step 23 analytics fixtures — reset the progress values this suite wrote.
-			await db.query('update schemes set physical_progress_pct = null where id = any($1::bigint[])', [[...f.deptProgress.schemeIds, ...f.deptNoProgress.schemeIds, f.schemeB]]);
+			// Step 23/27 analytics + reconciliation fixtures — reset the progress values this suite wrote.
+			await db.query('update schemes set physical_progress_pct = null, financial_progress_pct = null where id = any($1::bigint[])', [[...f.deptProgress.schemeIds, ...f.deptNoProgress.schemeIds, f.schemeB]]);
 		}
 		await db.close();
 	});
@@ -272,5 +282,96 @@ maybeDescribe('GET /api/v1/dashboards/division', () => {
 		const progressRow = data.progressByDepartment.find((row) => row.departmentId === f.deptProgress.departmentId);
 		expect(progressRow.schemesReported).toBe(2);
 		expect(progressRow.avgProgressPct).toBeCloseTo(50, 6);
+	});
+
+	describe('GET /api/v1/dashboards/reconciliation (Step 27 — physical vs. financial progress)', () => {
+		test('rejects an unauthenticated request and forbids MEO/Support', async () => {
+			const unauth = await request(app).get('/api/v1/dashboards/reconciliation');
+			expect(unauth.status).toBe(401);
+
+			const meoToken = await getAccessToken('MEO');
+			const meoRes = await request(app).get('/api/v1/dashboards/reconciliation').set('Authorization', `Bearer ${meoToken}`);
+			expect(meoRes.status).toBe(403);
+
+			const supportToken = await getAccessToken('SUPPORT_USER');
+			const supportRes = await request(app).get('/api/v1/dashboards/reconciliation').set('Authorization', `Bearer ${supportToken}`);
+			expect(supportRes.status).toBe(403);
+		});
+
+		test('RD sees both fixture schemes with correct gaps, worst-divergence first, division B excluded entirely', async () => {
+			const token = await getAccessToken('REGIONAL_DIRECTOR');
+			const res = await request(app).get('/api/v1/dashboards/reconciliation').query({ limit: 50 }).set('Authorization', `Bearer ${token}`);
+
+			expect(res.status).toBe(200);
+			const { rows } = res.body.data;
+
+			const rowA = rows.find((r) => r.id === f.progressSchemeA);
+			const rowB = rows.find((r) => r.id === f.progressSchemeB);
+			expect(rowA).toBeDefined();
+			expect(rowB).toBeDefined();
+			expect(rowA.physicalProgressPct).toBe(80);
+			expect(rowA.financialProgressPct).toBe(95);
+			expect(rowA.gap).toBeCloseTo(15, 6);
+			expect(rowB.physicalProgressPct).toBe(20);
+			expect(rowB.financialProgressPct).toBe(90);
+			expect(rowB.gap).toBeCloseTo(70, 6);
+
+			// progressSchemeB's gap (70) is bigger than progressSchemeA's (15) —
+			// worst divergence must sort first.
+			expect(rows.findIndex((r) => r.id === f.progressSchemeB)).toBeLessThan(rows.findIndex((r) => r.id === f.progressSchemeA));
+
+			// Division B's scheme must never appear, regardless of its own gap.
+			expect(rows.some((r) => r.id === f.schemeB)).toBe(false);
+		});
+
+		test('DG (same division) sees the identical rows', async () => {
+			const token = await getAccessToken('DIRECTOR_GENERAL');
+			const res = await request(app).get('/api/v1/dashboards/reconciliation').query({ limit: 50 }).set('Authorization', `Bearer ${token}`);
+
+			expect(res.status).toBe(200);
+			expect(res.body.data.rows.some((r) => r.id === f.progressSchemeA)).toBe(true);
+			expect(res.body.data.rows.some((r) => r.id === f.progressSchemeB)).toBe(true);
+		});
+
+		test('flaggedOnly=true keeps the 70pp-gap scheme and drops the 15pp-gap one (threshold is 25)', async () => {
+			const token = await getAccessToken('REGIONAL_DIRECTOR');
+			const res = await request(app)
+				.get('/api/v1/dashboards/reconciliation')
+				.query({ flaggedOnly: 'true', limit: 50 })
+				.set('Authorization', `Bearer ${token}`);
+
+			expect(res.status).toBe(200);
+			expect(res.body.data.flagThresholdPct).toBe(25);
+			expect(res.body.data.rows.some((r) => r.id === f.progressSchemeB)).toBe(true);
+			expect(res.body.data.rows.some((r) => r.id === f.progressSchemeA)).toBe(false);
+			expect(res.body.data.schemesFlagged).toBeGreaterThanOrEqual(1);
+			expect(res.body.data.schemesWithBothValues).toBeGreaterThanOrEqual(2);
+		});
+
+		test('cursor pagination with limit=1 returns one row at a time, still worst-gap-first, with a working nextCursor', async () => {
+			const token = await getAccessToken('REGIONAL_DIRECTOR');
+			const first = await request(app).get('/api/v1/dashboards/reconciliation').query({ limit: 1 }).set('Authorization', `Bearer ${token}`);
+			expect(first.status).toBe(200);
+			expect(first.body.data.rows).toHaveLength(1);
+			expect(first.body.meta.nextCursor).toBeTruthy();
+
+			const second = await request(app)
+				.get('/api/v1/dashboards/reconciliation')
+				.query({ limit: 1, cursor: first.body.meta.nextCursor })
+				.set('Authorization', `Bearer ${token}`);
+			expect(second.status).toBe(200);
+			expect(second.body.data.rows).toHaveLength(1);
+			// The two pages must never repeat the same scheme.
+			expect(second.body.data.rows[0].id).not.toBe(first.body.data.rows[0].id);
+		});
+
+		test('a malformed cursor is rejected with 400', async () => {
+			const token = await getAccessToken('REGIONAL_DIRECTOR');
+			const res = await request(app)
+				.get('/api/v1/dashboards/reconciliation')
+				.query({ cursor: 'not-a-cursor' })
+				.set('Authorization', `Bearer ${token}`);
+			expect(res.status).toBe(400);
+		});
 	});
 });

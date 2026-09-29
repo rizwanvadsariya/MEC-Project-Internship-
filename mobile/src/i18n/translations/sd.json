@@ -39,6 +39,9 @@
     "language": "ٻولي",
     "analytics": "تجزيا",
     "auditTrail": "منظوري جي تاريخ",
+    "reconciliation": "ترقي جي ميلاپ",
+    "qrScan": "QR اسڪين ڪريو",
+    "schemeDetail": "اسڪيم جو رڪارڊ",
     "unknownRole": "اڻڄاتل ڪردار: {{role}}"
   },
   "auth": {
@@ -146,6 +149,7 @@
       "language": "ٻولي",
       "analytics": "تجزيا",
       "auditTrail": "منظوري جي تاريخ",
+      "reconciliation": "ترقي جي ميلاپ",
       "logOut": "لاگ آئوٽ"
     },
     "errorLoadActivity": "توهان جي سرگرمي لوڊ نه ٿي سگهي."
@@ -169,7 +173,9 @@
     "financialProgress": "مالي {{pct}}%",
     "assembleTeam": "ٽيم ٺاهيو",
     "discussion": "بحث",
-    "discussionTitle": "{{schemeName}} — بحث"
+    "discussionTitle": "{{schemeName}} — بحث",
+    "scanQr": "QR اسڪين ڪريو",
+    "viewDetails": "تفصيل ڏسو"
   },
   "teams": {
     "eyebrow": "ٽيم جي تشڪيل",
@@ -294,6 +300,45 @@
       "APPROVED": "منظور ٿيل",
       "REJECTED": "رد ٿيل"
     }
+  },
+  "reconciliation": {
+    "title": "ترقي جي ميلاپ",
+    "subtitle": "MEO پاران رپورٽ ٿيل جسماني ترقي بمقابله ADP بڪليٽ جي مالي ترقي، اسڪيم موجب",
+    "couldNotLoad": "ميلاپ جي فهرست لوڊ نه ٿي سگهي.",
+    "couldNotLoadMore": "وڌيڪ اسڪيمون لوڊ نه ٿي سگهيون.",
+    "noSchemesYet": "اڃا تائين ڪا اهڙي اسڪيم ناهي جنهن جا ٻئي انگ اکر رپورٽ ٿيل هجن.",
+    "coverage": "{{total}} مان {{withBoth}} اسڪيمن جا ٻئي انگ اکر رپورٽ ٿيل آهن",
+    "flaggedCount": "{{count}} اسڪيم(ون) نشان لڳل — {{threshold}} سيڪڙو پوائنٽ يا وڌيڪ جو فرق",
+    "filter": {
+      "all": "سڀ اسڪيمون",
+      "flaggedOnly": "صرف نشان لڳل"
+    },
+    "physical": "جسماني",
+    "financial": "مالي",
+    "financialAhead": "مالي ترقي جسماني ترقي کان اڳتي آهي",
+    "physicalAhead": "جسماني ترقي مالي ترقي کان اڳتي آهي"
+  },
+  "qrScan": {
+    "permissionTitle": "ڪئميرا رسائي گهربل آهي",
+    "permissionBody": "MEC کي ڪنهن اسڪيم جو ڇپيل ADP QR ڪوڊ اسڪين ڪرڻ لاءِ توهان جي ڪئميرا جي ضرورت آهي.",
+    "grantPermission": "ڪئميرا جي اجازت ڏيو",
+    "hint": "ويجهو رکو ۽ فريم ۾ صرف هڪ QR ڪوڊ رکو",
+    "zoomIn": "زوم ان",
+    "zoomOut": "زوم آئوٽ",
+    "lookingUp": "اسڪيم ڳولهي پئي وڃي…",
+    "schemeNotFound": "ڪوڊ لاءِ ڪا اسڪيم نه ملي: {{code}}",
+    "couldNotLookUp": "هي ڪوڊ ڳولهي نه سگهيو. مهرباني ڪري ٻيهر ڪوشش ڪريو.",
+    "scanAgain": "ٻيهر اسڪين ڪريو"
+  },
+  "schemeDetail": {
+    "couldNotLoad": "هي اسڪيم لوڊ نه ٿي سگهي.",
+    "department": "کاتو",
+    "subSector": "ذيلي شعبو",
+    "districts": "ضلعا",
+    "divisions": "ڊويزنون",
+    "targetCompletion": "مڪمل ٿيڻ جو مقرر ٿيل وقت",
+    "estimatedCost": "تخميني خرچ",
+    "progress": "ترقي"
   },
   "dateTime": {
     "justNow": "هاڻي هاڻي",

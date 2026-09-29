@@ -246,6 +246,11 @@ export default function RoleHomeScreen() {
           <Text style={styles.securityButtonText}>{t('roleHome.buttons.auditTrail')}</Text>
         </Pressable>
       ) : null}
+      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
+        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('ProgressReconciliation')}>
+          <Text style={styles.securityButtonText}>{t('roleHome.buttons.reconciliation')}</Text>
+        </Pressable>
+      ) : null}
       <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Notifications')}>
         <Text style={styles.securityButtonText}>{t('roleHome.buttons.notifications')}</Text>
       </Pressable>

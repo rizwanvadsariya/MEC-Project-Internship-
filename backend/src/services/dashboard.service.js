@@ -11,6 +11,16 @@ const ApiError = require('../lib/ApiError');
 
 const RECENT_LIMIT = 5;
 
+/**
+ * Step 27 — how many percentage points apart physical and financial progress
+ * must be before a scheme is flagged as worth an RD/DG's attention. A
+ * deliberate judgment call, not a value from PRD.md/schema.md (neither
+ * specifies one) — documented here rather than treated as a fixed
+ * requirement, same footing as Step 25's escalation rules being "e.g."
+ * examples rather than an exhaustive spec.
+ */
+const RECONCILIATION_FLAG_THRESHOLD_PCT = 25;
+
 const TEAM_STATUSES = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 const VISIT_STATUSES = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 const ISSUE_STATUSES = ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED'];
@@ -131,4 +141,40 @@ async function getMemberSummary(actor) {
 	};
 }
 
-module.exports = { getDivisionSummary, getMemberSummary };
+function decodeReconciliationCursor(cursor) {
+	if (!cursor) return undefined;
+	const separatorIndex = cursor.lastIndexOf('_');
+	if (separatorIndex === -1) throw ApiError.badRequest('Invalid cursor');
+	const absGap = Number(cursor.slice(0, separatorIndex));
+	if (Number.isNaN(absGap)) throw ApiError.badRequest('Invalid cursor');
+	return { absGap, id: cursor.slice(separatorIndex + 1) };
+}
+
+/**
+ * Step 27 — physical (MEO-reported) vs. financial (ADP-booklet) progress
+ * reconciliation, division-scoped for RD and DG both (same access as
+ * getDivisionSummary above — an oversight list, not a write path). Returns a
+ * coverage summary (how many of the division's schemes even have both values
+ * to compare) alongside the paginated, worst-divergence-first list itself.
+ */
+async function getProgressReconciliation(actor, query) {
+	if (actor.divisionId == null) {
+		throw ApiError.badRequest('This account has no division assigned');
+	}
+	const { cursor, flaggedOnly, ...rest } = query;
+	const minGap = flaggedOnly ? RECONCILIATION_FLAG_THRESHOLD_PCT : undefined;
+
+	const [summary, page] = await Promise.all([
+		dashboardRepo.countProgressReconciliationSummary(actor.divisionId, RECONCILIATION_FLAG_THRESHOLD_PCT),
+		dashboardRepo.listProgressReconciliation(actor.divisionId, { ...rest, minGap, cursor: decodeReconciliationCursor(cursor) }),
+	]);
+
+	return {
+		...summary,
+		flagThresholdPct: RECONCILIATION_FLAG_THRESHOLD_PCT,
+		rows: page.rows,
+		nextCursor: page.nextCursor,
+	};
+}
+
+module.exports = { getDivisionSummary, getMemberSummary, getProgressReconciliation };

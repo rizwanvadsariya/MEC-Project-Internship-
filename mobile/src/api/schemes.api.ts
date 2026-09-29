@@ -12,8 +12,8 @@ export type Scheme = {
 	subSectorName?: string | null;
 	targetCompletionDate?: string | null;
 	estimatedCost?: string | number | null;
-	physicalProgressPct?: string | number | null;
-	financialProgressPct?: string | number | null;
+	physicalProgressPct?: number | null;
+	financialProgressPct?: number | null;
 	districts: string[];
 	divisions: string[];
 };
@@ -60,4 +60,9 @@ export function getSchemeFilterOptions(token: string) {
 
 export function getScheme(id: number, token: string) {
 	return apiRequest<Scheme>(`/schemes/${id}`, { token });
+}
+
+/** Step 28 — QR scan-to-open. Same shape as getScheme, keyed by uid instead of id. */
+export function getSchemeByUid(uid: string, token: string) {
+	return apiRequest<Scheme>(`/schemes/by-uid/${encodeURIComponent(uid)}`, { token });
 }

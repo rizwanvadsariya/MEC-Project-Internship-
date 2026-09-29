@@ -19,6 +19,8 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 	countDistinctSchemesForMember: jest.fn(),
 	listRecentVisitsForMember: jest.fn(),
 	listRecentVisibleIssuesForMember: jest.fn(),
+	countProgressReconciliationSummary: jest.fn(),
+	listProgressReconciliation: jest.fn(),
 }));
 // Step 25: getDivisionSummary fires the overdue-escalation trigger — mocked
 // here so this stays a pure unit test of dashboard.service's own shaping
@@ -262,5 +264,72 @@ describe('getMemberSummary (MEO/Support, team-membership scoped)', () => {
 	test('never throws for an actor with no division (SUPPORT_USER commonly has divisionId: null)', async () => {
 		stubMemberDefaults();
 		await expect(dashboardService.getMemberSummary({ id: 'support-1', divisionId: null })).resolves.toBeDefined();
+	});
+});
+
+describe('getProgressReconciliation (Step 27 — physical vs. financial progress)', () => {
+	function stubReconciliationDefaults() {
+		dashboardRepo.countProgressReconciliationSummary.mockResolvedValue({ schemesTotal: 10, schemesWithBothValues: 6, schemesFlagged: 2 });
+		dashboardRepo.listProgressReconciliation.mockResolvedValue({ rows: [], nextCursor: null });
+	}
+
+	test('queries the summary and the list both scoped by the actor\'s division, with the fixed flag threshold', async () => {
+		stubReconciliationDefaults();
+
+		await dashboardService.getProgressReconciliation(actor, { limit: 20 });
+
+		expect(dashboardRepo.countProgressReconciliationSummary).toHaveBeenCalledWith(1, 25);
+		expect(dashboardRepo.listProgressReconciliation).toHaveBeenCalledWith(1, { limit: 20, minGap: undefined, cursor: undefined });
+	});
+
+	test('flaggedOnly=true passes the flag threshold as minGap; omitted/false passes minGap: undefined (no filter)', async () => {
+		stubReconciliationDefaults();
+
+		await dashboardService.getProgressReconciliation(actor, { flaggedOnly: true, limit: 20 });
+		expect(dashboardRepo.listProgressReconciliation).toHaveBeenCalledWith(1, { limit: 20, minGap: 25, cursor: undefined });
+
+		jest.clearAllMocks();
+		stubReconciliationDefaults();
+		await dashboardService.getProgressReconciliation(actor, { flaggedOnly: false, limit: 20 });
+		expect(dashboardRepo.listProgressReconciliation).toHaveBeenCalledWith(1, { limit: 20, minGap: undefined, cursor: undefined });
+	});
+
+	test('decodes a cursor into {absGap, id} on the last "_", parsing absGap as a number', async () => {
+		stubReconciliationDefaults();
+
+		await dashboardService.getProgressReconciliation(actor, { cursor: '17.5_scheme-1', limit: 20 });
+
+		expect(dashboardRepo.listProgressReconciliation).toHaveBeenCalledWith(1, { limit: 20, minGap: undefined, cursor: { absGap: 17.5, id: 'scheme-1' } });
+	});
+
+	test('throws 400 on a malformed cursor with no separator or a non-numeric absGap', async () => {
+		stubReconciliationDefaults();
+
+		await expect(dashboardService.getProgressReconciliation(actor, { cursor: 'not-a-cursor', limit: 20 })).rejects.toMatchObject({ statusCode: 400 });
+		await expect(dashboardService.getProgressReconciliation(actor, { cursor: 'abc_scheme-1', limit: 20 })).rejects.toMatchObject({ statusCode: 400 });
+		expect(dashboardRepo.listProgressReconciliation).not.toHaveBeenCalled();
+	});
+
+	test('throws 400 when the actor has no division assigned', async () => {
+		stubReconciliationDefaults();
+
+		await expect(dashboardService.getProgressReconciliation({ id: 'x', divisionId: null }, { limit: 20 })).rejects.toMatchObject({ statusCode: 400 });
+		expect(dashboardRepo.countProgressReconciliationSummary).not.toHaveBeenCalled();
+	});
+
+	test('merges the summary counts with the flag threshold and the paginated rows into one flat result', async () => {
+		dashboardRepo.countProgressReconciliationSummary.mockResolvedValue({ schemesTotal: 10, schemesWithBothValues: 6, schemesFlagged: 2 });
+		dashboardRepo.listProgressReconciliation.mockResolvedValue({ rows: [{ id: 1, gap: 30 }], nextCursor: '30_1' });
+
+		const result = await dashboardService.getProgressReconciliation(actor, { limit: 20 });
+
+		expect(result).toEqual({
+			schemesTotal: 10,
+			schemesWithBothValues: 6,
+			schemesFlagged: 2,
+			flagThresholdPct: 25,
+			rows: [{ id: 1, gap: 30 }],
+			nextCursor: '30_1',
+		});
 	});
 });

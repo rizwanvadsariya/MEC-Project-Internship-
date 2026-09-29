@@ -18,8 +18,12 @@ const getById = asyncHandler(async (req, res) => {
 	ApiResponse.ok(res, await schemeService.getById(req.authUser, req.params.id));
 });
 
+const getByUid = asyncHandler(async (req, res) => {
+	ApiResponse.ok(res, await schemeService.getByUid(req.authUser, req.params.uid));
+});
+
 const filterOptions = asyncHandler(async (_req, res) => {
 	ApiResponse.ok(res, await schemeService.getFilterOptions());
 });
 
-module.exports = { list, getById, filterOptions };
+module.exports = { list, getById, getByUid, filterOptions };

@@ -31,7 +31,7 @@ const select = `
 		s.department_id as "departmentId", dep.name as "departmentName",
 		s.sub_sector_id as "subSectorId", ss.name as "subSectorName",
 		s.target_completion_date as "targetCompletionDate", s.estimated_cost as "estimatedCost",
-		s.physical_progress_pct as "physicalProgressPct", s.financial_progress_pct as "financialProgressPct",
+		s.physical_progress_pct::float8 as "physicalProgressPct", s.financial_progress_pct::float8 as "financialProgressPct",
 		coalesce(array_agg(distinct d.name) filter (where d.id is not null), '{}') as districts,
 		coalesce(array_agg(distinct div.name) filter (where div.id is not null), '{}') as divisions
 	from schemes s
@@ -61,6 +61,19 @@ async function findById(id, scopeDivisionId) {
 	return result.rows[0] || null;
 }
 
+/**
+ * Step 28 — QR scan-to-open resolves a scanned code to a scheme by its `uid`,
+ * the same natural, human-readable key printed-on-paper QR codes would
+ * realistically encode (schema.md §4.1's own "natural idempotency key" —
+ * there's no dedicated QR/barcode column anywhere in the ADP source CSVs to
+ * use instead). Case-insensitive and trimmed: a camera scan or a manually
+ * retyped code shouldn't fail over a stray space or a lowercase letter.
+ */
+async function findByUid(uid) {
+	const result = await db.query(`${select} where upper(s.uid) = upper($1) group by s.id, dep.name, ss.name`, [uid.trim()]);
+	return result.rows[0] || null;
+}
+
 async function filterOptions() {
 	const [divisions, districts, departments, subSectors, statuses] = await Promise.all([
 		db.query('select id, name from divisions order by name'),
@@ -78,4 +91,4 @@ async function filterOptions() {
 	};
 }
 
-module.exports = { list, findById, filterOptions };
+module.exports = { list, findById, findByUid, filterOptions };

@@ -39,6 +39,9 @@
     "language": "زبان",
     "analytics": "تجزیات",
     "auditTrail": "منظوری کی تاریخ",
+    "reconciliation": "پیش رفت مطابقت",
+    "qrScan": "QR اسکین کریں",
+    "schemeDetail": "اسکیم کا ریکارڈ",
     "unknownRole": "نامعلوم کردار: {{role}}"
   },
   "auth": {
@@ -146,6 +149,7 @@
       "language": "زبان",
       "analytics": "تجزیات",
       "auditTrail": "منظوری کی تاریخ",
+      "reconciliation": "پیش رفت مطابقت",
       "logOut": "لاگ آؤٹ"
     },
     "errorLoadActivity": "آپ کی سرگرمی لوڈ نہیں ہو سکی۔"
@@ -169,7 +173,9 @@
     "financialProgress": "مالی {{pct}}%",
     "assembleTeam": "ٹیم تشکیل دیں",
     "discussion": "تبادلہ خیال",
-    "discussionTitle": "{{schemeName}} — تبادلہ خیال"
+    "discussionTitle": "{{schemeName}} — تبادلہ خیال",
+    "scanQr": "QR اسکین کریں",
+    "viewDetails": "تفصیلات دیکھیں"
   },
   "teams": {
     "eyebrow": "ٹیم کی تشکیل",
@@ -294,6 +300,45 @@
       "APPROVED": "منظور شدہ",
       "REJECTED": "مسترد شدہ"
     }
+  },
+  "reconciliation": {
+    "title": "پیش رفت مطابقت",
+    "subtitle": "MEO کی رپورٹ کردہ جسمانی پیش رفت بمقابلہ ADP بکلٹ کی مالی پیش رفت، سکیم کے حساب سے",
+    "couldNotLoad": "مطابقت کی فہرست لوڈ نہیں ہو سکی۔",
+    "couldNotLoadMore": "مزید سکیمیں لوڈ نہیں ہو سکیں۔",
+    "noSchemesYet": "ابھی تک کوئی ایسی سکیم نہیں جس کے دونوں اعداد و شمار رپورٹ ہوئے ہوں۔",
+    "coverage": "{{total}} میں سے {{withBoth}} سکیموں کے دونوں اعداد و شمار رپورٹ ہوئے ہیں",
+    "flaggedCount": "{{count}} سکیم(یں) نشان زد — {{threshold}} فیصد پوائنٹس یا اس سے زیادہ کا فرق",
+    "filter": {
+      "all": "تمام سکیمیں",
+      "flaggedOnly": "صرف نشان زد"
+    },
+    "physical": "جسمانی",
+    "financial": "مالی",
+    "financialAhead": "مالی پیش رفت جسمانی پیش رفت سے آگے ہے",
+    "physicalAhead": "جسمانی پیش رفت مالی پیش رفت سے آگے ہے"
+  },
+  "qrScan": {
+    "permissionTitle": "کیمرے تک رسائی درکار ہے",
+    "permissionBody": "MEC کو کسی سکیم کا پرنٹ شدہ ADP QR کوڈ اسکین کرنے کے لیے آپ کے کیمرے کی ضرورت ہے۔",
+    "grantPermission": "کیمرے کی اجازت دیں",
+    "hint": "قریب رکھیں اور فریم میں صرف ایک QR کوڈ رکھیں",
+    "zoomIn": "زوم ان",
+    "zoomOut": "زوم آؤٹ",
+    "lookingUp": "سکیم تلاش کی جا رہی ہے…",
+    "schemeNotFound": "کوڈ کے لیے کوئی سکیم نہیں ملی: {{code}}",
+    "couldNotLookUp": "یہ کوڈ تلاش نہیں کیا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔",
+    "scanAgain": "دوبارہ اسکین کریں"
+  },
+  "schemeDetail": {
+    "couldNotLoad": "یہ سکیم لوڈ نہیں ہو سکی۔",
+    "department": "محکمہ",
+    "subSector": "ذیلی شعبہ",
+    "districts": "اضلاع",
+    "divisions": "ڈویژنز",
+    "targetCompletion": "تکمیل کا ہدف",
+    "estimatedCost": "تخمینی لاگت",
+    "progress": "پیش رفت"
   },
   "dateTime": {
     "justNow": "ابھی ابھی",
