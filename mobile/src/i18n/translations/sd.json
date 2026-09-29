@@ -38,6 +38,7 @@
     "approvalQueue": "منظوري جي قطار",
     "language": "ٻولي",
     "analytics": "تجزيا",
+    "auditTrail": "منظوري جي تاريخ",
     "unknownRole": "اڻڄاتل ڪردار: {{role}}"
   },
   "auth": {
@@ -144,6 +145,7 @@
       "security": "سيڪيورٽي سيٽنگون",
       "language": "ٻولي",
       "analytics": "تجزيا",
+      "auditTrail": "منظوري جي تاريخ",
       "logOut": "لاگ آئوٽ"
     },
     "errorLoadActivity": "توهان جي سرگرمي لوڊ نه ٿي سگهي."
@@ -268,6 +270,29 @@
       "MEDIUM": "وچولي",
       "HIGH": "وڌيڪ",
       "CRITICAL": "شديد"
+    }
+  },
+  "auditTrail": {
+    "title": "منظوري جي تاريخ",
+    "subtitle": "توهان جي ڊويزن ۾ هر ٽيم جي درخواست، فيصلو، ۽ ٻيهر جمع ڪرڻ",
+    "couldNotLoad": "منظوري جي تاريخ لوڊ نه ٿي سگهي.",
+    "couldNotLoadMore": "وڌيڪ تاريخ لوڊ نه ٿي سگهي.",
+    "noHistoryYet": "اڃا تائين ڪا منظوري جي تاريخ موجود ناهي.",
+    "version": "ورزن {{version}}",
+    "submittedBy": "{{name}} پاران جمع ڪرايل",
+    "approvedBy": "{{name}} پاران منظور ٿيل",
+    "rejectedBy": "{{name}} پاران رد ٿيل",
+    "remarks": "رايا",
+    "filter": {
+      "ALL": "سڀ",
+      "PENDING": "زير التواء",
+      "APPROVED": "منظور ٿيل",
+      "REJECTED": "رد ٿيل"
+    },
+    "decision": {
+      "PENDING": "زير التواء",
+      "APPROVED": "منظور ٿيل",
+      "REJECTED": "رد ٿيل"
     }
   },
   "dateTime": {

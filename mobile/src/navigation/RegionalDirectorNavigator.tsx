@@ -15,6 +15,7 @@ import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import VisitCalendarScreen from '../screens/common/VisitCalendarScreen';
 import AnalyticsScreen from '../screens/common/AnalyticsScreen';
+import AuditTrailScreen from '../screens/common/AuditTrailScreen';
 import VisitFormScreen from '../screens/meo/VisitFormScreen';
 import VisitReportScreen from '../screens/meo/VisitReportScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
@@ -38,6 +39,7 @@ export default function RegionalDirectorNavigator() {
       <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: t('navigation.siteVisit') }} />
       <Stack.Screen name="VisitCalendar" component={VisitCalendarScreen} options={{ title: t('navigation.visitCalendar') }} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: t('navigation.analytics') }} />
+      <Stack.Screen name="AuditTrail" component={AuditTrailScreen} options={{ title: t('navigation.auditTrail') }} />
       <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: t('navigation.visitForm') }} />
       <Stack.Screen name="VisitReport" component={VisitReportScreen} options={{ title: t('navigation.submittedReport') }} />
       <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: t('navigation.discussion') }} />

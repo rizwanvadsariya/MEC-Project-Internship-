@@ -1,7 +1,7 @@
 /**
  * Root component: SafeAreaProvider -> LanguageProvider -> AuthProvider ->
  * NavigationContainer(RootNavigator). Phase 1 adds QueryClientProvider /
- * ThemeProvider around this same tree (src/app/queryClient.ts, src/theme are
+ * ThemeProvider around this same tree (src/appState/queryClient.ts, src/theme are
  * already stubbed/built). LanguageProvider is mounted outermost (Step 22):
  * language preference is app-wide and independent of auth state — it must be
  * ready before AuthProvider/LoginScreen render so the login screen itself can

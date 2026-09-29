@@ -37,6 +37,72 @@ async function listPending(divisionId) {
 	return rows;
 }
 
+/**
+ * Step 26 — full audit trail: every team_approval_requests row ever written
+ * (submit, reject, resubmit, approve), not just the still-PENDING ones
+ * listPending returns. Division-scoped the same way as every other list
+ * endpoint in this app (RD/DG see their own division, not just their own
+ * submissions) — reuses the exact scheme_districts/districts EXISTS-clause
+ * template listPending/decide already use, applied without listPending's own
+ * `tar.decision = 'PENDING'` restriction. Newest first, same convention as
+ * comments (Step 20) and notifications (Step 17).
+ */
+async function listHistory(divisionId, filters) {
+	const params = [divisionId];
+	const clauses = [
+		`exists (
+			select 1 from scheme_districts scope_sd
+			join districts scope_d on scope_d.id = scope_sd.district_id
+			where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = $1
+		)`,
+	];
+
+	if (filters.teamId) {
+		params.push(filters.teamId);
+		clauses.push(`tar.team_id = $${params.length}`);
+	}
+	if (filters.decision) {
+		params.push(filters.decision);
+		clauses.push(`tar.decision = $${params.length}`);
+	}
+	if (filters.cursor) {
+		params.push(filters.cursor.submittedAt);
+		const submittedAtIdx = params.length;
+		params.push(filters.cursor.id);
+		const idIdx = params.length;
+		clauses.push(`(tar.submitted_at, tar.id) < ($${submittedAtIdx}, $${idIdx})`);
+	}
+
+	const limit = Number.isInteger(filters.limit) ? filters.limit : 20;
+	params.push(limit + 1);
+
+	const result = await db.query(
+		`select tar.id as "requestId", tar.team_id as "teamId", tar.team_version as "teamVersion",
+						tar.decision, tar.remarks, tar.submitted_at as "submittedAt", tar.reviewed_at as "reviewedAt",
+						vt.status as "teamStatus",
+						s.id as "schemeId", s.uid as "schemeUid", s.name as "schemeName",
+						submitter.full_name as "submittedByName",
+						reviewer.full_name as "reviewedByName"
+		 from team_approval_requests tar
+		 join visit_teams vt on vt.id = tar.team_id
+		 join schemes s on s.id = vt.scheme_id
+		 join users submitter on submitter.id = tar.submitted_by
+		 left join users reviewer on reviewer.id = tar.reviewed_by
+		 where ${clauses.join(' and ')}
+		 order by tar.submitted_at desc, tar.id desc
+		 limit $${params.length}`,
+		params,
+	);
+
+	const hasMore = result.rows.length > limit;
+	const rows = result.rows.slice(0, limit);
+	const last = rows[rows.length - 1];
+	return {
+		rows,
+		nextCursor: hasMore && last ? `${last.submittedAt.toISOString()}_${last.requestId}` : null,
+	};
+}
+
 async function decide(teamId, reviewerId, divisionId, decision, remarks) {
 	const client = await db.pool.connect();
 	try {
@@ -74,4 +140,4 @@ async function decide(teamId, reviewerId, divisionId, decision, remarks) {
 	}
 }
 
-module.exports = { listPending, decide };
+module.exports = { listPending, listHistory, decide };

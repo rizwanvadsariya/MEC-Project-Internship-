@@ -22,6 +22,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../auth/useAuth';
 import { ApiClientError, apiBaseUrl } from '../../api/client';
 import { colors, spacing } from '../../theme';
+import LanguageSwitcherButton from '../../i18n/LanguageSwitcherButton';
 
 const BACKGROUND_IMAGES = [
   require('../../../assets/images/login/site-1.png'),
@@ -475,6 +476,10 @@ export default function LoginScreen() {
       <AnimatedBackground />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.languageButtonWrapper}>
+          <LanguageSwitcherButton variant="floating" />
+        </View>
+
         <KeyboardAvoidingView
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -651,21 +656,27 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 
+  languageButtonWrapper: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 20,
+  },
   headerContainer: {
     alignItems: 'center',
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
   },
-  // logoRing: {
-  //   width: 112,
-  //   height: 112,
-  //   borderRadius: 56,              // 👈 Half of 112 to make the border a circle
-  //   borderWidth: 3,                // 👈 Border thickness
-  //   borderColor: '#cce6d2',        // 👈 Border color (or 'rgba(255,255,255,0.8)')
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  //   overflow: 'hidden'
-  // },
+  logoRing: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 3,
+    borderColor: '#cce6d2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
   logoImage: {
     width: 100,
     height: 100,

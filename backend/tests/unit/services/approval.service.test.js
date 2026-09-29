@@ -9,6 +9,7 @@
 // actually loaded; this test needs to run in CI with no .env too.
 jest.mock('../../../src/repositories/approval.repo', () => ({
 	listPending: jest.fn(),
+	listHistory: jest.fn(),
 	decide: jest.fn(),
 }));
 // notification.service transitively requires src/config/database (fatal with
@@ -63,4 +64,49 @@ test('decide throws 404 when approval.repo finds no pending request for that tea
 	});
 	await expect(approvalService.decide(actor, 'team-404', { decision: 'APPROVED' })).rejects.toBeInstanceOf(ApiError);
 	expect(notificationService.notifyTeamDecision).not.toHaveBeenCalled();
+});
+
+describe('history (Step 26 — full audit trail)', () => {
+	test('delegates to approval.repo.listHistory scoped by the actor\'s division, with an undecoded cursor passed through as undefined', async () => {
+		approvalRepo.listHistory.mockResolvedValue({ rows: [{ requestId: 'r1' }], nextCursor: null });
+
+		const result = await approvalService.history(actor, { limit: 20 });
+
+		expect(approvalRepo.listHistory).toHaveBeenCalledWith(actor.divisionId, { limit: 20, cursor: undefined });
+		expect(result).toEqual({ rows: [{ requestId: 'r1' }], nextCursor: null });
+	});
+
+	test('passes teamId/decision filters through untouched', async () => {
+		approvalRepo.listHistory.mockResolvedValue({ rows: [], nextCursor: null });
+
+		await approvalService.history(actor, { teamId: 'team-1', decision: 'REJECTED', limit: 20 });
+
+		expect(approvalRepo.listHistory).toHaveBeenCalledWith(actor.divisionId, {
+			teamId: 'team-1',
+			decision: 'REJECTED',
+			limit: 20,
+			cursor: undefined,
+		});
+	});
+
+	test('decodes a cursor into {submittedAt, id} on the last "_"', async () => {
+		approvalRepo.listHistory.mockResolvedValue({ rows: [], nextCursor: null });
+
+		await approvalService.history(actor, { cursor: '2026-01-05T10:00:00.000Z_req-1', limit: 20 });
+
+		expect(approvalRepo.listHistory).toHaveBeenCalledWith(actor.divisionId, {
+			limit: 20,
+			cursor: { submittedAt: '2026-01-05T10:00:00.000Z', id: 'req-1' },
+		});
+	});
+
+	test('throws 400 on a malformed cursor with no separator', async () => {
+		await expect(approvalService.history(actor, { cursor: 'not-a-cursor', limit: 20 })).rejects.toMatchObject({ statusCode: 400 });
+		expect(approvalRepo.listHistory).not.toHaveBeenCalled();
+	});
+
+	test('throws 400 when the actor has no division assigned', async () => {
+		await expect(approvalService.history({ id: 'x', divisionId: null }, { limit: 20 })).rejects.toMatchObject({ statusCode: 400 });
+		expect(approvalRepo.listHistory).not.toHaveBeenCalled();
+	});
 });

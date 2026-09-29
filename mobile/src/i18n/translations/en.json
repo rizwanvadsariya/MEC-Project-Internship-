@@ -38,6 +38,7 @@
     "approvalQueue": "Approval queue",
     "language": "Language",
     "analytics": "Analytics",
+    "auditTrail": "Audit trail",
     "unknownRole": "Unknown role: {{role}}"
   },
   "auth": {
@@ -144,6 +145,7 @@
       "security": "Security settings",
       "language": "Language",
       "analytics": "Analytics",
+      "auditTrail": "Audit trail",
       "logOut": "Log out"
     },
     "errorLoadActivity": "Could not load your activity."
@@ -268,6 +270,29 @@
       "MEDIUM": "Medium",
       "HIGH": "High",
       "CRITICAL": "Critical"
+    }
+  },
+  "auditTrail": {
+    "title": "Audit trail",
+    "subtitle": "Every team submission, decision, and resubmission in your division",
+    "couldNotLoad": "Could not load the audit trail.",
+    "couldNotLoadMore": "Could not load more history.",
+    "noHistoryYet": "No approval history yet.",
+    "version": "Version {{version}}",
+    "submittedBy": "Submitted by {{name}}",
+    "approvedBy": "Approved by {{name}}",
+    "rejectedBy": "Rejected by {{name}}",
+    "remarks": "Remarks",
+    "filter": {
+      "ALL": "All",
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "decision": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
     }
   },
   "dateTime": {

@@ -10,6 +10,10 @@ const asyncHandler = require('../lib/asyncHandler');
 const ApiResponse = require('../lib/ApiResponse');
 
 const listPending = asyncHandler(async (req, res) => ApiResponse.ok(res, await approvalService.listPending(req.authUser)));
+const history = asyncHandler(async (req, res) => {
+	const result = await approvalService.history(req.authUser, req.query);
+	ApiResponse.ok(res, result.rows, { nextCursor: result.nextCursor });
+});
 const decide = asyncHandler(async (req, res) => ApiResponse.ok(res, await approvalService.decide(req.authUser, req.params.teamId, req.body)));
 
-module.exports = { listPending, decide };
+module.exports = { listPending, history, decide };

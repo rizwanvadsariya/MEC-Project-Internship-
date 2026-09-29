@@ -13,6 +13,25 @@ async function listPending(actor) {
 	return approvalRepo.listPending(actor.divisionId);
 }
 
+function decodeCursor(cursor) {
+	if (!cursor) return undefined;
+	const separatorIndex = cursor.lastIndexOf('_');
+	if (separatorIndex === -1) throw ApiError.badRequest('Invalid cursor');
+	return { submittedAt: cursor.slice(0, separatorIndex), id: cursor.slice(separatorIndex + 1) };
+}
+
+/**
+ * Step 26 — full audit trail. Division-scoped for both RD and DG (same rule
+ * as every other list endpoint in this app — not restricted to "requests I
+ * personally submitted/reviewed"), unlike listPending/decide above which stay
+ * DG-only (see approvals.routes.js's per-route authorize).
+ */
+async function history(actor, query) {
+	if (actor.divisionId == null) throw ApiError.badRequest('This account has no division assigned');
+	const { cursor, ...rest } = query;
+	return approvalRepo.listHistory(actor.divisionId, { ...rest, cursor: decodeCursor(cursor) });
+}
+
 async function decide(actor, teamId, input) {
 	const result = await approvalRepo.decide(teamId, actor.id, actor.divisionId, input.decision, input.remarks);
 	if (!result) throw ApiError.notFound('Pending approval not found');
@@ -21,4 +40,4 @@ async function decide(actor, teamId, input) {
 	return result;
 }
 
-module.exports = { listPending, decide };
+module.exports = { listPending, history, decide };

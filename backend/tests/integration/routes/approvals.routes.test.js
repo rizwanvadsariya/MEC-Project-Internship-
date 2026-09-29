@@ -136,4 +136,83 @@ maybeDescribe('full submit -> reject -> revise -> resubmit -> approve loop', () 
 		expect(visitDetail.status).toBe(200);
 		expect(visitDetail.body.data.teamId).toBe(teamId);
 	});
+
+	describe('GET /api/v1/approvals/history (Step 26 — full audit trail)', () => {
+		// Runs after the outer test, reusing the exact submit -> reject ->
+		// resubmit -> approve chain it just created against the live project —
+		// this is the real audit trail the feature's own name promises to surface.
+		test('RD and DG both see the same two-row REJECTED -> APPROVED chain, newest first', async () => {
+			const asRd = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId })
+				.set('Authorization', `Bearer ${rdToken}`);
+			expect(asRd.status).toBe(200);
+			expect(asRd.body.data.map((row) => row.decision)).toEqual(['APPROVED', 'REJECTED']);
+			expect(asRd.body.data[0].teamVersion).toBe(2);
+			expect(asRd.body.data[1].teamVersion).toBe(1);
+			expect(asRd.body.data[1].remarks).toBe('Add a supporting MEO before resubmitting');
+			expect(asRd.body.data.every((row) => row.schemeId === schemeId)).toBe(true);
+
+			const asDg = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId })
+				.set('Authorization', `Bearer ${dgToken}`);
+			expect(asDg.status).toBe(200);
+			expect(asDg.body.data.map((row) => row.decision)).toEqual(['APPROVED', 'REJECTED']);
+		});
+
+		test('the decision filter narrows to just the REJECTED row', async () => {
+			const res = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId, decision: 'REJECTED' })
+				.set('Authorization', `Bearer ${rdToken}`);
+			expect(res.status).toBe(200);
+			expect(res.body.data).toHaveLength(1);
+			expect(res.body.data[0].decision).toBe('REJECTED');
+		});
+
+		test('cursor pagination with limit=1 returns one row at a time with a working nextCursor', async () => {
+			const first = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId, limit: 1 })
+				.set('Authorization', `Bearer ${rdToken}`);
+			expect(first.status).toBe(200);
+			expect(first.body.data).toHaveLength(1);
+			expect(first.body.data[0].decision).toBe('APPROVED');
+			expect(first.body.meta.nextCursor).toBeTruthy();
+
+			const second = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId, limit: 1, cursor: first.body.meta.nextCursor })
+				.set('Authorization', `Bearer ${rdToken}`);
+			expect(second.status).toBe(200);
+			expect(second.body.data).toHaveLength(1);
+			expect(second.body.data[0].decision).toBe('REJECTED');
+			expect(second.body.meta.nextCursor).toBeNull();
+		});
+
+		test('MEO and Support are both rejected with 403 — the audit trail is RD/DG only', async () => {
+			const meoToken = await getAccessToken('MEO');
+			const supportToken = await getAccessToken('SUPPORT_USER');
+
+			const asMeo = await request(app).get('/api/v1/approvals/history').set('Authorization', `Bearer ${meoToken}`);
+			expect(asMeo.status).toBe(403);
+
+			const asSupport = await request(app).get('/api/v1/approvals/history').set('Authorization', `Bearer ${supportToken}`);
+			expect(asSupport.status).toBe(403);
+		});
+
+		test('a different division\'s RD sees an empty page, never this team\'s rows', async () => {
+			// The RD account seeded in this project's own test data is single-division
+			// (division 1) — asserting against a team_id that genuinely isn't theirs
+			// is the real cross-division isolation check available without a second
+			// seeded RD account.
+			const res = await request(app)
+				.get('/api/v1/approvals/history')
+				.query({ teamId: '00000000-0000-0000-0000-000000000000' })
+				.set('Authorization', `Bearer ${rdToken}`);
+			expect(res.status).toBe(200);
+			expect(res.body.data).toEqual([]);
+		});
+	});
 });

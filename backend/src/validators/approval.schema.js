@@ -17,4 +17,16 @@ const decision = {
 	}),
 };
 
-module.exports = { teamId, decision };
+// Step 26 — full audit trail query. teamId narrows to one team's full
+// submit/reject/resubmit/approve chain; decision filters by outcome. Same
+// cursor/limit shape as every other list endpoint in this app.
+const history = {
+	query: z.object({
+		teamId: z.string().uuid().optional(),
+		decision: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+		cursor: z.string().max(80).optional(),
+		limit: z.coerce.number().int().min(1).max(50).default(20),
+	}),
+};
+
+module.exports = { teamId, decision, history };

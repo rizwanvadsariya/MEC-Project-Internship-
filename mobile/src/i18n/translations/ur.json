@@ -38,6 +38,7 @@
     "approvalQueue": "منظوری کی قطار",
     "language": "زبان",
     "analytics": "تجزیات",
+    "auditTrail": "منظوری کی تاریخ",
     "unknownRole": "نامعلوم کردار: {{role}}"
   },
   "auth": {
@@ -144,6 +145,7 @@
       "security": "سیکیورٹی سیٹنگز",
       "language": "زبان",
       "analytics": "تجزیات",
+      "auditTrail": "منظوری کی تاریخ",
       "logOut": "لاگ آؤٹ"
     },
     "errorLoadActivity": "آپ کی سرگرمی لوڈ نہیں ہو سکی۔"
@@ -268,6 +270,29 @@
       "MEDIUM": "درمیانہ",
       "HIGH": "زیادہ",
       "CRITICAL": "شدید"
+    }
+  },
+  "auditTrail": {
+    "title": "منظوری کی تاریخ",
+    "subtitle": "آپ کے ڈویژن میں ہر ٹیم کی درخواست، فیصلہ، اور دوبارہ جمع کروانا",
+    "couldNotLoad": "منظوری کی تاریخ لوڈ نہیں ہو سکی۔",
+    "couldNotLoadMore": "مزید تاریخ لوڈ نہیں ہو سکی۔",
+    "noHistoryYet": "ابھی تک کوئی منظوری کی تاریخ موجود نہیں۔",
+    "version": "ورژن {{version}}",
+    "submittedBy": "{{name}} نے جمع کروائی",
+    "approvedBy": "{{name}} نے منظور کی",
+    "rejectedBy": "{{name}} نے مسترد کی",
+    "remarks": "تبصرے",
+    "filter": {
+      "ALL": "سب",
+      "PENDING": "زیر التوا",
+      "APPROVED": "منظور شدہ",
+      "REJECTED": "مسترد شدہ"
+    },
+    "decision": {
+      "PENDING": "زیر التوا",
+      "APPROVED": "منظور شدہ",
+      "REJECTED": "مسترد شدہ"
     }
   },
   "dateTime": {
