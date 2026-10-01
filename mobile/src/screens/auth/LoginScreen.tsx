@@ -494,13 +494,11 @@ export default function LoginScreen() {
                   alignItems: 'center',
                 }}
               >
-                <View style={styles.logoRing}>
                   <Image
                     source={require('../../../assets/images/login/edit_logo.png')}
                     style={styles.logoImage}
                     resizeMode="contain"
                   />
-                </View>
               </Animated.View>
 
               <Animated.View
