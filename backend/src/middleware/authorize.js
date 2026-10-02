@@ -30,6 +30,7 @@ function toAuthUser(profile) {
     email: profile.email,
     role: profile.role,
     divisionId: profile.division_id,
+    divisionIds: profile.division_ids?.length ? profile.division_ids : (profile.division_id == null ? [] : [profile.division_id]),
     departmentId: profile.department_id,
     isActive: profile.is_active,
   };

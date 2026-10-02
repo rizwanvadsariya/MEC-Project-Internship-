@@ -24,7 +24,8 @@ async function assertMember(id, divisionId, allowedRoles) {
 	// constraint explicitly allows this) — that makes them division-agnostic,
 	// not out-of-division, so they pass the division check either way. An MEO
 	// always needs an exact division match.
-	const inDivision = !!profile && (profile.division_id === divisionId || (profile.role === ROLES.SUPPORT_USER && profile.division_id === null));
+	const assignedDivisionIds = profile?.division_ids?.length ? profile.division_ids : [profile?.division_id];
+	const inDivision = !!profile && (assignedDivisionIds.includes(divisionId) || (profile.role === ROLES.SUPPORT_USER && profile.division_id === null));
 	if (!profile || !profile.is_active || !inDivision || !allowedRoles.includes(profile.role)) {
 		throw ApiError.badRequest('All team members must be active MEOs or support users in the RD division', undefined, 'INVALID_TEAM_MEMBER');
 	}
@@ -34,13 +35,14 @@ async function assertMember(id, divisionId, allowedRoles) {
 async function createDraft(actor, input) {
 	const scheme = await teamRepo.findSchemeDivision(input.schemeId);
 	if (!scheme) throw ApiError.notFound('Scheme not found');
-	if (scheme.divisionId !== actor.divisionId) {
+	const actorDivisionIds = actor.divisionIds?.length ? actor.divisionIds : [actor.divisionId];
+	if (!actorDivisionIds.includes(scheme.divisionId)) {
 		throw ApiError.forbidden('You can only assemble teams for schemes in your division', 'TEAM_DIVISION_DENIED');
 	}
-	await assertMember(input.leadMeoId, actor.divisionId, [ROLES.MEO]);
+	await assertMember(input.leadMeoId, scheme.divisionId, [ROLES.MEO]);
 	const uniqueSupportingIds = [...new Set(input.supportingMemberIds)].filter((id) => id !== input.leadMeoId);
 	const supportingProfiles = await Promise.all(
-		uniqueSupportingIds.map((id) => assertMember(id, actor.divisionId, [ROLES.MEO, ROLES.SUPPORT_USER])),
+		uniqueSupportingIds.map((id) => assertMember(id, scheme.divisionId, [ROLES.MEO, ROLES.SUPPORT_USER])),
 	);
 	const supportingMembers = supportingProfiles.map((profile) => ({
 		id: profile.id,
@@ -55,7 +57,7 @@ async function createDraft(actor, input) {
 }
 
 async function eligibleMembers(actor) {
-	return teamRepo.findEligibleMembers(actor.divisionId);
+	return teamRepo.findEligibleMembers(actor.divisionIds?.length ? actor.divisionIds : actor.divisionId);
 }
 
 async function submit(actor, teamId) {

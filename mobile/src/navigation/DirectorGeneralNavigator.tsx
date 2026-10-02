@@ -1,12 +1,15 @@
-/** Director General stack — Phase 0 home stub + Security settings; Phase 1
- *  adds ApprovalQueueScreen (already stubbed under screens/directorGeneral),
- *  plus a view-only VisitForm (Step 15 — the DG has division-scoped read
- *  access even when not a team member; VisitForm owns the whole
- *  form/photos/issue report flow now). */
+/** Director General navigation — a bottom tab bar (Home / Approval queue /
+ *  KPI dashboard / Site visits / More) sits as the first screen of the
+ *  existing stack, so every other screen below keeps navigating exactly as
+ *  before via `navigation.navigate('RouteName')` (React Navigation bubbles
+ *  unmatched route names up to this outer stack automatically). */
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import RoleHomeScreen from '../screens/common/RoleHomeScreen';
+import MoreScreen from '../screens/common/MoreScreen';
 import SecuritySettingsScreen from '../screens/common/SecuritySettingsScreen';
 import LanguageSettingsScreen from '../screens/common/LanguageSettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
@@ -15,6 +18,7 @@ import QrScanScreen from '../screens/common/QrScanScreen';
 import GisMapScreen from '../screens/common/GisMapScreen';
 import KpiDashboardScreen from '../screens/common/KpiDashboardScreen';
 import ApprovalQueueScreen from '../screens/directorGeneral/ApprovalQueueScreen';
+import RdDivisionAssignmentScreen from '../screens/directorGeneral/RdDivisionAssignmentScreen';
 import AnalyticsScreen from '../screens/common/AnalyticsScreen';
 import AuditTrailScreen from '../screens/common/AuditTrailScreen';
 import ProgressReconciliationScreen from '../screens/common/ProgressReconciliationScreen';
@@ -26,15 +30,59 @@ import VisitReportScreen from '../screens/meo/VisitReportScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
 import CommentsScreen from '../screens/common/CommentsScreen';
 import LanguageSwitcherButton from '../i18n/LanguageSwitcherButton';
-import { stackScreenOptions } from '../theme';
+import { colors, stackScreenOptions } from '../theme';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function DirectorGeneralTabs() {
+  const { t } = useTranslation();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerRight: () => <LanguageSwitcherButton />,
+        headerStyle: { backgroundColor: colors.primaryDark },
+        headerTintColor: colors.white,
+        headerShadowVisible: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.border },
+      }}
+    >
+      <Tab.Screen
+        name="DgHome"
+        component={RoleHomeScreen}
+        options={{ title: t('navigation.directorGeneral'), tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="ApprovalQueue"
+        component={ApprovalQueueScreen}
+        options={{ title: t('navigation.approvalQueue'), tabBarIcon: ({ color, size }) => <Ionicons name="checkmark-done-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="KpiDashboard"
+        component={KpiDashboardScreen}
+        options={{ title: t('navigation.kpiDashboard'), tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="SiteVisitsTab"
+        component={SiteVisitListScreen}
+        options={{ title: t('navigation.siteVisits'), tabBarIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="More"
+        component={MoreScreen}
+        options={{ title: t('navigation.more'), tabBarIcon: ({ color, size }) => <Ionicons name="ellipsis-horizontal-outline" size={size} color={color} /> }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function DirectorGeneralNavigator() {
   const { t } = useTranslation();
   return (
     <Stack.Navigator screenOptions={{ ...stackScreenOptions, headerRight: () => <LanguageSwitcherButton /> }}>
-      <Stack.Screen name="DgHome" component={RoleHomeScreen} options={{ title: t('navigation.directorGeneral') }} />
+      <Stack.Screen name="Tabs" component={DirectorGeneralTabs} options={{ headerShown: false }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: t('navigation.notifications') }} />
       <Stack.Screen name="Security" component={SecuritySettingsScreen} options={{ title: t('navigation.security') }} />
       <Stack.Screen name="Language" component={LanguageSettingsScreen} options={{ title: t('navigation.language') }} />
@@ -42,8 +90,7 @@ export default function DirectorGeneralNavigator() {
       <Stack.Screen name="SchemeDetail" component={SchemeDetailScreen} options={{ title: t('navigation.schemeDetail') }} />
       <Stack.Screen name="QrScan" component={QrScanScreen} options={{ title: t('navigation.qrScan') }} />
       <Stack.Screen name="GisMap" component={GisMapScreen} options={{ title: t('navigation.gisMap') }} />
-      <Stack.Screen name="KpiDashboard" component={KpiDashboardScreen} options={{ title: t('navigation.kpiDashboard') }} />
-      <Stack.Screen name="ApprovalQueue" component={ApprovalQueueScreen} options={{ title: t('navigation.approvalQueue') }} />
+      <Stack.Screen name="RdDivisionAssignments" component={RdDivisionAssignmentScreen} options={{ title: t('navigation.rdAssignments') }} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: t('navigation.analytics') }} />
       <Stack.Screen name="AuditTrail" component={AuditTrailScreen} options={{ title: t('navigation.auditTrail') }} />
       <Stack.Screen name="ProgressReconciliation" component={ProgressReconciliationScreen} options={{ title: t('navigation.reconciliation') }} />

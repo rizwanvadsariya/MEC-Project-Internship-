@@ -12,7 +12,7 @@ import {
   type RecentVisit,
   type RecentIssue,
 } from '../../api/dashboard.api';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, radius, shadow, spacing, typography } from '../../theme';
 
 const DIVISION_SCOPED_ROLES = new Set(['REGIONAL_DIRECTOR', 'DIRECTOR_GENERAL']);
 const MEMBER_SCOPED_ROLES = new Set(['MEO', 'SUPPORT_USER']);
@@ -119,7 +119,7 @@ function supportDashboard(dashboard: MemberDashboard | null, t: TFunction): Dash
 
 export default function RoleHomeScreen() {
   const { t } = useTranslation();
-  const { user, accessToken, signOut } = useAuth();
+  const { user, accessToken } = useAuth();
   const navigation = useNavigation<{ navigate: (screen: string) => void }>();
   const [divisionDashboard, setDivisionDashboard] = useState<DivisionDashboard | null>(null);
   const [memberDashboard, setMemberDashboard] = useState<MemberDashboard | null>(null);
@@ -228,49 +228,6 @@ export default function RoleHomeScreen() {
         </Text>
       </View>
 
-      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('KpiDashboard')}>
-        <Text style={styles.securityButtonText}>{t('roleHome.buttons.kpiDashboard')}</Text>
-      </Pressable>
-      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('SiteVisits')}>
-        <Text style={styles.securityButtonText}>{t('roleHome.buttons.siteVisits')}</Text>
-      </Pressable>
-      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('GisMap')}>
-        <Text style={styles.securityButtonText}>{t('roleHome.buttons.gisMap')}</Text>
-      </Pressable>
-      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'MEO' ? (
-        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('VisitCalendar')}>
-          <Text style={styles.securityButtonText}>{t('roleHome.buttons.visitCalendar')}</Text>
-        </Pressable>
-      ) : null}
-      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
-        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Analytics')}>
-          <Text style={styles.securityButtonText}>{t('roleHome.buttons.analytics')}</Text>
-        </Pressable>
-      ) : null}
-      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
-        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('AuditTrail')}>
-          <Text style={styles.securityButtonText}>{t('roleHome.buttons.auditTrail')}</Text>
-        </Pressable>
-      ) : null}
-      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
-        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('ProgressReconciliation')}>
-          <Text style={styles.securityButtonText}>{t('roleHome.buttons.reconciliation')}</Text>
-        </Pressable>
-      ) : null}
-      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
-        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Anomalies')}>
-          <Text style={styles.securityButtonText}>{t('roleHome.buttons.anomalies')}</Text>
-        </Pressable>
-      ) : null}
-      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Notifications')}>
-        <Text style={styles.securityButtonText}>{t('roleHome.buttons.notifications')}</Text>
-      </Pressable>
-      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Security')}>
-        <Text style={styles.securityButtonText}>{t('roleHome.buttons.security')}</Text>
-      </Pressable>
-      <Pressable style={styles.logout} onPress={signOut}>
-        <Text style={styles.logoutText}>{t('roleHome.buttons.logOut')}</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -355,12 +312,11 @@ const styles = StyleSheet.create({
   metrics: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   metricCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
     minHeight: 112,
+    ...shadow.card,
   },
   metricDot: { width: 8, height: 8, borderRadius: radius.pill, marginBottom: spacing.md },
   metricValue: { color: colors.textPrimary, fontSize: typography.size.xl, fontWeight: typography.weight.bold },
@@ -371,20 +327,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
+    backgroundColor: colors.buttonPrimary,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.lg,
+    ...shadow.button,
   },
   assignTeamIcon: { color: colors.white, fontSize: typography.size.lg, fontWeight: typography.weight.bold, marginRight: spacing.sm },
   assignTeamButtonText: { color: colors.white, fontSize: typography.size.sm, fontWeight: typography.weight.bold },
   emptyCard: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.xl,
+    ...shadow.card,
   },
   emptyIcon: {
     alignItems: 'center',
@@ -400,11 +356,10 @@ const styles = StyleSheet.create({
   emptyMessage: { color: colors.textSecondary, fontSize: typography.size.sm, lineHeight: typography.lineHeight.md, textAlign: 'center', marginTop: spacing.sm },
   nextWorkspace: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.bold, marginTop: spacing.lg },
   activityCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.md,
+    ...shadow.card,
   },
   activityTitle: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.bold, marginBottom: spacing.sm },
   activityRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
@@ -417,22 +372,4 @@ const styles = StyleSheet.create({
   profileRole: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.bold, marginTop: spacing.xs },
   profileEmail: { color: colors.textSecondary, fontSize: typography.size.xs, marginTop: spacing.xs },
   divisionText: { color: colors.primaryDark, fontSize: typography.size.xs, fontWeight: typography.weight.medium },
-  securityButton: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md - 4,
-    alignItems: 'center',
-  },
-  securityButtonText: { color: colors.primaryDark, fontWeight: typography.weight.medium },
-  logout: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md - 4,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  logoutText: { color: colors.error, fontWeight: typography.weight.medium },
 });

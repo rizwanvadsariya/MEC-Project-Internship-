@@ -16,9 +16,9 @@ async function findVisitContext(siteVisitId, actor) {
 		left join visit_forms vf on vf.site_visit_id = sv.id
 		where sv.id = $1 and (
 			exists (select 1 from visit_team_members member_vtm where member_vtm.team_id = sv.team_id and member_vtm.user_id = $2)
-			or ($3 and exists (select 1 from scheme_districts sd join districts d on d.id = sd.district_id where sd.scheme_id = sv.scheme_id and d.division_id = $4))
+			or ($3 and exists (select 1 from scheme_districts sd join districts d on d.id = sd.district_id where sd.scheme_id = sv.scheme_id and d.division_id = any($4::int[])))
 		)`,
-		[siteVisitId, actor.id, actor.role === 'REGIONAL_DIRECTOR' || actor.role === 'DIRECTOR_GENERAL', actor.divisionId ?? null],
+		[siteVisitId, actor.id, actor.role === 'REGIONAL_DIRECTOR' || actor.role === 'DIRECTOR_GENERAL', actor.divisionIds?.length ? actor.divisionIds : (actor.divisionId == null ? [] : [actor.divisionId])],
 	);
 	return result.rows[0] || null;
 }

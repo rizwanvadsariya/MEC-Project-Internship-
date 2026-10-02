@@ -10,7 +10,7 @@ const notificationService = require('./notification.service');
 const ApiError = require('../lib/ApiError');
 
 async function listPending(actor) {
-	return approvalRepo.listPending(actor.divisionId);
+	return approvalRepo.listPending(actor.divisionIds?.length ? actor.divisionIds : actor.divisionId);
 }
 
 function decodeCursor(cursor) {
@@ -29,11 +29,11 @@ function decodeCursor(cursor) {
 async function history(actor, query) {
 	if (actor.divisionId == null) throw ApiError.badRequest('This account has no division assigned');
 	const { cursor, ...rest } = query;
-	return approvalRepo.listHistory(actor.divisionId, { ...rest, cursor: decodeCursor(cursor) });
+	return approvalRepo.listHistory(actor.divisionIds?.length ? actor.divisionIds : actor.divisionId, { ...rest, cursor: decodeCursor(cursor) });
 }
 
 async function decide(actor, teamId, input) {
-	const result = await approvalRepo.decide(teamId, actor.id, actor.divisionId, input.decision, input.remarks);
+	const result = await approvalRepo.decide(teamId, actor.id, actor.divisionIds?.length ? actor.divisionIds : actor.divisionId, input.decision, input.remarks);
 	if (!result) throw ApiError.notFound('Pending approval not found');
 	// Fire-and-forget (phases.md Step 17) — never delays this response.
 	notificationService.notifyTeamDecision(teamId, input.decision);

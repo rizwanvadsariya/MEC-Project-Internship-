@@ -18,6 +18,25 @@ export const colors = {
   warning: '#FFC107',
   success: '#198754',
   white: '#FFFFFF',
+  // Login-derived tokens — the app's shared rounded/soft-shadow look is
+  // modeled on the login screen's original hardcoded palette.
+  backgroundDark: '#0a1a0f',
+  textOnDark: '#ffffff',
+  textOnDarkMuted: 'rgba(255,255,255,0.7)',
+  textHeaderDark: '#1a3322',
+  textBodyDark: '#1a2e1f',
+  iconMuted: '#5a7a63',
+  placeholder: '#7f9986',
+  inputBackground: '#f1f8f2',
+  inputBorder: '#dbeade',
+  ringBorder: '#cce6d2',
+  cardTranslucent: 'rgba(255,255,255,0.65)',
+  buttonPrimary: '#1e6b37',
+  successBright: '#34C759',
+  errorBright: '#FF3B30',
+  scrim: 'rgba(0,0,0,0.78)',
+  warningBackground: '#FFF8E1',
+  warningText: '#7A5700',
 } as const;
 
 export const spacing = {
@@ -30,10 +49,33 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 0,
-  md: 0,
-  lg: 0,
+  sm: 12,
+  md: 16,
+  lg: 24,
   pill: 999,
+} as const;
+
+/** Soft-shadow tokens matching the login screen's card/button elevation. */
+export const shadow = {
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  button: {
+    shadowColor: colors.buttonPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+} as const;
+
+/** Login's Ken Burns background gradient, centralized instead of a raw literal. */
+export const gradient = {
+  loginBackground: ['rgba(9, 43, 25, 1)', 'transparent', 'transparent', 'rgba(9, 43, 25, 1)'],
 } as const;
 
 export const typography = {

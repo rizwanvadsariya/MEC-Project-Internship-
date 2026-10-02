@@ -9,6 +9,7 @@ const db = require('../config/database');
 const siteVisitRepo = require('./siteVisit.repo');
 
 async function listPending(divisionId) {
+	const divisionIds = Array.isArray(divisionId) ? divisionId : [divisionId];
 	const { rows } = await db.query(
 		`select tar.id as "requestId", tar.team_id as "teamId", tar.team_version as "teamVersion",
 						tar.submitted_at as "submittedAt", tar.remarks,
@@ -28,11 +29,11 @@ async function listPending(divisionId) {
 			 and exists (
 				 select 1 from scheme_districts scope_sd
 				 join districts scope_d on scope_d.id = scope_sd.district_id
-				 where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = $1
+				 where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = any($1::int[])
 			 )
 		 group by tar.id, vt.id, s.id, u.id
 		 order by tar.submitted_at asc`,
-		[divisionId],
+		[divisionIds],
 	);
 	return rows;
 }
@@ -48,12 +49,12 @@ async function listPending(divisionId) {
  * comments (Step 20) and notifications (Step 17).
  */
 async function listHistory(divisionId, filters) {
-	const params = [divisionId];
+	const params = [Array.isArray(divisionId) ? divisionId : [divisionId]];
 	const clauses = [
 		`exists (
 			select 1 from scheme_districts scope_sd
 			join districts scope_d on scope_d.id = scope_sd.district_id
-			where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = $1
+			where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = any($1::int[])
 		)`,
 	];
 
@@ -104,6 +105,7 @@ async function listHistory(divisionId, filters) {
 }
 
 async function decide(teamId, reviewerId, divisionId, decision, remarks) {
+	const divisionIds = Array.isArray(divisionId) ? divisionId : [divisionId];
 	const client = await db.pool.connect();
 	try {
 		await client.query('begin');
@@ -114,10 +116,10 @@ async function decide(teamId, reviewerId, divisionId, decision, remarks) {
 				 and exists (
 					 select 1 from scheme_districts scope_sd
 					 join districts scope_d on scope_d.id = scope_sd.district_id
-					 where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = $2
+					 where scope_sd.scheme_id = vt.scheme_id and scope_d.division_id = any($2::int[])
 				 )
 			 order by tar.submitted_at desc limit 1 for update`,
-			[teamId, divisionId],
+			[teamId, divisionIds],
 		)).rows[0];
 		if (!request) return null;
 		await client.query(

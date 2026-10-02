@@ -5,10 +5,11 @@
  */
 'use strict';
 
+const crypto = require('crypto');
 const { query } = require('../config/database');
 
 const PROFILE_COLUMNS = `
-  id, full_name, email, phone, role, division_id, department_id,
+  id, full_name, email, phone, role, division_id, division_ids, department_id,
   is_active, failed_login_count, locked_until, created_at, updated_at
 `;
 
@@ -22,12 +23,54 @@ async function findByEmail(email) {
   return rows[0] || null;
 }
 
-async function insertProfile({ id, fullName, email, phone = null, role, divisionId = null, departmentId = null }) {
+async function listRegionalDirectors() {
   const { rows } = await query(
-    `insert into users (id, full_name, email, phone, role, division_id, department_id)
-     values ($1, $2, $3, $4, $5, $6, $7)
+    `select id, full_name as "fullName", email, division_id as "divisionId", division_ids as "divisionIds"
+     from users where role = 'REGIONAL_DIRECTOR' and is_active = true order by full_name`,
+  );
+  return rows;
+}
+
+async function listDivisions() {
+  const { rows } = await query(`select id, name from divisions order by name`);
+  return rows;
+}
+
+async function updateDivisions(id, divisionIds) {
+  const { rows } = await query(
+    `update users set division_id = $2, division_ids = $3
+     where id = $1 and role = 'REGIONAL_DIRECTOR' and is_active = true
      returning ${PROFILE_COLUMNS}`,
-    [id, fullName, email, phone, role, divisionId, departmentId],
+    [id, divisionIds[0], divisionIds],
+  );
+  return rows[0] || null;
+}
+
+async function createInvite(userId, token, expiresAt) {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  await query(
+    `insert into user_invites (user_id, token_hash, expires_at) values ($1, $2, $3)`,
+    [userId, tokenHash, expiresAt],
+  );
+}
+
+async function claimInvite(token) {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const { rows } = await query(
+    `update user_invites set used_at = now()
+     where token_hash = $1 and used_at is null and expires_at > now()
+     returning user_id as "userId"`,
+    [tokenHash],
+  );
+  return rows[0] || null;
+}
+
+async function insertProfile({ id, fullName, email, phone = null, role, divisionId = null, divisionIds = [], departmentId = null }) {
+  const { rows } = await query(
+    `insert into users (id, full_name, email, phone, role, division_id, division_ids, department_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
+     returning ${PROFILE_COLUMNS}`,
+    [id, fullName, email, phone, role, divisionId, divisionIds, departmentId],
   );
   return rows[0];
 }
@@ -81,6 +124,11 @@ async function markDigestSent(id, period) {
 module.exports = {
   findById,
   findByEmail,
+  listRegionalDirectors,
+  listDivisions,
+  updateDivisions,
+  createInvite,
+  claimInvite,
   insertProfile,
   setActive,
   incrementFailedLogin,

@@ -58,8 +58,9 @@ const schema = z.object({
   LOGIN_LOCKOUT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   // Deep links the invite email / password-reset email send the user to
   // (point #1, #10). Mobile app.json declares the `mec://` scheme.
-  INVITE_REDIRECT_URL: z.string().default('mec://auth/accept-invite'),
+  INVITE_REDIRECT_URL: z.string().default('http://localhost:4000/auth/accept-invite'),
   PASSWORD_RESET_REDIRECT_URL: z.string().default('mec://auth/reset-password'),
+  INVITE_TOKEN_EXPIRY_MINUTES: z.coerce.number().int().positive().default(60),
 
   // ---- Notifications (phases.md Step 17) -----------------------------------
   // Off by default in test/CI so the suite never makes a real outbound call

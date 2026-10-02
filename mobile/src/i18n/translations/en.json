@@ -29,6 +29,7 @@
     "security": "Security",
     "schemeBrowser": "Scheme browser",
     "assembleTeam": "Assemble team",
+      "createTeamMember": "Create team member",
     "siteVisits": "Site visits",
     "siteVisit": "Site visit",
     "visitCalendar": "Visit calendar",
@@ -36,6 +37,7 @@
     "submittedReport": "Submitted report",
     "discussion": "Discussion",
     "approvalQueue": "Approval queue",
+    "rdAssignments": "RD divisions",
     "language": "Language",
     "analytics": "Analytics",
     "auditTrail": "Audit trail",
@@ -44,7 +46,9 @@
     "schemeDetail": "Scheme record",
     "gisMap": "Map",
     "anomalies": "Anomalies",
+      "createTeamMember": "Create MEO or support user",
     "kpiDashboard": "KPI Dashboard",
+    "more": "More",
     "unknownRole": "Unknown role: {{role}}"
   },
   "auth": {
@@ -156,6 +160,7 @@
       "auditTrail": "Audit trail",
       "reconciliation": "Progress reconciliation",
       "anomalies": "Anomalies",
+      "rdAssignments": "Assign RD divisions",
       "logOut": "Log out"
     },
     "errorLoadActivity": "Could not load your activity."
@@ -568,6 +573,34 @@
     "couldNotLoad": "Could not load notifications.",
     "couldNotLoadMore": "Could not load more notifications."
   },
+  "rdAssignments": {
+    "title": "Assign RD divisions",
+    "subtitle": "Choose the divisions each Regional Director manages.",
+    "selectRd": "Select a Regional Director",
+    "selectDivisions": "Assign divisions",
+    "divisionNumber": "Division {{id}}",
+    "save": "Save assignments",
+    "saved": "Division assignments saved.",
+    "loadFailed": "Could not load RD assignments.",
+    "saveFailed": "Could not save RD assignments."
+  },
+  "teamMember": {
+    "title": "Create team member",
+    "subtitle": "Invite a MEO or support user to your assigned divisions.",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Enter full name",
+    "email": "Email",
+    "emailPlaceholder": "Enter email address",
+    "phone": "Phone (optional)",
+    "phonePlaceholder": "Enter phone number",
+    "role": "Position",
+    "roles": { "MEO": "MEO", "SUPPORT_USER": "Support user" },
+    "divisionNote": "The new user will be assigned to your RD divisions.",
+    "create": "Create and invite",
+    "created": "User created successfully.",
+    "inviteLink": "Invite link: {{link}}",
+    "createFailed": "Could not create the user."
+  },
   "security": {
     "title": "Two-factor authentication",
     "enabled": "✅ Enabled",
@@ -589,11 +622,7 @@
     "subtitle": "Choose the language used throughout the app.",
     "english": "English",
     "urdu": "اردو",
-    "sindhi": "سنڌي",
-    "restartNoticeTitle": "Restart needed",
-    "restartNoticeBody": "To fully apply the new text direction, please close and reopen the app.",
-    "restartNowButton": "Restart now",
-    "restartLaterHint": "You can keep using the app — the layout direction will update the next time it opens."
+    "sindhi": "سنڌي"
   },
   "errors": {
     "INVALID_CREDENTIALS": "Incorrect email or password.",

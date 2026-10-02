@@ -41,7 +41,7 @@ const LIST_SELECT = listSelect();
 function visibilityClause(actor, params) {
 	params.push(ROLES_WITH_DIVISION_SCOPE.has(actor.role));
 	const isDivisionScopedIdx = params.length;
-	params.push(actor.divisionId ?? null);
+	params.push(actor.divisionIds?.length ? actor.divisionIds : (actor.divisionId == null ? [] : [actor.divisionId]));
 	const divisionIdx = params.length;
 	params.push(actor.id);
 	const userIdx = params.length;
@@ -50,7 +50,7 @@ function visibilityClause(actor, params) {
 		($${isDivisionScopedIdx} and exists (
 			select 1 from scheme_districts scope_sd
 			join districts scope_d on scope_d.id = scope_sd.district_id
-			where scope_sd.scheme_id = sv.scheme_id and scope_d.division_id = $${divisionIdx}
+			where scope_sd.scheme_id = sv.scheme_id and scope_d.division_id = any($${divisionIdx}::int[])
 		))
 		or exists (select 1 from visit_team_members vtm where vtm.team_id = sv.team_id and vtm.user_id = $${userIdx})
 	)`;
@@ -155,11 +155,40 @@ async function updateScheduledDate(id, scheduledDate) {
  */
 async function createForApprovedTeam(client, teamId) {
 	await client.query(
+		`select pg_advisory_xact_lock(vt.scheme_id)
+		 from visit_teams vt where vt.id = $1`,
+		[teamId],
+	);
+	await client.query(
 		`insert into site_visits (team_id, scheme_id)
 		 select vt.id, vt.scheme_id from visit_teams vt
-		 where vt.id = $1 and not exists (select 1 from site_visits sv where sv.team_id = vt.id)`,
+		 where vt.id = $1
+		   and not exists (select 1 from site_visits sv where sv.team_id = vt.id)
+		   and not exists (select 1 from site_visits active_sv
+			 where active_sv.scheme_id = vt.scheme_id and active_sv.status in ('SCHEDULED', 'IN_PROGRESS'))`,
 		[teamId],
 	);
 }
 
-module.exports = { listForActor, findByIdForActor, createForApprovedTeam, updateScheduledDate };
+/**
+ * Promote the oldest approved team waiting for a scheme after its previous
+ * visit completes. The transaction caller already owns the completion write;
+ * the advisory lock makes approval and promotion serialize per scheme.
+ */
+async function createNextForScheme(client, schemeId) {
+	await client.query('select pg_advisory_xact_lock($1)', [schemeId]);
+	await client.query(
+		`insert into site_visits (team_id, scheme_id)
+		 select vt.id, vt.scheme_id
+		 from visit_teams vt
+		 where vt.scheme_id = $1 and vt.status = 'APPROVED'
+		   and not exists (select 1 from site_visits team_visit where team_visit.team_id = vt.id)
+		   and not exists (select 1 from site_visits active_sv
+			 where active_sv.scheme_id = vt.scheme_id and active_sv.status in ('SCHEDULED', 'IN_PROGRESS'))
+		 order by vt.created_at asc
+		 limit 1`,
+		[schemeId],
+	);
+}
+
+module.exports = { listForActor, findByIdForActor, createForApprovedTeam, createNextForScheme, updateScheduledDate };

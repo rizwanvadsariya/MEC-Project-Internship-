@@ -25,6 +25,13 @@ const forgotPassword = {
   }),
 };
 
+const acceptInvite = {
+  body: z.object({
+    inviteToken: z.string().min(1),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+  }),
+};
+
 const provisionUser = {
   body: z
     .object({
@@ -33,16 +40,21 @@ const provisionUser = {
       phone: z.string().trim().max(30).optional(),
       role: roleEnum,
       divisionId: z.coerce.number().int().positive().optional(),
+      divisionIds: z.array(z.coerce.number().int().positive()).min(1).optional(),
       departmentId: z.coerce.number().int().positive().optional(),
     })
-    .refine((v) => v.role === ROLES.SUPPORT_USER || v.divisionId != null, {
-      message: 'divisionId is required unless role is SUPPORT_USER',
+    .refine((v) => v.role === ROLES.SUPPORT_USER || v.divisionId != null || v.divisionIds?.length, {
+      message: 'divisionId or divisionIds is required unless role is SUPPORT_USER',
       path: ['divisionId'],
     }),
 };
 
 const userIdParam = {
   params: z.object({ id: z.string().uuid() }),
+};
+
+const assignDivisions = {
+  body: z.object({ divisionIds: z.array(z.coerce.number().int().positive()).min(1) }),
 };
 
 const sessionIdParam = {
@@ -68,8 +80,10 @@ const factorIdParam = {
 module.exports = {
   login,
   forgotPassword,
+  acceptInvite,
   provisionUser,
   userIdParam,
+  assignDivisions,
   sessionIdParam,
   mfaChallenge,
   mfaVerify,

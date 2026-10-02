@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../auth/useAuth';
 import { ApiClientError, apiBaseUrl } from '../../api/client';
-import { colors, spacing } from '../../theme';
+import { colors, spacing, radius, gradient, shadow } from '../../theme';
 import LanguageSwitcherButton from '../../i18n/LanguageSwitcherButton';
 
 const BACKGROUND_IMAGES = [
@@ -168,7 +168,7 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
   });
 
   const isSuccess = status === 'success';
-  const finalColor = isSuccess ? '#34C759' : '#FF3B30';
+  const finalColor = isSuccess ? colors.successBright : colors.errorBright;
 
   return (
     <Animated.View style={[styles.overlayContainer, { opacity: overlayOpacity }]} pointerEvents="auto">
@@ -188,7 +188,7 @@ function VerificationOverlay({ status }: { status: VerificationStatus }) {
                 transform: [{ rotate: spin }],
                 ...Platform.select({
                   ios: {
-                    shadowColor: '#FFFFFF',
+                    shadowColor: colors.white,
                     shadowOffset: { width: 0, height: 0 },
                     shadowOpacity: 0.3,
                     shadowRadius: 10,
@@ -347,7 +347,7 @@ function AnimatedBackground() {
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientOpacity }]}>
         <LinearGradient
-          colors={['rgba(9, 43, 25, 1)', 'transparent', 'transparent', 'rgba(9, 43, 25, 1)']}
+          colors={gradient.loginBackground}
           locations={[0, 0.45, 0.55, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -531,13 +531,13 @@ export default function LoginScreen() {
                 <Ionicons
                   name="person-outline"
                   size={18}
-                  color="#5a7a63"
+                  color={colors.iconMuted}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.textInput}
                   placeholder="Username"
-                  placeholderTextColor="#7f9986"
+                  placeholderTextColor={colors.placeholder}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -551,13 +551,13 @@ export default function LoginScreen() {
                 <Ionicons
                   name="lock-closed-outline"
                   size={18}
-                  color="#5a7a63"
+                  color={colors.iconMuted}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.textInput}
                   placeholder="Password"
-                  placeholderTextColor="#7f9986"
+                  placeholderTextColor={colors.placeholder}
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
@@ -571,7 +571,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={18}
-                    color="#5a7a63"
+                    color={colors.iconMuted}
                   />
                 </TouchableOpacity>
               </View>
@@ -585,7 +585,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={rememberMe ? 'checkbox' : 'square-outline'}
                     size={18}
-                    color={rememberMe ? '#1e6b37' : '#7f9986'}
+                    color={rememberMe ? colors.buttonPrimary : colors.placeholder}
                   />
                   <Text style={styles.rememberText}>Remember me</Text>
                 </TouchableOpacity>
@@ -605,7 +605,7 @@ export default function LoginScreen() {
                   onPressOut={handlePressOut}
                   disabled={submitting}
                 >
-                  <Animated.View style={[styles.loginButton, submitting && styles.loginButtonDisabled, { width: initialButtonWidth, borderRadius: 12 }]}>
+                  <Animated.View style={[styles.loginButton, submitting && styles.loginButtonDisabled, { width: initialButtonWidth, borderRadius: radius.sm }]}>
                     <Text style={styles.loginButtonText}>Log in</Text>
                   </Animated.View>
                 </Pressable>
@@ -625,7 +625,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#0a1a0f',
+    backgroundColor: colors.backgroundDark,
   },
   safeArea: {
     flex: 1,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#0a1a0f',
+    backgroundColor: colors.backgroundDark,
     overflow: 'hidden',
   },
   backgroundImage: {
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: 56,
     borderWidth: 3,
-    borderColor: '#cce6d2',
+    borderColor: colors.ringBorder,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textOnDark,
     textAlign: 'center',
     letterSpacing: 0.3,
     textShadowColor: 'rgba(0,0,0,0.5)',
@@ -701,30 +701,26 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    borderRadius: 24,
+    backgroundColor: colors.cardTranslucent,
+    borderRadius: radius.lg,
     marginHorizontal: spacing.lg,
     padding: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    ...shadow.card,
   },
   cardHeader: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1a3322',
+    color: colors.textHeaderDark,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f8f2',
-    borderRadius: 12,
+    backgroundColor: colors.inputBackground,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#dbeade',
+    borderColor: colors.inputBorder,
     paddingHorizontal: spacing.md,
     height: 48,
   },
@@ -734,7 +730,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1a2e1f',
+    color: colors.textBodyDark,
     paddingVertical: 0,
   },
   eyeIcon: {
@@ -755,7 +751,7 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     fontSize: 13,
-    color: '#55725e',
+    color: colors.iconMuted,
   },
 
   errorContainer: {
@@ -771,28 +767,24 @@ const styles = StyleSheet.create({
   },
 
   loginButton: {
-    backgroundColor: '#1e6b37',
+    backgroundColor: colors.buttonPrimary,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1e6b37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    ...shadow.button,
   },
   loginButtonDisabled: {
     opacity: 0.65,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: colors.textOnDark,
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.4,
   },
 
   apiHint: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.textOnDarkMuted,
     fontSize: 11,
     textAlign: 'center',
     marginTop: spacing.md,
@@ -804,7 +796,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    backgroundColor: colors.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
@@ -832,8 +824,8 @@ const styles = StyleSheet.create({
   },
   ringSpinner: {
     borderColor: 'transparent',
-    borderTopColor: '#FFFFFF',
-    borderRightColor: '#FFFFFF',
+    borderTopColor: colors.white,
+    borderRightColor: colors.white,
   },
   iconCenter: {
     justifyContent: 'center',
@@ -847,7 +839,7 @@ const styles = StyleSheet.create({
   neonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.white,
     textAlign: 'center',
     letterSpacing: 0.5,
   },

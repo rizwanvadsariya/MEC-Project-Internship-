@@ -21,7 +21,7 @@ const LANGUAGE_LABEL_KEY: Record<SupportedLanguage, string> = {
 
 export default function LanguagePickerOptions({ onLanguageChosen }: { onLanguageChosen?: (language: SupportedLanguage) => void }) {
   const { t } = useTranslation();
-  const { language, restartNeeded, setLanguage, restartNow } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [switching, setSwitching] = useState<SupportedLanguage | null>(null);
 
   const choose = async (next: SupportedLanguage) => {
@@ -54,17 +54,6 @@ export default function LanguagePickerOptions({ onLanguageChosen }: { onLanguage
           </Pressable>
         );
       })}
-
-      {restartNeeded ? (
-        <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>{t('languageSettings.restartNoticeTitle')}</Text>
-          <Text style={styles.noticeBody}>{t('languageSettings.restartNoticeBody')}</Text>
-          <Pressable style={styles.restartButton} onPress={() => { void restartNow(); }}>
-            <Text style={styles.restartButtonText}>{t('languageSettings.restartNowButton')}</Text>
-          </Pressable>
-          <Text style={styles.restartHint}>{t('languageSettings.restartLaterHint')}</Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -85,10 +74,4 @@ const styles = StyleSheet.create({
   optionText: { color: colors.textPrimary, fontSize: typography.size.md, fontWeight: typography.weight.medium },
   optionTextSelected: { color: colors.primaryDark, fontWeight: typography.weight.bold },
   checkmark: { color: colors.primary, fontSize: typography.size.lg, fontWeight: typography.weight.bold },
-  notice: { backgroundColor: '#FFF8E1', borderColor: colors.warning, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md },
-  noticeTitle: { color: '#7A5700', fontWeight: typography.weight.bold, marginBottom: spacing.xs },
-  noticeBody: { color: '#7A5700', fontSize: typography.size.xs, lineHeight: typography.lineHeight.md },
-  restartButton: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.sm, marginTop: spacing.md },
-  restartButtonText: { color: colors.white, fontWeight: typography.weight.bold },
-  restartHint: { color: '#7A5700', fontSize: typography.size.xs, marginTop: spacing.sm },
 });

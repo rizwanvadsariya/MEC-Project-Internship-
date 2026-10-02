@@ -21,7 +21,10 @@ function buildWhere(filters, params) {
 	if (filters.status) add('s.status = ?', [filters.status]);
 	if (filters.districtId) add('exists (select 1 from scheme_districts sd_filter where sd_filter.scheme_id = s.id and sd_filter.district_id = ?)', [filters.districtId]);
 	if (filters.divisionId) add('exists (select 1 from scheme_districts sd_division join districts d_division on d_division.id = sd_division.district_id where sd_division.scheme_id = s.id and d_division.division_id = ?)', [filters.divisionId]);
-	if (filters.scopeDivisionId) add('exists (select 1 from scheme_districts sd_scope join districts d_scope on d_scope.id = sd_scope.district_id where sd_scope.scheme_id = s.id and d_scope.division_id = ?)', [filters.scopeDivisionId]);
+	if (filters.scopeDivisionId) {
+		const divisionIds = Array.isArray(filters.scopeDivisionId) ? filters.scopeDivisionId : [filters.scopeDivisionId];
+		add('exists (select 1 from scheme_districts sd_scope join districts d_scope on d_scope.id = sd_scope.district_id where sd_scope.scheme_id = s.id and d_scope.division_id = any(?::int[]))', [divisionIds]);
+	}
 	if (filters.cursor) add('s.id < ?', [filters.cursor]);
 	return clauses.length ? `where ${clauses.join(' and ')}` : '';
 }
@@ -55,8 +58,9 @@ async function list(filters) {
 
 async function findById(id, scopeDivisionId) {
 	const params = [id];
-	const scope = scopeDivisionId ? 'and exists (select 1 from scheme_districts sd_scope join districts d_scope on d_scope.id = sd_scope.district_id where sd_scope.scheme_id = s.id and d_scope.division_id = $2)' : '';
-	if (scopeDivisionId) params.push(scopeDivisionId);
+	const divisionIds = Array.isArray(scopeDivisionId) ? scopeDivisionId : [scopeDivisionId];
+	const scope = scopeDivisionId ? 'and exists (select 1 from scheme_districts sd_scope join districts d_scope on d_scope.id = sd_scope.district_id where sd_scope.scheme_id = s.id and d_scope.division_id = any($2::int[]))' : '';
+	if (scopeDivisionId) params.push(divisionIds);
 	const result = await db.query(`${select} where s.id = $1 ${scope} group by s.id, dep.name, ss.name`, params);
 	return result.rows[0] || null;
 }

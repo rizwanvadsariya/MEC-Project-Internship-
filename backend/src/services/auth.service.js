@@ -6,6 +6,7 @@
  */
 'use strict';
 
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { supabase } = require('../config/supabase');
 const { config } = require('../config');
@@ -34,6 +35,7 @@ function toPublicProfile(profile) {
     phone: profile.phone,
     role: profile.role,
     divisionId: profile.division_id,
+    divisionIds: profile.division_ids?.length ? profile.division_ids : (profile.division_id == null ? [] : [profile.division_id]),
     departmentId: profile.department_id,
     isActive: profile.is_active,
   };
@@ -43,7 +45,7 @@ function toPublicProfile(profile) {
  * Point #1 (invite link) + #2 (authorization matrix) + #3 (defense-in-depth
  * division/role validation) + #4 (audit log).
  */
-async function provisionUser(actor, { email, fullName, phone, role, divisionId, departmentId }) {
+async function provisionUser(actor, { email, fullName, phone, role, divisionId, divisionIds, departmentId }) {
   const allowed = PROVISION_MATRIX[actor.role];
   if (!allowed || !allowed.has(role)) {
     throw ApiError.forbidden('You are not permitted to create a user with this role', 'PROVISION_ROLE_DENIED');
@@ -51,8 +53,10 @@ async function provisionUser(actor, { email, fullName, phone, role, divisionId, 
 
   // RD/DG may only provision within their own division; a SUPPORT_USER with
   // no divisionId in the request inherits the provisioner's division.
-  const effectiveDivisionId = divisionId ?? actor.divisionId;
-  if (effectiveDivisionId !== actor.divisionId) {
+  const requestedDivisionIds = divisionIds ?? (divisionId == null ? [actor.divisionId] : [divisionId]);
+  const effectiveDivisionIds = [...new Set(requestedDivisionIds.filter((id) => id != null))];
+  const actorDivisionIds = actor.divisionIds?.length ? actor.divisionIds : [actor.divisionId];
+  if (effectiveDivisionIds.some((id) => !actorDivisionIds.includes(id))) {
     throw ApiError.forbidden('Cannot provision a user outside your own division', 'PROVISION_DIVISION_DENIED');
   }
 
@@ -61,10 +65,12 @@ async function provisionUser(actor, { email, fullName, phone, role, divisionId, 
     throw ApiError.conflict('A user with this email already exists', undefined, 'EMAIL_TAKEN');
   }
 
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: 'invite',
+  const temporaryPassword = crypto.randomBytes(32).toString('base64url');
+  const { data, error } = await supabase.auth.admin.createUser({
     email,
-    options: { redirectTo: config.INVITE_REDIRECT_URL, data: { full_name: fullName } },
+    password: temporaryPassword,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
   });
   if (error || !data?.user) {
     throw ApiError.badRequest(`Could not create the invite: ${error?.message || 'unknown error'}`);
@@ -76,7 +82,8 @@ async function provisionUser(actor, { email, fullName, phone, role, divisionId, 
     email,
     phone,
     role,
-    divisionId: effectiveDivisionId,
+    divisionId: effectiveDivisionIds[0] ?? null,
+    divisionIds: effectiveDivisionIds,
     departmentId,
   });
 
@@ -85,13 +92,17 @@ async function provisionUser(actor, { email, fullName, phone, role, divisionId, 
     action: 'USER_PROVISIONED',
     entityType: 'users',
     entityId: profile.id,
-    metadata: { role, divisionId: effectiveDivisionId, departmentId },
+    metadata: { role, divisionId: effectiveDivisionIds[0] ?? null, divisionIds: effectiveDivisionIds, departmentId },
   });
+
+  const inviteToken = crypto.randomBytes(32).toString('base64url');
+  const expiresAt = new Date(Date.now() + config.INVITE_TOKEN_EXPIRY_MINUTES * 60 * 1000);
+  await userRepo.createInvite(profile.id, inviteToken, expiresAt);
 
   // No SMTP is configured to actually deliver this yet, so hand the link back
   // to the (already-authorized) caller directly. Once email delivery is set
   // up, drop `inviteLink` from the response — Supabase will have sent it.
-  return { profile: toPublicProfile(profile), inviteLink: data.properties?.action_link ?? null };
+  return { profile: toPublicProfile(profile), inviteLink: `${config.INVITE_REDIRECT_URL}?token=${encodeURIComponent(inviteToken)}` };
 }
 
 /** Point #6 — deactivation that actually revokes access, not just a DB flag. */
@@ -103,7 +114,9 @@ async function deactivateUser(actor, targetId) {
   const target = await userRepo.findById(targetId);
   if (!target) throw ApiError.notFound('User not found');
 
-  if (actor.role === ROLES.REGIONAL_DIRECTOR && target.division_id !== actor.divisionId) {
+  const actorDivisionIds = actor.divisionIds?.length ? actor.divisionIds : [actor.divisionId];
+  const targetDivisionIds = target.division_ids?.length ? target.division_ids : [target.division_id];
+  if (actor.role === ROLES.REGIONAL_DIRECTOR && !targetDivisionIds.some((id) => actorDivisionIds.includes(id))) {
     throw ApiError.forbidden('Cannot deactivate a user outside your own division');
   }
 
@@ -125,6 +138,38 @@ async function deactivateUser(actor, targetId) {
     entityId: targetId,
   });
 
+  return toPublicProfile(updated);
+}
+
+async function listDivisionAssignments(actor) {
+  if (actor.role !== ROLES.DIRECTOR_GENERAL) {
+    throw ApiError.forbidden('Only the Director General can manage RD divisions');
+  }
+  const [directors, divisions] = await Promise.all([
+    userRepo.listRegionalDirectors(),
+    userRepo.listDivisions(),
+  ]);
+  return { directors, divisions };
+}
+
+async function assignDivisions(actor, targetId, divisionIds) {
+  if (actor.role !== ROLES.DIRECTOR_GENERAL) {
+    throw ApiError.forbidden('Only the Director General can manage RD divisions');
+  }
+  const uniqueIds = [...new Set(divisionIds)].sort((a, b) => a - b);
+  const divisions = await userRepo.listDivisions();
+  if (uniqueIds.some((id) => !divisions.some((division) => division.id === id))) {
+    throw ApiError.badRequest('One or more selected divisions do not exist');
+  }
+  const updated = await userRepo.updateDivisions(targetId, uniqueIds);
+  if (!updated) throw ApiError.notFound('Active Regional Director not found');
+  await auditLogRepo.record({
+    actorId: actor.id,
+    action: 'RD_DIVISIONS_UPDATED',
+    entityType: 'users',
+    entityId: targetId,
+    metadata: { divisionIds: uniqueIds },
+  });
   return toPublicProfile(updated);
 }
 
@@ -183,6 +228,14 @@ async function forgotPassword({ email }) {
   } catch (err) {
     logger.warn({ err, email }, 'resetPasswordForEmail call failed');
   }
+}
+
+async function acceptInvite(inviteToken, password) {
+  const invite = await userRepo.claimInvite(inviteToken);
+  if (!invite) throw ApiError.badRequest('This invite link is invalid, expired, or already used', undefined, 'INVITE_EXPIRED');
+  const { error } = await supabase.auth.admin.updateUserById(invite.userId, { password, email_confirm: true });
+  if (error) throw ApiError.badRequest(error.message, undefined, 'INVITE_PASSWORD_UPDATE_FAILED');
+  return { message: 'Password created successfully. You can now sign in.' };
 }
 
 /** Point #9 — session visibility + single-session revoke. */
@@ -258,8 +311,11 @@ module.exports = {
   toPublicProfile,
   provisionUser,
   deactivateUser,
+  listDivisionAssignments,
+  assignDivisions,
   login,
   forgotPassword,
+  acceptInvite,
   listSessions,
   revokeSession,
   mfaEnroll,

@@ -19,11 +19,16 @@ const logger = require('./lib/logger');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const v1 = require('./api/v1');
+const authInvitePage = require('./authInvitePage');
 
 const app = express();
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
+
+app.get('/auth/accept-invite', (_req, res) => {
+  res.type('html').send(authInvitePage);
+});
 
 app.use(helmet());
 app.use(

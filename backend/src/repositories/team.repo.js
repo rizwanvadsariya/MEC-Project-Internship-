@@ -26,15 +26,16 @@ async function findSchemeDivision(schemeId) {
  * so those accounts are division-agnostic and eligible everywhere.
  */
 async function findEligibleMembers(divisionId) {
+	const divisionIds = Array.isArray(divisionId) ? divisionId : [divisionId];
 	const { rows } = await db.query(
 		`select id, full_name as "fullName", email, role, department_id as "departmentId"
 		 from users
 		 where is_active = true and (
-			 (role = 'MEO' and division_id = $1)
-			 or (role = 'SUPPORT_USER' and (division_id = $1 or division_id is null))
+			 (role = 'MEO' and division_ids && $1::int[])
+			 or (role = 'SUPPORT_USER' and (division_id = any($1::int[]) or division_id is null))
 		 )
 		 order by role, full_name`,
-		[divisionId],
+		[divisionIds],
 	);
 	return rows;
 }

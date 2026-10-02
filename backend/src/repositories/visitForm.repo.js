@@ -6,20 +6,21 @@
 'use strict';
 
 const db = require('../config/database');
+const siteVisitRepo = require('./siteVisit.repo');
 
 const DIVISION_ROLES = new Set(['REGIONAL_DIRECTOR', 'DIRECTOR_GENERAL']);
 
 function visibilityClause(actor, params, alias = 'sv') {
 	params.push(DIVISION_ROLES.has(actor.role));
 	const divisionScopedIndex = params.length;
-	params.push(actor.divisionId ?? null);
+	params.push(actor.divisionIds?.length ? actor.divisionIds : (actor.divisionId == null ? [] : [actor.divisionId]));
 	const divisionIndex = params.length;
 	params.push(actor.id);
 	const userIndex = params.length;
 	return `(
 		($${divisionScopedIndex} and exists (
 			select 1 from scheme_districts sd join districts d on d.id = sd.district_id
-			where sd.scheme_id = ${alias}.scheme_id and d.division_id = $${divisionIndex}
+			where sd.scheme_id = ${alias}.scheme_id and d.division_id = any($${divisionIndex}::int[])
 		))
 		or exists (select 1 from visit_team_members vtm where vtm.team_id = ${alias}.team_id and vtm.user_id = $${userIndex})
 	)`;
@@ -108,6 +109,7 @@ async function save(siteVisitId, actorId, templateId, payload, status) {
 			[siteVisitId, templateId, actorId, status, payload.physicalProgressPct, payload.remarks ?? null, JSON.stringify(payload.responses)],
 		);
 		if (status === 'SUBMITTED') {
+			const visit = await client.query(`select scheme_id from site_visits where id = $1 for update`, [siteVisitId]);
 			await client.query(
 				`update site_visits set status = 'COMPLETED', completed_at = now() where id = $1 and status <> 'CANCELLED'`,
 				[siteVisitId],
@@ -123,6 +125,7 @@ async function save(siteVisitId, actorId, templateId, payload, status) {
 				 where id = (select scheme_id from site_visits where id = $2)`,
 				[payload.physicalProgressPct, siteVisitId],
 			);
+			if (visit.rows[0]) await siteVisitRepo.createNextForScheme(client, visit.rows[0].scheme_id);
 		}
 		await client.query('commit');
 		return result.rows[0];

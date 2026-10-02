@@ -29,6 +29,7 @@
     "security": "سيڪيورٽي",
     "schemeBrowser": "اسڪيم برائوزر",
     "assembleTeam": "ٽيم ٺاهيو",
+      "createTeamMember": "ٽيم ميمبر ٺاهيو",
     "siteVisits": "سائيٽ ورزٽون",
     "siteVisit": "سائيٽ ورزٽ",
     "visitCalendar": "ورزٽ ڪئلينڊر",
@@ -36,6 +37,7 @@
     "submittedReport": "جمع ٿيل رپورٽ",
     "discussion": "بحث",
     "approvalQueue": "منظوري جي قطار",
+    "rdAssignments": "آر ڊي ڊويزنون",
     "language": "ٻولي",
     "analytics": "تجزيا",
     "auditTrail": "منظوري جي تاريخ",
@@ -44,7 +46,9 @@
     "schemeDetail": "اسڪيم جو رڪارڊ",
     "gisMap": "نقشو",
     "anomalies": "بي ضابطگيون",
+      "createTeamMember": "MEO يا مددگار صارف ٺاهيو",
     "kpiDashboard": "KPI ڊيش بورڊ",
+    "more": "وڌيڪ",
     "unknownRole": "اڻڄاتل ڪردار: {{role}}"
   },
   "auth": {
@@ -156,6 +160,7 @@
       "auditTrail": "منظوري جي تاريخ",
       "reconciliation": "ترقي جي ميلاپ",
       "anomalies": "بي ضابطگيون",
+      "rdAssignments": "آر ڊي ڊويزنون مقرر ڪريو",
       "logOut": "لاگ آئوٽ"
     },
     "errorLoadActivity": "توهان جي سرگرمي لوڊ نه ٿي سگهي."
@@ -568,6 +573,34 @@
     "couldNotLoad": "اطلاعون لوڊ نه ٿي سگهيون.",
     "couldNotLoadMore": "وڌيڪ اطلاعون لوڊ نه ٿي سگهيون."
   },
+  "rdAssignments": {
+    "title": "آر ڊي ڊويزنون مقرر ڪريو",
+    "subtitle": "هر علائقائي ڊائريڪٽر جا انتظام هيٺ ڊويزن چونڊيو.",
+    "selectRd": "علائقائي ڊائريڪٽر چونڊيو",
+    "selectDivisions": "ڊويزنون مقرر ڪريو",
+    "divisionNumber": "ڊويزن {{id}}",
+    "save": "تقرريون محفوظ ڪريو",
+    "saved": "ڊويزن جون تقرريون محفوظ ٿي ويون.",
+    "loadFailed": "آر ڊي جون تقرريون لوڊ نه ٿي سگهيون.",
+    "saveFailed": "آر ڊي جون تقرريون محفوظ نه ٿي سگهيون."
+  },
+  "teamMember": {
+    "title": "ٽيم ميمبر ٺاهيو",
+    "subtitle": "پنهنجي مقرر ٿيل ڊويزنن ۾ MEO يا مددگار صارف کي دعوت ڏيو.",
+    "fullName": "پورو نالو",
+    "fullNamePlaceholder": "پورو نالو داخل ڪريو",
+    "email": "اي ميل",
+    "emailPlaceholder": "اي ميل داخل ڪريو",
+    "phone": "فون (اختياري)",
+    "phonePlaceholder": "فون نمبر داخل ڪريو",
+    "role": "عهدو",
+    "roles": { "MEO": "ايم اي او", "SUPPORT_USER": "مددگار صارف" },
+    "divisionNote": "نئون صارف توهان جي RD ڊويزنن ۾ شامل ٿيندو.",
+    "create": "ٺاهيو ۽ دعوت ڏيو",
+    "created": "صارف ڪاميابي سان ٺاهيو ويو.",
+    "inviteLink": "دعوت لنڪ: {{link}}",
+    "createFailed": "صارف ٺاهي نه سگهيو."
+  },
   "security": {
     "title": "ٻه مرحلا تصديق",
     "enabled": "✅ فعال",
@@ -589,11 +622,7 @@
     "subtitle": "پوري ايپ ۾ استعمال ٿيندڙ ٻولي چونڊيو.",
     "english": "English",
     "urdu": "اردو",
-    "sindhi": "سنڌي",
-    "restartNoticeTitle": "ٻيهر شروع ڪرڻ گهربل آهي",
-    "restartNoticeBody": "نئين متن جي طرف کي مڪمل طور تي لاڳو ڪرڻ لاءِ، مهرباني ڪري ايپ بند ڪري ٻيهر کوليو.",
-    "restartNowButton": "هاڻي ٻيهر شروع ڪريو",
-    "restartLaterHint": "توهان ايپ استعمال ڪندا رهي سگهو ٿا — ايندڙ ڀيري کلڻ تي ليئائوٽ جي طرف پاڻمرادو تازي ٿي ويندي."
+    "sindhi": "سنڌي"
   },
   "errors": {
     "INVALID_CREDENTIALS": "غلط اي ميل يا پاس ورڊ.",

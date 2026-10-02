@@ -113,7 +113,7 @@ export default function SecuritySettingsScreen() {
         <>
           <Text style={styles.status}>{t('security.enabled')}</Text>
           <Pressable style={[styles.button, styles.dangerButton]} onPress={removeMfa} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.removeButton')}</Text>}
+            {busy ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>{t('security.removeButton')}</Text>}
           </Pressable>
         </>
       )}
@@ -122,7 +122,7 @@ export default function SecuritySettingsScreen() {
         <>
           <Text style={styles.status}>{t('security.notEnabled')}</Text>
           <Pressable style={styles.button} onPress={startEnroll} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.enableButton')}</Text>}
+            {busy ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>{t('security.enableButton')}</Text>}
           </Pressable>
         </>
       )}
@@ -145,7 +145,7 @@ export default function SecuritySettingsScreen() {
             placeholder={t('security.codePlaceholder')}
           />
           <Pressable style={styles.button} onPress={confirmCode} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('security.verifyButton')}</Text>}
+            {busy ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>{t('security.verifyButton')}</Text>}
           </Pressable>
         </View>
       )}

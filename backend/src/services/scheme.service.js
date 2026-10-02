@@ -54,8 +54,8 @@ async function getMapSummary(actor) {
 	]);
 
 	let issuesByDistrict = [];
-	if (HIGH_VALUE_ROLES.includes(actor.role) && actor.divisionId != null) {
-		issuesByDistrict = await dashboardRepo.countIssuesByDistrict(actor.divisionId);
+	if (HIGH_VALUE_ROLES.includes(actor.role) && (actor.divisionIds?.length || actor.divisionId != null)) {
+		issuesByDistrict = await dashboardRepo.countIssuesByDistrict(actor.divisionIds?.length ? actor.divisionIds : actor.divisionId);
 	}
 
 	return { divisions, districts, issuesByDistrict };

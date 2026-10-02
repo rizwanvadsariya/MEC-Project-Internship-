@@ -515,6 +515,7 @@ async function countAtRiskSchemes(divisionId, gapThresholdPct) {
  * districts a scheme touches.
  */
 async function countIssuesByDistrict(divisionId) {
+	const divisionIds = Array.isArray(divisionId) ? divisionId : [divisionId];
 	const { rows } = await db.query(
 		`select d.id as "districtId", d.name as "districtName",
 				count(ir.id) filter (where ir.status <> 'RESOLVED')::int as "openIssues",
@@ -527,10 +528,10 @@ async function countIssuesByDistrict(divisionId) {
 		 left join schemes s on s.id = sd.scheme_id
 		 left join site_visits sv on sv.scheme_id = s.id
 		 left join issue_reports ir on ir.site_visit_id = sv.id
-		 where d.division_id = $1
+			 where d.division_id = any($1::int[])
 		 group by d.id, d.name
 		 order by d.name`,
-		[divisionId],
+		[divisionIds],
 	);
 	return rows;
 }

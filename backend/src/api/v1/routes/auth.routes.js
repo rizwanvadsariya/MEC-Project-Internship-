@@ -19,6 +19,7 @@ const { ROLES } = require('../../../constants/roles');
 
 router.post('/login', loginLimiter, validate(schema.login), controller.login);
 router.post('/forgot-password', loginLimiter, validate(schema.forgotPassword), controller.forgotPassword);
+router.post('/accept-invite', validate(schema.acceptInvite), controller.acceptInvite);
 
 router.get('/me', authenticate, authorize(), controller.me);
 
@@ -37,6 +38,22 @@ router.patch(
   authorize(ROLES.DIRECTOR_GENERAL, ROLES.REGIONAL_DIRECTOR),
   validate(schema.userIdParam),
   controller.deactivateUser,
+);
+
+router.get(
+  '/division-assignments',
+  authenticate,
+  authorize(ROLES.DIRECTOR_GENERAL),
+  controller.listDivisionAssignments,
+);
+
+router.patch(
+  '/users/:id/divisions',
+  authenticate,
+  authorize(ROLES.DIRECTOR_GENERAL),
+  validate(schema.userIdParam),
+  validate(schema.assignDivisions),
+  controller.assignDivisions,
 );
 
 router.get('/sessions', authenticate, authorize(), controller.listSessions);

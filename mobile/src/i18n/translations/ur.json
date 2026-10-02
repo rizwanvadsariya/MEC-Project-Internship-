@@ -36,6 +36,7 @@
     "submittedReport": "جمع کردہ رپورٹ",
     "discussion": "تبادلہ خیال",
     "approvalQueue": "منظوری کی قطار",
+    "rdAssignments": "آر ڈی ڈویژنیں",
     "language": "زبان",
     "analytics": "تجزیات",
     "auditTrail": "منظوری کی تاریخ",
@@ -44,7 +45,9 @@
     "schemeDetail": "اسکیم کا ریکارڈ",
     "gisMap": "نقشہ",
     "anomalies": "بے ضابطگیاں",
+      "createTeamMember": "MEO یا معاون صارف بنائیں",
     "kpiDashboard": "KPI ڈیش بورڈ",
+    "more": "مزید",
     "unknownRole": "نامعلوم کردار: {{role}}"
   },
   "auth": {
@@ -156,6 +159,7 @@
       "auditTrail": "منظوری کی تاریخ",
       "reconciliation": "پیش رفت مطابقت",
       "anomalies": "بے ضابطگیاں",
+      "rdAssignments": "آر ڈی ڈویژنیں مقرر کریں",
       "logOut": "لاگ آؤٹ"
     },
     "errorLoadActivity": "آپ کی سرگرمی لوڈ نہیں ہو سکی۔"
@@ -568,6 +572,34 @@
     "couldNotLoad": "اطلاعات لوڈ نہیں ہو سکیں۔",
     "couldNotLoadMore": "مزید اطلاعات لوڈ نہیں ہو سکیں۔"
   },
+  "rdAssignments": {
+    "title": "آر ڈی ڈویژنیں مقرر کریں",
+    "subtitle": "ہر علاقائی ڈائریکٹر کے زیر انتظام ڈویژن منتخب کریں۔",
+    "selectRd": "علاقائی ڈائریکٹر منتخب کریں",
+    "selectDivisions": "ڈویژن مقرر کریں",
+    "divisionNumber": "ڈویژن {{id}}",
+    "save": "تقرریاں محفوظ کریں",
+    "saved": "ڈویژن کی تقرریاں محفوظ ہو گئیں۔",
+    "loadFailed": "آر ڈی تقرریاں لوڈ نہیں ہو سکیں۔",
+    "saveFailed": "آر ڈی تقرریاں محفوظ نہیں ہو سکیں۔"
+  },
+  "teamMember": {
+    "title": "ٹیم ممبر بنائیں",
+    "subtitle": "اپنے مقرر کردہ ڈویژنوں میں MEO یا معاون صارف کو مدعو کریں۔",
+    "fullName": "پورا نام",
+    "fullNamePlaceholder": "پورا نام درج کریں",
+    "email": "ای میل",
+    "emailPlaceholder": "ای میل درج کریں",
+    "phone": "فون (اختیاری)",
+    "phonePlaceholder": "فون نمبر درج کریں",
+    "role": "عہدہ",
+    "roles": { "MEO": "ایم ای او", "SUPPORT_USER": "معاون صارف" },
+    "divisionNote": "نیا صارف آپ کے RD ڈویژنوں میں شامل کیا جائے گا۔",
+    "create": "بنائیں اور مدعو کریں",
+    "created": "صارف کامیابی سے بنا دیا گیا۔",
+    "inviteLink": "دعوت کا لنک: {{link}}",
+    "createFailed": "صارف نہیں بنایا جا سکا۔"
+  },
   "security": {
     "title": "دو مرحلہ توثیق",
     "enabled": "✅ فعال",
@@ -589,11 +621,7 @@
     "subtitle": "پوری ایپ میں استعمال ہونے والی زبان منتخب کریں۔",
     "english": "English",
     "urdu": "اردو",
-    "sindhi": "سنڌي",
-    "restartNoticeTitle": "دوبارہ آغاز درکار ہے",
-    "restartNoticeBody": "نئی متن کی سمت کو مکمل طور پر لاگو کرنے کے لیے، براہ کرم ایپ بند کر کے دوبارہ کھولیں۔",
-    "restartNowButton": "ابھی دوبارہ شروع کریں",
-    "restartLaterHint": "آپ ایپ استعمال کرتے رہ سکتے ہیں — اگلی بار کھلنے پر لے آؤٹ کی سمت خودکار طور پر اپ ڈیٹ ہو جائے گی۔"
+    "sindhi": "سنڌي"
   },
   "errors": {
     "INVALID_CREDENTIALS": "غلط ای میل یا پاس ورڈ۔",

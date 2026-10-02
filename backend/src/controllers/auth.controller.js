@@ -19,6 +19,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, { message: 'If that email is registered, a reset link has been sent.' });
 });
 
+const acceptInvite = asyncHandler(async (req, res) => {
+  ApiResponse.ok(res, await authService.acceptInvite(req.body.inviteToken, req.body.password));
+});
+
 const me = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, req.authUser);
 });
@@ -31,6 +35,14 @@ const provisionUser = asyncHandler(async (req, res) => {
 const deactivateUser = asyncHandler(async (req, res) => {
   const profile = await authService.deactivateUser(req.authUser, req.params.id);
   ApiResponse.ok(res, profile);
+});
+
+const listDivisionAssignments = asyncHandler(async (req, res) => {
+  ApiResponse.ok(res, await authService.listDivisionAssignments(req.authUser));
+});
+
+const assignDivisions = asyncHandler(async (req, res) => {
+  ApiResponse.ok(res, await authService.assignDivisions(req.authUser, req.params.id, req.body.divisionIds));
 });
 
 const listSessions = asyncHandler(async (req, res) => {
@@ -71,9 +83,12 @@ const mfaUnenroll = asyncHandler(async (req, res) => {
 module.exports = {
   login,
   forgotPassword,
+  acceptInvite,
   me,
   provisionUser,
   deactivateUser,
+  listDivisionAssignments,
+  assignDivisions,
   listSessions,
   revokeSession,
   mfaEnroll,
