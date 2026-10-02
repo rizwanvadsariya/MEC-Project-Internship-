@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import {
 	ActivityIndicator,
 	FlatList,
@@ -32,8 +32,16 @@ export default function SchemeBrowserScreen() {
 	const { t } = useTranslation();
 	const { accessToken, user } = useAuth();
 	const navigation = useNavigation<{ navigate: (screen: string, params?: Record<string, string | number>) => void }>();
+	// Step 30 — GIS map view: tapping a district on the map drills in here
+	// pre-filtered to that district, the same filter a user could reach
+	// manually via the "District" chip below. Read once at mount, not
+	// re-applied on every focus, so clearing/changing filters afterward isn't
+	// fought by a stale route param.
+	const route = useRoute<{ key: string; name: string; params?: { districtId?: number } }>();
 	const canDiscuss = user?.role !== 'SUPPORT_USER';
-	const [filters, setFilters] = useState<SchemeFilters>(EMPTY_FILTERS);
+	const [filters, setFilters] = useState<SchemeFilters>(() =>
+		route.params?.districtId ? { ...EMPTY_FILTERS, districtId: route.params.districtId } : EMPTY_FILTERS,
+	);
 	const [options, setOptions] = useState<SchemeFilterOptions | null>(null);
 	const [schemes, setSchemes] = useState<Scheme[]>([]);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);

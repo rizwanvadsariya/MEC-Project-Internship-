@@ -12,6 +12,8 @@ import LanguageSettingsScreen from '../screens/common/LanguageSettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import SchemeDetailScreen from '../screens/common/SchemeDetailScreen';
 import QrScanScreen from '../screens/common/QrScanScreen';
+import GisMapScreen from '../screens/common/GisMapScreen';
+import KpiDashboardScreen from '../screens/common/KpiDashboardScreen';
 import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
 import VisitFormScreen from '../screens/meo/VisitFormScreen';
@@ -33,6 +35,8 @@ export default function SupportUserNavigator() {
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: t('navigation.schemeBrowser') }} />
       <Stack.Screen name="SchemeDetail" component={SchemeDetailScreen} options={{ title: t('navigation.schemeDetail') }} />
       <Stack.Screen name="QrScan" component={QrScanScreen} options={{ title: t('navigation.qrScan') }} />
+      <Stack.Screen name="GisMap" component={GisMapScreen} options={{ title: t('navigation.gisMap') }} />
+      <Stack.Screen name="KpiDashboard" component={KpiDashboardScreen} options={{ title: t('navigation.kpiDashboard') }} />
       <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: t('navigation.siteVisits') }} />
       <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: t('navigation.siteVisit') }} />
       <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: t('navigation.visitForm') }} />

@@ -59,6 +59,25 @@ async function resetLoginAttempts(id) {
   await query(`update users set failed_login_count = 0, locked_until = null where id = $1`, [id]);
 }
 
+/** Step 32 — automated digest reports. Plain data ops, same split as the
+ *  login-lockout counters above: the actual "is a digest due" policy lives
+ *  in services/digest.service.js, not here. */
+async function findDigestTimestamps(id) {
+  const { rows } = await query(
+    `select last_weekly_digest_at as "lastWeeklyDigestAt", last_monthly_digest_at as "lastMonthlyDigestAt"
+     from users where id = $1`,
+    [id],
+  );
+  return rows[0] || null;
+}
+
+/** `period` is always an internal literal ('weekly' | 'monthly'), never
+ *  user input, so the column-name interpolation below is safe. */
+async function markDigestSent(id, period) {
+  const column = period === 'weekly' ? 'last_weekly_digest_at' : 'last_monthly_digest_at';
+  await query(`update users set ${column} = now() where id = $1`, [id]);
+}
+
 module.exports = {
   findById,
   findByEmail,
@@ -67,4 +86,6 @@ module.exports = {
   incrementFailedLogin,
   setLockedUntil,
   resetLoginAttempts,
+  findDigestTimestamps,
+  markDigestSent,
 };

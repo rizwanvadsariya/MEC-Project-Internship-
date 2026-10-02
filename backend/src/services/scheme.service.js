@@ -6,6 +6,8 @@
 'use strict';
 
 const schemeRepo = require('../repositories/scheme.repo');
+const dashboardRepo = require('../repositories/dashboard.repo');
+const { HIGH_VALUE_ROLES } = require('../constants/roles');
 const ApiError = require('../lib/ApiError');
 
 async function list(filters) {
@@ -34,4 +36,29 @@ async function getFilterOptions() {
 	return schemeRepo.filterOptions();
 }
 
-module.exports = { list, getById, getByUid, getFilterOptions };
+/**
+ * Step 30 — GIS map view. Division/district progress rollups are
+ * province-wide open data for any authenticated role (the same figures the
+ * scheme browser already exposes to everyone, Step 7) — no new access is
+ * granted here. The issue-severity coloring layer is a different matter: it
+ * surfaces an open-issue count per district, which this app has only ever
+ * exposed to RD/DG and only for their own division (Steps 16/23) — so it's
+ * added here under the identical restriction rather than opened
+ * province-wide, and simply omitted (an empty array, not a 403) for every
+ * other role so the base map — progress-only — still works for everyone.
+ */
+async function getMapSummary(actor) {
+	const [divisions, districts] = await Promise.all([
+		schemeRepo.mapDivisionSummary(),
+		schemeRepo.mapDistrictSummary(),
+	]);
+
+	let issuesByDistrict = [];
+	if (HIGH_VALUE_ROLES.includes(actor.role) && actor.divisionId != null) {
+		issuesByDistrict = await dashboardRepo.countIssuesByDistrict(actor.divisionId);
+	}
+
+	return { divisions, districts, issuesByDistrict };
+}
+
+module.exports = { list, getById, getByUid, getFilterOptions, getMapSummary };

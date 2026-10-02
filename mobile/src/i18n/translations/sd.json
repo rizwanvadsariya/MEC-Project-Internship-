@@ -42,6 +42,9 @@
     "reconciliation": "ترقي جي ميلاپ",
     "qrScan": "QR اسڪين ڪريو",
     "schemeDetail": "اسڪيم جو رڪارڊ",
+    "gisMap": "نقشو",
+    "anomalies": "بي ضابطگيون",
+    "kpiDashboard": "KPI ڊيش بورڊ",
     "unknownRole": "اڻڄاتل ڪردار: {{role}}"
   },
   "auth": {
@@ -142,7 +145,9 @@
       "SUPPORT_USER": "مددگار صارف"
     },
     "buttons": {
+      "kpiDashboard": "KPI ڊيش بورڊ",
       "siteVisits": "سائيٽ ورزٽون",
+      "gisMap": "نقشو",
       "visitCalendar": "ورزٽ ڪئلينڊر",
       "notifications": "اطلاعون",
       "security": "سيڪيورٽي سيٽنگون",
@@ -150,6 +155,7 @@
       "analytics": "تجزيا",
       "auditTrail": "منظوري جي تاريخ",
       "reconciliation": "ترقي جي ميلاپ",
+      "anomalies": "بي ضابطگيون",
       "logOut": "لاگ آئوٽ"
     },
     "errorLoadActivity": "توهان جي سرگرمي لوڊ نه ٿي سگهي."
@@ -276,6 +282,16 @@
       "MEDIUM": "وچولي",
       "HIGH": "وڌيڪ",
       "CRITICAL": "شديد"
+    },
+    "export": {
+      "title": "آف لائن رپورٽنگ لاءِ ايڪسپورٽ",
+      "pdf": "PDF ايڪسپورٽ ڪريو",
+      "excel": "Excel ايڪسپورٽ ڪريو",
+      "reportTitle": "{{division}} — ڊويزن رپورٽ",
+      "schemesReportedLabel": "رپورٽ ٿيل اسڪيمون",
+      "shared": "ايڪسپورٽ تيار آهي — محفوظ ڪرڻ يا موڪلڻ لاءِ جڳهه چونڊيو.",
+      "savedOnly": "ايڪسپورٽ هن ڊوائس تي محفوظ ٿي وئي (هتي شيئرنگ موجود ناهي).",
+      "failed": "ايڪسپورٽ نه ٺهي سگھي."
     }
   },
   "auditTrail": {
@@ -317,6 +333,74 @@
     "financial": "مالي",
     "financialAhead": "مالي ترقي جسماني ترقي کان اڳتي آهي",
     "physicalAhead": "جسماني ترقي مالي ترقي کان اڳتي آهي"
+  },
+  "gisMap": {
+    "title": "اسڪيم نقشو",
+    "subtitle": "ڊويزن/ضلعي موجب اسڪيمون",
+    "pinAccuracyDisclaimer": "پن هر ضلعي جو تقريباً مرڪز ڏيکارين ٿا، انفرادي اسڪيمن جي جڳهه نه — بنيادي ADP ڊيٽا ۾ اسڪيمن جا حقيقي نقطا موجود ناهن.",
+    "couldNotLoad": "نقشو لوڊ نه ٿي سگھيو.",
+    "modeProgress": "ترقي",
+    "modeSeverity": "مسئلي جي شدت",
+    "legend": {
+      "progressHigh": "75%+ سراسري ترقي",
+      "progressMedium": "40-74% سراسري ترقي",
+      "progressLow": "40% کان گهٽ سراسري ترقي",
+      "noData": "اڃا تائين ڪو ڊيٽا رپورٽ نه ٿيو",
+      "severityNone": "ڪو کليل مسئلو ناهي",
+      "severityModerate": "صرف گهٽ/وچولي شدت",
+      "severityHigh": "وڌيڪ يا شديد مسئلو موجود آهي"
+    },
+    "schemesReportedContext": "{{total}} مان {{reported}} اسڪيمون رپورٽ ٿيون",
+    "notYetReported": "اڃا تائين رپورٽ نه ٿيو",
+    "avgProgress": "{{pct}}% سراسري ترقي",
+    "openIssuesContext": "{{count}} کليل مسئلا ({{critical}} شديد، {{high}} وڌيڪ)",
+    "viewSchemesInDistrict": "هن ضلعي ۾ اسڪيمون ڏسو"
+  },
+  "anomalies": {
+    "title": "دير ۽ بي ضابطگي جي نشاندهي",
+    "subtitle": "اهي اسڪيمون جن تي ڌيان ڏيڻ جي ضرورت ٿي سگھي ٿي — حالياتي وزٽ نه هجڻ، ميداني ترقي کان سواءِ رقم خرچ ٿيڻ، يا مقرر تاريخ تي مڪمل نه ٿيڻ جو خطرو",
+    "couldNotLoad": "بي ضابطگيون لوڊ نه ٿي سگھيون.",
+    "totalFlagged": "{{count}} اسڪيمون نشان لڳل",
+    "noneFlagged": "هن وقت ڪا اسڪيم نشان لڳل ناهي.",
+    "neverVisited": "ڪڏهن به وزٽ نه ٿيو",
+    "lastVisit": "آخري وزٽ: {{time}}",
+    "noRecentVisit": {
+      "title": "حالياتي وزٽ ناهي",
+      "thresholdContext": "ايتري وقت نشان لڳندو آهي جڏهن ڪنهن اسڪيم جو گذريل {{months}} مهينن ۾ ڪو مڪمل وزٽ نه ٿيو هجي"
+    },
+    "spendWithoutProgress": {
+      "title": "ترقي کان سواءِ خرچ",
+      "thresholdContext": "ايتري وقت نشان لڳندو آهي جڏهن مالي ترقي {{financialMinPct}}%+ هجي جڏهن ته جسماني ترقي اڃا تائين {{physicalMaxPct}}% يا ان کان گهٽ هجي",
+      "progressPair": "{{physical}}% جسماني · {{financial}}% مالي"
+    },
+    "atRisk": {
+      "title": "مقرر تاريخ ۾ دير جو خطرو",
+      "thresholdContext": "ايتري وقت نشان لڳندو آهي جڏهن ڪا اسڪيم اڳ ۾ ئي پنهنجي مقرر تاريخ کان مٿي گذري چڪي هجي، يا وقت تي مڪمل ٿيڻ جي رفتار کان گهٽ ۾ گهٽ {{gapPct}} پوائنٽ پوئتي هجي",
+      "overdue": "مقرر تاريخ ({{targetMonth}}) گذري چڪي ۽ اڃا تائين مڪمل ناهي",
+      "behindPace": "مقرر تاريخ {{targetMonth}} — هن وقت تائين {{expected}}% ترقي متوقع هئي، اصل ۾ {{actual}}%"
+    }
+  },
+  "kpi": {
+    "title": "KPI ڊيش بورڊ",
+    "subtitle": "صوبي جي ترقي، توهان جي پنهنجي ڪم سان لاڳاپيل انگن اکرن سان گدي",
+    "couldNotLoad": "KPI ڊيش بورڊ لوڊ نه ٿي سگھيو.",
+    "notYetReported": "اڃا تائين رپورٽ نه ٿيو",
+    "noData": "ڪو ڊيٽا موجود ناهي.",
+    "provinceSectionTitle": "صوبي جو جائزو",
+    "divisionSectionTitle": "{{division}} جو جائزو",
+    "memberSectionTitle": "توهان جو ڪم",
+    "overallProgress": "مجموعي ترقي",
+    "activeTeams": "فعال ٽيمون",
+    "activeVisits": "ورزٽون",
+    "openIssues": "کليل مسئلا",
+    "noRecentVisit": "حالياتي وزٽ ناهي",
+    "spendWithoutProgress": "ترقي کان سواءِ خرچ",
+    "atRisk": "مقرر تاريخ ۾ دير جو خطرو",
+    "schemesMonitored": "نظر ۾ رکيل اسڪيمون",
+    "formsDue": "باقي فارم",
+    "viewMap": "نقشو ڏسو",
+    "viewAnalytics": "تجزيا ڏسو",
+    "viewAnomalies": "بي ضابطگيون ڏسو"
   },
   "qrScan": {
     "permissionTitle": "ڪئميرا رسائي گهربل آهي",

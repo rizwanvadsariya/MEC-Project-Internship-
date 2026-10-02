@@ -21,5 +21,11 @@ router.get(
 	validate(schema.reconciliationQuery),
 	controller.getProgressReconciliation,
 );
+router.get(
+	'/anomalies',
+	authorize(ROLES.REGIONAL_DIRECTOR, ROLES.DIRECTOR_GENERAL),
+	validate(schema.anomaliesQuery),
+	controller.getAnomalies,
+);
 
 module.exports = router;

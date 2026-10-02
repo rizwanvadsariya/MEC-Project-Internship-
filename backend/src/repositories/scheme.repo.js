@@ -74,6 +74,60 @@ async function findByUid(uid) {
 	return result.rows[0] || null;
 }
 
+/**
+ * Step 30 — GIS map view, district granularity. A scheme can span multiple
+ * districts (scheme_districts has no unique-per-scheme constraint), and
+ * that's the correct, desired behavior here: each district tile on the map
+ * reports progress for the schemes physically linked to it, so a
+ * multi-district scheme legitimately contributes to more than one tile.
+ * `scheme_districts`'s own primary key is (scheme_id, district_id), so a
+ * scheme can only ever join to a given district once — no double-counting
+ * risk within a single district's own aggregate.
+ */
+async function mapDistrictSummary() {
+	const { rows } = await db.query(`
+		select d.id as "districtId", d.name as "districtName", d.division_id as "divisionId",
+			count(distinct s.id)::int as "schemesTotal",
+			count(distinct s.id) filter (where s.physical_progress_pct is not null)::int as "schemesReported",
+			avg(s.physical_progress_pct)::float8 as "avgPhysicalProgressPct"
+		from districts d
+		left join scheme_districts sd on sd.district_id = d.id
+		left join schemes s on s.id = sd.scheme_id
+		group by d.id, d.name, d.division_id
+		order by d.name
+	`);
+	return rows;
+}
+
+/**
+ * Division-level rollup for the same map. Unlike the district query above,
+ * a scheme spanning two districts *within the same division* must only be
+ * counted once at the division level — the exact double-counting trap
+ * Step 23 already documented hitting in its own test fixture. The CTE
+ * de-duplicates (scheme_id, division_id) pairs before aggregating, so a
+ * scheme's progress is never double-weighted into one division's average
+ * just because it touches two of that division's districts.
+ */
+async function mapDivisionSummary() {
+	const { rows } = await db.query(`
+		with scheme_division as (
+			select distinct s.id as scheme_id, s.physical_progress_pct, d.division_id
+			from schemes s
+			join scheme_districts sd on sd.scheme_id = s.id
+			join districts d on d.id = sd.district_id
+		)
+		select dv.id as "divisionId", dv.name as "divisionName",
+			count(sdv.scheme_id)::int as "schemesTotal",
+			count(sdv.scheme_id) filter (where sdv.physical_progress_pct is not null)::int as "schemesReported",
+			avg(sdv.physical_progress_pct)::float8 as "avgPhysicalProgressPct"
+		from divisions dv
+		left join scheme_division sdv on sdv.division_id = dv.id
+		group by dv.id, dv.name
+		order by dv.name
+	`);
+	return rows;
+}
+
 async function filterOptions() {
 	const [divisions, districts, departments, subSectors, statuses] = await Promise.all([
 		db.query('select id, name from divisions order by name'),
@@ -91,4 +145,4 @@ async function filterOptions() {
 	};
 }
 
-module.exports = { list, findById, findByUid, filterOptions };
+module.exports = { list, findById, findByUid, filterOptions, mapDistrictSummary, mapDivisionSummary };

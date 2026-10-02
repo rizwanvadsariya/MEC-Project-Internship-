@@ -41,6 +41,7 @@ module.exports = {
       'expo-image-picker',
       'expo-notifications',
       'expo-localization',
+      'expo-sharing',
       [
         'expo-location',
         {

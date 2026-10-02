@@ -17,4 +17,15 @@ const reconciliationQuery = {
 	}),
 };
 
-module.exports = { reconciliationQuery };
+/** Step 31 — delay/anomaly detection. Not cursor-paginated (these are
+ *  short "flagged problem" lists, not a full browse view) — just a
+ *  caller-overridable cap, default 50, capped at 200 so a division with a
+ *  very sparse/early-stage visit history can't request an unbounded
+ *  response. */
+const anomaliesQuery = {
+	query: z.object({
+		limit: z.coerce.number().int().min(1).max(200).default(50),
+	}),
+};
+
+module.exports = { reconciliationQuery, anomaliesQuery };

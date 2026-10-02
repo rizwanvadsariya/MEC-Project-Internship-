@@ -228,8 +228,14 @@ export default function RoleHomeScreen() {
         </Text>
       </View>
 
+      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('KpiDashboard')}>
+        <Text style={styles.securityButtonText}>{t('roleHome.buttons.kpiDashboard')}</Text>
+      </Pressable>
       <Pressable style={styles.securityButton} onPress={() => navigation.navigate('SiteVisits')}>
         <Text style={styles.securityButtonText}>{t('roleHome.buttons.siteVisits')}</Text>
+      </Pressable>
+      <Pressable style={styles.securityButton} onPress={() => navigation.navigate('GisMap')}>
+        <Text style={styles.securityButtonText}>{t('roleHome.buttons.gisMap')}</Text>
       </Pressable>
       {user.role === 'REGIONAL_DIRECTOR' || user.role === 'MEO' ? (
         <Pressable style={styles.securityButton} onPress={() => navigation.navigate('VisitCalendar')}>
@@ -249,6 +255,11 @@ export default function RoleHomeScreen() {
       {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
         <Pressable style={styles.securityButton} onPress={() => navigation.navigate('ProgressReconciliation')}>
           <Text style={styles.securityButtonText}>{t('roleHome.buttons.reconciliation')}</Text>
+        </Pressable>
+      ) : null}
+      {user.role === 'REGIONAL_DIRECTOR' || user.role === 'DIRECTOR_GENERAL' ? (
+        <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Anomalies')}>
+          <Text style={styles.securityButtonText}>{t('roleHome.buttons.anomalies')}</Text>
         </Pressable>
       ) : null}
       <Pressable style={styles.securityButton} onPress={() => navigation.navigate('Notifications')}>

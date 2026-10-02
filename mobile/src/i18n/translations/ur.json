@@ -42,6 +42,9 @@
     "reconciliation": "پیش رفت مطابقت",
     "qrScan": "QR اسکین کریں",
     "schemeDetail": "اسکیم کا ریکارڈ",
+    "gisMap": "نقشہ",
+    "anomalies": "بے ضابطگیاں",
+    "kpiDashboard": "KPI ڈیش بورڈ",
     "unknownRole": "نامعلوم کردار: {{role}}"
   },
   "auth": {
@@ -142,7 +145,9 @@
       "SUPPORT_USER": "معاون صارف"
     },
     "buttons": {
+      "kpiDashboard": "KPI ڈیش بورڈ",
       "siteVisits": "سائٹ وزٹس",
+      "gisMap": "نقشہ",
       "visitCalendar": "وزٹ کیلنڈر",
       "notifications": "اطلاعات",
       "security": "سیکیورٹی سیٹنگز",
@@ -150,6 +155,7 @@
       "analytics": "تجزیات",
       "auditTrail": "منظوری کی تاریخ",
       "reconciliation": "پیش رفت مطابقت",
+      "anomalies": "بے ضابطگیاں",
       "logOut": "لاگ آؤٹ"
     },
     "errorLoadActivity": "آپ کی سرگرمی لوڈ نہیں ہو سکی۔"
@@ -276,6 +282,16 @@
       "MEDIUM": "درمیانہ",
       "HIGH": "زیادہ",
       "CRITICAL": "شدید"
+    },
+    "export": {
+      "title": "آف لائن رپورٹنگ کے لیے ایکسپورٹ",
+      "pdf": "PDF ایکسپورٹ کریں",
+      "excel": "Excel ایکسپورٹ کریں",
+      "reportTitle": "{{division}} — ڈویژن رپورٹ",
+      "schemesReportedLabel": "رپورٹ شدہ اسکیمیں",
+      "shared": "ایکسپورٹ تیار ہے — محفوظ کرنے یا بھیجنے کے لیے جگہ منتخب کریں۔",
+      "savedOnly": "ایکسپورٹ اس ڈیوائس پر محفوظ ہو گئی (یہاں شیئرنگ دستیاب نہیں ہے)۔",
+      "failed": "ایکسپورٹ نہیں بن سکی۔"
     }
   },
   "auditTrail": {
@@ -317,6 +333,74 @@
     "financial": "مالی",
     "financialAhead": "مالی پیش رفت جسمانی پیش رفت سے آگے ہے",
     "physicalAhead": "جسمانی پیش رفت مالی پیش رفت سے آگے ہے"
+  },
+  "gisMap": {
+    "title": "اسکیم نقشہ",
+    "subtitle": "ڈویژن/ضلع کے لحاظ سے اسکیمیں",
+    "pinAccuracyDisclaimer": "پن ہر ضلع کے تقریباً مرکز کو ظاہر کرتے ہیں، انفرادی اسکیموں کی جگہ کو نہیں — بنیادی ADP ڈیٹا میں اسکیموں کے حقیقی نقاط موجود نہیں ہیں۔",
+    "couldNotLoad": "نقشہ لوڈ نہیں ہو سکا۔",
+    "modeProgress": "پیش رفت",
+    "modeSeverity": "مسئلے کی شدت",
+    "legend": {
+      "progressHigh": "75%+ اوسط پیش رفت",
+      "progressMedium": "40-74% اوسط پیش رفت",
+      "progressLow": "40% سے کم اوسط پیش رفت",
+      "noData": "ابھی تک کوئی ڈیٹا رپورٹ نہیں ہوا",
+      "severityNone": "کوئی کھلا مسئلہ نہیں",
+      "severityModerate": "صرف کم/درمیانی شدت",
+      "severityHigh": "زیادہ یا شدید مسئلہ موجود ہے"
+    },
+    "schemesReportedContext": "{{total}} میں سے {{reported}} اسکیمیں رپورٹ ہوئیں",
+    "notYetReported": "ابھی تک رپورٹ نہیں ہوا",
+    "avgProgress": "{{pct}}% اوسط پیش رفت",
+    "openIssuesContext": "{{count}} کھلے مسائل ({{critical}} شدید، {{high}} زیادہ)",
+    "viewSchemesInDistrict": "اس ضلع میں اسکیمیں دیکھیں"
+  },
+  "anomalies": {
+    "title": "تاخیر اور بے ضابطگی کی نشاندہی",
+    "subtitle": "ایسی اسکیمیں جن پر توجہ درکار ہو سکتی ہے — حالیہ وزٹ نہ ہونا، میدانی پیش رفت کے بغیر رقم خرچ ہونا، یا مقررہ تاریخ تک مکمل نہ ہونے کا خطرہ",
+    "couldNotLoad": "بے ضابطگیاں لوڈ نہیں ہو سکیں۔",
+    "totalFlagged": "{{count}} اسکیمیں نشان زد",
+    "noneFlagged": "فی الحال کوئی اسکیم نشان زد نہیں۔",
+    "neverVisited": "کبھی وزٹ نہیں ہوا",
+    "lastVisit": "آخری وزٹ: {{time}}",
+    "noRecentVisit": {
+      "title": "حالیہ وزٹ نہیں",
+      "thresholdContext": "اس وقت نشان زد ہوتا ہے جب کسی اسکیم کا گزشتہ {{months}} مہینوں میں کوئی مکمل وزٹ نہ ہوا ہو"
+    },
+    "spendWithoutProgress": {
+      "title": "پیش رفت کے بغیر خرچ",
+      "thresholdContext": "اس وقت نشان زد ہوتا ہے جب مالی پیش رفت {{financialMinPct}}%+ ہو جبکہ جسمانی پیش رفت اب بھی {{physicalMaxPct}}% یا اس سے کم ہو",
+      "progressPair": "{{physical}}% جسمانی · {{financial}}% مالی"
+    },
+    "atRisk": {
+      "title": "مقررہ تاریخ میں تاخیر کا خطرہ",
+      "thresholdContext": "اس وقت نشان زد ہوتا ہے جب کوئی اسکیم پہلے ہی اپنی مقررہ تاریخ سے گزر چکی ہو، یا وقت پر مکمل ہونے کی رفتار سے کم از کم {{gapPct}} پوائنٹس پیچھے ہو",
+      "overdue": "مقررہ تاریخ ({{targetMonth}}) گزر چکی اور ابھی تک مکمل نہیں",
+      "behindPace": "مقررہ تاریخ {{targetMonth}} — اب تک {{expected}}% پیش رفت متوقع تھی، دراصل {{actual}}%"
+    }
+  },
+  "kpi": {
+    "title": "KPI ڈیش بورڈ",
+    "subtitle": "صوبے بھر کی پیش رفت، آپ کے اپنے کام سے متعلق اعداد و شمار کے ساتھ",
+    "couldNotLoad": "KPI ڈیش بورڈ لوڈ نہیں ہو سکا۔",
+    "notYetReported": "ابھی تک رپورٹ نہیں ہوا",
+    "noData": "کوئی ڈیٹا دستیاب نہیں۔",
+    "provinceSectionTitle": "صوبے کا جائزہ",
+    "divisionSectionTitle": "{{division}} کا جائزہ",
+    "memberSectionTitle": "آپ کا کام",
+    "overallProgress": "مجموعی پیش رفت",
+    "activeTeams": "فعال ٹیمیں",
+    "activeVisits": "وزٹس",
+    "openIssues": "کھلے مسائل",
+    "noRecentVisit": "حالیہ وزٹ نہیں",
+    "spendWithoutProgress": "پیش رفت کے بغیر خرچ",
+    "atRisk": "مقررہ تاریخ میں تاخیر کا خطرہ",
+    "schemesMonitored": "نگرانی شدہ اسکیمیں",
+    "formsDue": "زیر التواء فارمز",
+    "viewMap": "نقشہ دیکھیں",
+    "viewAnalytics": "تجزیات دیکھیں",
+    "viewAnomalies": "بے ضابطگیاں دیکھیں"
   },
   "qrScan": {
     "permissionTitle": "کیمرے تک رسائی درکار ہے",

@@ -11,7 +11,7 @@
  * already use, no chart library.
  */
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
@@ -24,7 +24,11 @@ import {
   type IssueStatus,
   type IssueSeverity,
 } from '../../api/dashboard.api';
+import { buildDivisionReport } from '../../export/divisionReport';
+import { exportDivisionReportAsExcel, exportDivisionReportAsPdf } from '../../export/exportDivisionReport';
 import { colors, radius, spacing, typography } from '../../theme';
+
+type ExportFormat = 'pdf' | 'excel';
 
 const TEAM_STATUSES: TeamStatus[] = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 const VISIT_STATUSES: VisitStatus[] = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
@@ -37,6 +41,9 @@ export default function AnalyticsScreen() {
   const [dashboard, setDashboard] = useState<DivisionDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  const [exportMessage, setExportMessage] = useState('');
+  const [exportError, setExportError] = useState('');
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -58,6 +65,22 @@ export default function AnalyticsScreen() {
     }, [load]),
   );
 
+  const handleExport = useCallback(async (format: ExportFormat) => {
+    if (!dashboard || exporting) return;
+    setExporting(format);
+    setExportMessage('');
+    setExportError('');
+    try {
+      const report = buildDivisionReport(dashboard, t);
+      const result = format === 'pdf' ? await exportDivisionReportAsPdf(report) : await exportDivisionReportAsExcel(report);
+      setExportMessage(result.shared ? t('analytics.export.shared') : t('analytics.export.savedOnly'));
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : t('analytics.export.failed'));
+    } finally {
+      setExporting(null);
+    }
+  }, [dashboard, exporting, t]);
+
   if (loading && !dashboard) {
     return (
       <View style={styles.centered}>
@@ -75,12 +98,49 @@ export default function AnalyticsScreen() {
 
       {dashboard ? (
         <>
+          <ExportRow exporting={exporting} onExport={handleExport} />
+          {exportMessage ? <Text style={styles.exportMessage}>{exportMessage}</Text> : null}
+          {exportError ? <Text style={styles.error}>{exportError}</Text> : null}
+
           <OverallProgressCard overall={dashboard.overallProgress} />
           <DepartmentProgressList departments={dashboard.progressByDepartment} />
           <StatusBreakdownSection dashboard={dashboard} />
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+function ExportRow({ exporting, onExport }: { exporting: ExportFormat | null; onExport: (format: ExportFormat) => void }) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.exportCard}>
+      <Text style={styles.exportLabel}>{t('analytics.export.title')}</Text>
+      <View style={styles.exportButtonRow}>
+        <Pressable
+          style={[styles.exportButton, exporting === 'pdf' && styles.exportButtonDisabled]}
+          onPress={() => onExport('pdf')}
+          disabled={exporting !== null}
+        >
+          {exporting === 'pdf' ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <Text style={styles.exportButtonText}>{t('analytics.export.pdf')}</Text>
+          )}
+        </Pressable>
+        <Pressable
+          style={[styles.exportButton, exporting === 'excel' && styles.exportButtonDisabled]}
+          onPress={() => onExport('excel')}
+          disabled={exporting !== null}
+        >
+          {exporting === 'excel' ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <Text style={styles.exportButtonText}>{t('analytics.export.excel')}</Text>
+          )}
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -203,4 +263,25 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs / 2 },
   statusLabel: { color: colors.textSecondary, fontSize: typography.size.sm },
   statusCount: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.medium },
+  exportCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  exportLabel: { color: colors.textPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.bold, marginBottom: spacing.sm },
+  exportButtonRow: { flexDirection: 'row', gap: spacing.sm },
+  exportButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportButtonDisabled: { opacity: 0.7 },
+  exportButtonText: { color: colors.white, fontSize: typography.size.sm, fontWeight: typography.weight.bold },
+  exportMessage: { color: colors.success, fontSize: typography.size.xs, marginBottom: spacing.sm },
 });

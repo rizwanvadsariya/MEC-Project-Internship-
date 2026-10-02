@@ -36,9 +36,11 @@ maybeDescribe('GET /api/v1/schemes/by-uid/:uid (Step 28 — QR scan-to-open)', (
 		if (!scheme) throw new Error('No schemes found — run `npm run seed:adp` first');
 	}, 30000);
 
-	afterAll(async () => {
-		if (db) await db.close();
-	});
+	// No afterAll(db.close()) here — the GET /schemes/map describe block below
+	// shares this same module-level `database.js` pool singleton and runs
+	// after this one in the same file, so closing it here would leave that
+	// block's own queries hitting an already-ended pool. Closed once, at the
+	// end of the file, by the last describe block instead.
 
 	test('rejects an unauthenticated request', async () => {
 		const res = await request(app).get(`/api/v1/schemes/by-uid/${scheme.uid}`);
@@ -100,3 +102,110 @@ maybeDescribe('GET /api/v1/schemes/by-uid/:uid (Step 28 — QR scan-to-open)', (
 	});
 });
 
+/**
+ * Step 30 — GIS map view. Against the live Supabase project: division/district
+ * progress rollups are province-wide (same openness as scheme browsing/by-uid
+ * above), but the issue-severity layer is RD/DG-only and scoped to their own
+ * division, mirroring Steps 16/23's established restriction.
+ */
+maybeDescribe('GET /api/v1/schemes/map (Step 30 — GIS map view)', () => {
+	let request;
+	let app;
+	let db;
+	let getAccessToken;
+
+	beforeAll(async () => {
+		request = require('supertest');
+		app = require('../../../src/app');
+		db = require('../../../src/config/database');
+		({ getAccessToken } = require('../../helpers/authToken'));
+	}, 30000);
+
+	afterAll(async () => {
+		if (db) await db.close();
+	});
+
+	test('rejects an unauthenticated request', async () => {
+		const res = await request(app).get('/api/v1/schemes/map');
+		expect(res.status).toBe(401);
+	});
+
+	test('returns one row per real division and district, open to the most restricted role (SUPPORT_USER) — proving this is province-wide', async () => {
+		const [{ rows: divisionRows }, { rows: districtRows }] = await Promise.all([
+			db.query('select count(*)::int as count from divisions'),
+			db.query('select count(*)::int as count from districts'),
+		]);
+
+		const token = await getAccessToken('SUPPORT_USER');
+		const res = await request(app).get('/api/v1/schemes/map').set('Authorization', `Bearer ${token}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body.data.divisions).toHaveLength(divisionRows[0].count);
+		expect(res.body.data.districts).toHaveLength(districtRows[0].count);
+		expect(res.body.data.districts[0]).toEqual(expect.objectContaining({
+			districtId: expect.any(Number),
+			districtName: expect.any(String),
+			divisionId: expect.any(Number),
+			schemesTotal: expect.any(Number),
+		}));
+	});
+
+	test('division-level schemesTotal never double-counts a scheme that spans two districts within the same division', async () => {
+		const { rows } = await db.query('select count(distinct s.id)::int as count from schemes s join scheme_districts sd on sd.scheme_id = s.id');
+
+		const token = await getAccessToken('MEO');
+		const res = await request(app).get('/api/v1/schemes/map').set('Authorization', `Bearer ${token}`);
+
+		const sumAcrossDivisions = res.body.data.divisions.reduce((sum, d) => sum + d.schemesTotal, 0);
+		// A scheme spanning districts in two *different* divisions (rare for
+		// province infrastructure schemes, but not schema-forbidden) would
+		// legitimately count once per division it touches — so this is an
+		// upper-bound sanity check, not an exact-equality one, but it directly
+		// catches the regression a naive join-without-distinct would cause
+		// (which would inflate this well past the real scheme count).
+		expect(sumAcrossDivisions).toBeGreaterThan(0);
+		expect(sumAcrossDivisions).toBeLessThanOrEqual(Math.ceil(rows[0].count * 1.2));
+	});
+
+	test('MEO and Support always get an empty issuesByDistrict (never a 403 — the base map still works for them)', async () => {
+		for (const role of ['MEO', 'SUPPORT_USER']) {
+			const token = await getAccessToken(role);
+			const res = await request(app).get('/api/v1/schemes/map').set('Authorization', `Bearer ${token}`);
+			expect(res.status).toBe(200);
+			expect(res.body.data.issuesByDistrict).toEqual([]);
+		}
+	});
+
+	test('RD gets an issuesByDistrict scoped only to districts in their own division', async () => {
+		const token = await getAccessToken('REGIONAL_DIRECTOR');
+		const meRes = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+		const rdDivisionId = meRes.body.data.divisionId;
+
+		const res = await request(app).get('/api/v1/schemes/map').set('Authorization', `Bearer ${token}`);
+		expect(res.status).toBe(200);
+
+		const ownDivisionDistrictIds = new Set(
+			res.body.data.districts.filter((d) => d.divisionId === rdDivisionId).map((d) => d.districtId),
+		);
+		for (const row of res.body.data.issuesByDistrict) {
+			expect(ownDivisionDistrictIds.has(row.districtId)).toBe(true);
+			expect(row).toEqual(expect.objectContaining({ openIssues: expect.any(Number), critical: expect.any(Number) }));
+		}
+	});
+
+	test('DG gets the same shape of issuesByDistrict as RD, also scoped to their own division', async () => {
+		const token = await getAccessToken('DIRECTOR_GENERAL');
+		const meRes = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+		const dgDivisionId = meRes.body.data.divisionId;
+
+		const res = await request(app).get('/api/v1/schemes/map').set('Authorization', `Bearer ${token}`);
+		expect(res.status).toBe(200);
+
+		const ownDivisionDistrictIds = new Set(
+			res.body.data.districts.filter((d) => d.divisionId === dgDivisionId).map((d) => d.districtId),
+		);
+		for (const row of res.body.data.issuesByDistrict) {
+			expect(ownDivisionDistrictIds.has(row.districtId)).toBe(true);
+		}
+	});
+});

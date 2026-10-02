@@ -12,6 +12,7 @@ const controller = require('../../../controllers/schemes.controller');
 const schema = require('../../../validators/schemes.schema');
 
 router.get('/filters', authenticate, authorize(), controller.filterOptions);
+router.get('/map', authenticate, authorize(), controller.mapSummary);
 router.get('/by-uid/:uid', authenticate, authorize(), validate(schema.uidParam), controller.getByUid);
 router.get('/', authenticate, authorize(), validate(schema.query), controller.list);
 router.get('/:id', authenticate, authorize(), validate(schema.idParam), controller.getById);

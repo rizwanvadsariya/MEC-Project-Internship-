@@ -26,4 +26,8 @@ const filterOptions = asyncHandler(async (_req, res) => {
 	ApiResponse.ok(res, await schemeService.getFilterOptions());
 });
 
-module.exports = { list, getById, getByUid, filterOptions };
+const mapSummary = asyncHandler(async (req, res) => {
+	ApiResponse.ok(res, await schemeService.getMapSummary(req.authUser));
+});
+
+module.exports = { list, getById, getByUid, filterOptions, mapSummary };

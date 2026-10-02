@@ -12,6 +12,8 @@ import LanguageSettingsScreen from '../screens/common/LanguageSettingsScreen';
 import SchemeBrowserScreen from '../screens/common/SchemeBrowserScreen';
 import SchemeDetailScreen from '../screens/common/SchemeDetailScreen';
 import QrScanScreen from '../screens/common/QrScanScreen';
+import GisMapScreen from '../screens/common/GisMapScreen';
+import KpiDashboardScreen from '../screens/common/KpiDashboardScreen';
 import TeamAssemblyScreen from '../screens/regionalDirector/TeamAssemblyScreen';
 import SiteVisitListScreen from '../screens/common/SiteVisitListScreen';
 import SiteVisitDetailScreen from '../screens/common/SiteVisitDetailScreen';
@@ -19,6 +21,7 @@ import VisitCalendarScreen from '../screens/common/VisitCalendarScreen';
 import AnalyticsScreen from '../screens/common/AnalyticsScreen';
 import AuditTrailScreen from '../screens/common/AuditTrailScreen';
 import ProgressReconciliationScreen from '../screens/common/ProgressReconciliationScreen';
+import AnomaliesScreen from '../screens/common/AnomaliesScreen';
 import VisitFormScreen from '../screens/meo/VisitFormScreen';
 import VisitReportScreen from '../screens/meo/VisitReportScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
@@ -39,6 +42,8 @@ export default function RegionalDirectorNavigator() {
       <Stack.Screen name="Schemes" component={SchemeBrowserScreen} options={{ title: t('navigation.schemeBrowser') }} />
       <Stack.Screen name="SchemeDetail" component={SchemeDetailScreen} options={{ title: t('navigation.schemeDetail') }} />
       <Stack.Screen name="QrScan" component={QrScanScreen} options={{ title: t('navigation.qrScan') }} />
+      <Stack.Screen name="GisMap" component={GisMapScreen} options={{ title: t('navigation.gisMap') }} />
+      <Stack.Screen name="KpiDashboard" component={KpiDashboardScreen} options={{ title: t('navigation.kpiDashboard') }} />
       <Stack.Screen name="TeamAssembly" component={TeamAssemblyScreen} options={{ title: t('navigation.assembleTeam') }} />
       <Stack.Screen name="SiteVisits" component={SiteVisitListScreen} options={{ title: t('navigation.siteVisits') }} />
       <Stack.Screen name="SiteVisitDetail" component={SiteVisitDetailScreen} options={{ title: t('navigation.siteVisit') }} />
@@ -46,6 +51,7 @@ export default function RegionalDirectorNavigator() {
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: t('navigation.analytics') }} />
       <Stack.Screen name="AuditTrail" component={AuditTrailScreen} options={{ title: t('navigation.auditTrail') }} />
       <Stack.Screen name="ProgressReconciliation" component={ProgressReconciliationScreen} options={{ title: t('navigation.reconciliation') }} />
+      <Stack.Screen name="Anomalies" component={AnomaliesScreen} options={{ title: t('navigation.anomalies') }} />
       <Stack.Screen name="VisitForm" component={VisitFormScreen} options={{ title: t('navigation.visitForm') }} />
       <Stack.Screen name="VisitReport" component={VisitReportScreen} options={{ title: t('navigation.submittedReport') }} />
       <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: t('navigation.discussion') }} />

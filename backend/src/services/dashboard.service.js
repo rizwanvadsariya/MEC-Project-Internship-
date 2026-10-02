@@ -7,6 +7,7 @@
 
 const dashboardRepo = require('../repositories/dashboard.repo');
 const notificationService = require('./notification.service');
+const digestService = require('./digest.service');
 const ApiError = require('../lib/ApiError');
 
 const RECENT_LIMIT = 5;
@@ -100,7 +101,7 @@ async function getDivisionSummary(actor) {
 	// project has no cron/queue infra; see notification.service's own comment.
 	notificationService.escalateOverdueIssues(actor.divisionId);
 
-	return {
+	const summary = {
 		division,
 		teams: byStatus(teamRows, TEAM_STATUSES),
 		visits: byStatus(visitRows, VISIT_STATUSES),
@@ -110,6 +111,12 @@ async function getDivisionSummary(actor) {
 		recentVisits,
 		recentIssues,
 	};
+
+	// Step 32 — automated weekly/monthly digest, same lazy-check shape as the
+	// escalation trigger above (see digest.service.js's own comment for why).
+	digestService.maybeSendDigests(actor, summary);
+
+	return summary;
 }
 
 /**
@@ -177,4 +184,82 @@ async function getProgressReconciliation(actor, query) {
 	};
 }
 
-module.exports = { getDivisionSummary, getMemberSummary, getProgressReconciliation };
+/**
+ * Step 31 — delay/anomaly detection, division-scoped RD/DG (same access as
+ * Steps 23/26/27 — an oversight list, not a write path). Two independent
+ * pattern detectors:
+ *  - "no visit in X months": a scheme with no COMPLETED site visit within
+ *    the threshold (or ever).
+ *  - "spend-without-progress": financial progress reported high while
+ *    physical (field-verified) progress stays low — a one-directional,
+ *    stricter signal than Step 27's generic reconciliation gap, not a reuse
+ *    of it.
+ * Both thresholds are deliberate judgment calls, not values PRD.md/schema.md
+ * specify (neither gives one) — same footing as Step 25's escalation rules
+ * and Step 27's own reconciliation threshold.
+ *
+ * Per phases.md's own dependency note for this step ("needs a real
+ * accumulated visit history over time — this can't be built or validated on
+ * day-one data"), these lists will legitimately flag most/all of a
+ * division's schemes on a fresh project with little visit history yet —
+ * that's an honest reflection of the data, not a bug in the detection
+ * logic. `total` alongside each capped list lets an RD/DG see how large the
+ * real backlog is even though only the worst `limit` rows are returned —
+ * `limit` defaults to `DEFAULT_ANOMALY_LIST_LIMIT` but is caller-overridable
+ * (dashboard.schema.js's `anomaliesQuery`, capped at 200) precisely because
+ * a division can realistically have more flagged schemes than the default
+ * on a sparse, early-stage dataset (the never-visited bucket sorts first and
+ * can itself exceed a small limit, crowding out a more specifically overdue
+ * — but non-null-lastVisitDate — scheme further down the same list).
+ */
+const NO_VISIT_THRESHOLD_MONTHS = 6;
+const SPEND_WITHOUT_PROGRESS_FINANCIAL_MIN_PCT = 50;
+const SPEND_WITHOUT_PROGRESS_PHYSICAL_MAX_PCT = 10;
+const DEFAULT_ANOMALY_LIST_LIMIT = 50;
+
+/**
+ * Step 33 — predictive risk flagging, "builds directly on the anomaly-
+ * detection foundation" (phases.md's own dependency line) — added as a
+ * third category on this same endpoint/response rather than a parallel
+ * screen, same division-scoped RD/DG access, same `{total, rows}` shape,
+ * same caller-overridable `limit`. How many percentage points behind the
+ * linear-pace projection (dashboard.repo.js's own `EXPECTED_PROGRESS_EXPR`)
+ * counts as "at risk" is this step's own documented judgment call — a
+ * scheme already past its target date and still incomplete is flagged
+ * regardless of this threshold (see dashboard.repo.js's `AT_RISK_CLAUSE`).
+ */
+const RISK_GAP_THRESHOLD_PCT = 20;
+
+async function getAnomalies(actor, query = {}) {
+	if (actor.divisionId == null) {
+		throw ApiError.badRequest('This account has no division assigned');
+	}
+	const limit = Number.isInteger(query.limit) ? query.limit : DEFAULT_ANOMALY_LIST_LIMIT;
+
+	const [
+		noRecentVisitTotal, noRecentVisitRows,
+		spendWithoutProgressTotal, spendWithoutProgressRows,
+		atRiskTotal, atRiskRows,
+	] = await Promise.all([
+		dashboardRepo.countNoRecentVisitSchemes(actor.divisionId, NO_VISIT_THRESHOLD_MONTHS),
+		dashboardRepo.listNoRecentVisitSchemes(actor.divisionId, NO_VISIT_THRESHOLD_MONTHS, limit),
+		dashboardRepo.countSpendWithoutProgressSchemes(actor.divisionId, SPEND_WITHOUT_PROGRESS_FINANCIAL_MIN_PCT, SPEND_WITHOUT_PROGRESS_PHYSICAL_MAX_PCT),
+		dashboardRepo.listSpendWithoutProgressSchemes(actor.divisionId, SPEND_WITHOUT_PROGRESS_FINANCIAL_MIN_PCT, SPEND_WITHOUT_PROGRESS_PHYSICAL_MAX_PCT, limit),
+		dashboardRepo.countAtRiskSchemes(actor.divisionId, RISK_GAP_THRESHOLD_PCT),
+		dashboardRepo.listAtRiskSchemes(actor.divisionId, RISK_GAP_THRESHOLD_PCT, limit),
+	]);
+
+	return {
+		noVisitThresholdMonths: NO_VISIT_THRESHOLD_MONTHS,
+		spendWithoutProgressThresholds: {
+			financialMinPct: SPEND_WITHOUT_PROGRESS_FINANCIAL_MIN_PCT,
+			physicalMaxPct: SPEND_WITHOUT_PROGRESS_PHYSICAL_MAX_PCT,
+		},
+		riskGapThresholdPct: RISK_GAP_THRESHOLD_PCT,
+		noRecentVisit: { total: noRecentVisitTotal, rows: noRecentVisitRows },
+		spendWithoutProgress: { total: spendWithoutProgressTotal, rows: spendWithoutProgressRows },
+		atRiskOfMissingTarget: { total: atRiskTotal, rows: atRiskRows },
+	};
+}
+
+module.exports = { getDivisionSummary, getMemberSummary, getProgressReconciliation, getAnomalies };

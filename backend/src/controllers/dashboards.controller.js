@@ -22,4 +22,8 @@ const getProgressReconciliation = asyncHandler(async (req, res) => {
 	ApiResponse.ok(res, { ...summary, rows }, { nextCursor });
 });
 
-module.exports = { getDivisionSummary, getMemberSummary, getProgressReconciliation };
+const getAnomalies = asyncHandler(async (req, res) => {
+	ApiResponse.ok(res, await dashboardService.getAnomalies(req.authUser, req.query));
+});
+
+module.exports = { getDivisionSummary, getMemberSummary, getProgressReconciliation, getAnomalies };

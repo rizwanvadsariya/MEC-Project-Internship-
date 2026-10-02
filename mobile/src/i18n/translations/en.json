@@ -42,6 +42,9 @@
     "reconciliation": "Progress reconciliation",
     "qrScan": "Scan QR",
     "schemeDetail": "Scheme record",
+    "gisMap": "Map",
+    "anomalies": "Anomalies",
+    "kpiDashboard": "KPI Dashboard",
     "unknownRole": "Unknown role: {{role}}"
   },
   "auth": {
@@ -142,7 +145,9 @@
       "SUPPORT_USER": "Support User"
     },
     "buttons": {
+      "kpiDashboard": "KPI Dashboard",
       "siteVisits": "Site visits",
+      "gisMap": "Map",
       "visitCalendar": "Visit calendar",
       "notifications": "Notifications",
       "security": "Security settings",
@@ -150,6 +155,7 @@
       "analytics": "Analytics",
       "auditTrail": "Audit trail",
       "reconciliation": "Progress reconciliation",
+      "anomalies": "Anomalies",
       "logOut": "Log out"
     },
     "errorLoadActivity": "Could not load your activity."
@@ -276,6 +282,16 @@
       "MEDIUM": "Medium",
       "HIGH": "High",
       "CRITICAL": "Critical"
+    },
+    "export": {
+      "title": "Export for offline reporting",
+      "pdf": "Export PDF",
+      "excel": "Export Excel",
+      "reportTitle": "{{division}} — Division Report",
+      "schemesReportedLabel": "Schemes reported",
+      "shared": "Export ready — choose where to save or send it.",
+      "savedOnly": "Export saved on this device (sharing isn't available here).",
+      "failed": "Could not create the export."
     }
   },
   "auditTrail": {
@@ -317,6 +333,74 @@
     "financial": "Financial",
     "financialAhead": "Financial progress is ahead of physical progress",
     "physicalAhead": "Physical progress is ahead of financial progress"
+  },
+  "gisMap": {
+    "title": "Scheme map",
+    "subtitle": "Schemes by division/district",
+    "pinAccuracyDisclaimer": "Pins mark each district's approximate centre, not individual scheme locations — the underlying ADP data has no real coordinates for schemes.",
+    "couldNotLoad": "Could not load the map.",
+    "modeProgress": "Progress",
+    "modeSeverity": "Issue severity",
+    "legend": {
+      "progressHigh": "75%+ average progress",
+      "progressMedium": "40-74% average progress",
+      "progressLow": "Under 40% average progress",
+      "noData": "No data reported yet",
+      "severityNone": "No open issues",
+      "severityModerate": "Low/medium severity only",
+      "severityHigh": "High or critical severity present"
+    },
+    "schemesReportedContext": "{{reported}} of {{total}} schemes reported",
+    "notYetReported": "Not yet reported",
+    "avgProgress": "{{pct}}% average progress",
+    "openIssuesContext": "{{count}} open issues ({{critical}} critical, {{high}} high)",
+    "viewSchemesInDistrict": "View schemes in this district"
+  },
+  "anomalies": {
+    "title": "Delay & anomaly detection",
+    "subtitle": "Schemes that may need attention — no recent visit, money spent without matching field progress, or at risk of missing their target date",
+    "couldNotLoad": "Could not load anomalies.",
+    "totalFlagged": "{{count}} schemes flagged",
+    "noneFlagged": "No schemes flagged right now.",
+    "neverVisited": "Never visited",
+    "lastVisit": "Last visit: {{time}}",
+    "noRecentVisit": {
+      "title": "No recent visit",
+      "thresholdContext": "Flagged when a scheme has had no completed visit in the last {{months}} months"
+    },
+    "spendWithoutProgress": {
+      "title": "Spend without progress",
+      "thresholdContext": "Flagged when financial progress is {{financialMinPct}}%+ while physical progress is still {{physicalMaxPct}}% or under",
+      "progressPair": "{{physical}}% physical · {{financial}}% financial"
+    },
+    "atRisk": {
+      "title": "At risk of missing target date",
+      "thresholdContext": "Flagged when a scheme is already past its target date, or at least {{gapPct}} points behind the pace needed to reach it on time",
+      "overdue": "Past target ({{targetMonth}}) and not yet complete",
+      "behindPace": "Target {{targetMonth}} — expected {{expected}}% progress by now, actually {{actual}}%"
+    }
+  },
+  "kpi": {
+    "title": "KPI Dashboard",
+    "subtitle": "Province-wide progress alongside the numbers scoped to your own work",
+    "couldNotLoad": "Could not load the KPI dashboard.",
+    "notYetReported": "Not yet reported",
+    "noData": "No data available.",
+    "provinceSectionTitle": "Province overview",
+    "divisionSectionTitle": "{{division}} overview",
+    "memberSectionTitle": "Your work",
+    "overallProgress": "Overall progress",
+    "activeTeams": "Active teams",
+    "activeVisits": "Visits",
+    "openIssues": "Open issues",
+    "noRecentVisit": "No recent visit",
+    "spendWithoutProgress": "Spend without progress",
+    "atRisk": "At risk of missing target",
+    "schemesMonitored": "Schemes monitored",
+    "formsDue": "Forms due",
+    "viewMap": "View map",
+    "viewAnalytics": "View analytics",
+    "viewAnomalies": "View anomalies"
   },
   "qrScan": {
     "permissionTitle": "Camera access needed",

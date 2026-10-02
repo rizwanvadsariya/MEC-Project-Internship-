@@ -21,6 +21,12 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 	listRecentVisibleIssuesForMember: jest.fn(),
 	countProgressReconciliationSummary: jest.fn(),
 	listProgressReconciliation: jest.fn(),
+	countNoRecentVisitSchemes: jest.fn(),
+	listNoRecentVisitSchemes: jest.fn(),
+	countSpendWithoutProgressSchemes: jest.fn(),
+	listSpendWithoutProgressSchemes: jest.fn(),
+	countAtRiskSchemes: jest.fn(),
+	listAtRiskSchemes: jest.fn(),
 }));
 // Step 25: getDivisionSummary fires the overdue-escalation trigger — mocked
 // here so this stays a pure unit test of dashboard.service's own shaping
@@ -28,9 +34,14 @@ jest.mock('../../../src/repositories/dashboard.repo', () => ({
 // in this suite. notification.service's own trigger logic is covered by
 // tests/unit/services/notification.service.test.js.
 jest.mock('../../../src/services/notification.service', () => ({ escalateOverdueIssues: jest.fn() }));
+// Step 32: getDivisionSummary also fires the lazy digest check — mocked for
+// the same reason; digest.service's own logic is covered by
+// tests/unit/services/digest.service.test.js.
+jest.mock('../../../src/services/digest.service', () => ({ maybeSendDigests: jest.fn() }));
 
 const dashboardRepo = require('../../../src/repositories/dashboard.repo');
 const notificationService = require('../../../src/services/notification.service');
+const digestService = require('../../../src/services/digest.service');
 const dashboardService = require('../../../src/services/dashboard.service');
 const ApiError = require('../../../src/lib/ApiError');
 
@@ -204,6 +215,26 @@ describe('overdue-escalation trigger (Step 25)', () => {
 	});
 });
 
+describe('digest-check trigger (Step 32)', () => {
+	test('fires maybeSendDigests for the actor with the exact summary this response returns, on a successful load', async () => {
+		stubDefaults();
+
+		const result = await dashboardService.getDivisionSummary(actor);
+
+		expect(digestService.maybeSendDigests).toHaveBeenCalledTimes(1);
+		expect(digestService.maybeSendDigests).toHaveBeenCalledWith(actor, result);
+	});
+
+	test('never fires when the division cannot be found', async () => {
+		stubDefaults();
+		dashboardRepo.findDivision.mockResolvedValue(null);
+
+		await expect(dashboardService.getDivisionSummary(actor)).rejects.toMatchObject({ statusCode: 404 });
+
+		expect(digestService.maybeSendDigests).not.toHaveBeenCalled();
+	});
+});
+
 describe('getMemberSummary (MEO/Support, team-membership scoped)', () => {
 	const memberActor = { id: 'meo-1' };
 
@@ -331,5 +362,83 @@ describe('getProgressReconciliation (Step 27 — physical vs. financial progress
 			rows: [{ id: 1, gap: 30 }],
 			nextCursor: '30_1',
 		});
+	});
+});
+
+describe('getAnomalies (Step 31 — delay/anomaly detection; Step 33 — predictive risk flagging)', () => {
+	function stubAnomalyDefaults() {
+		dashboardRepo.countNoRecentVisitSchemes.mockResolvedValue(0);
+		dashboardRepo.listNoRecentVisitSchemes.mockResolvedValue([]);
+		dashboardRepo.countSpendWithoutProgressSchemes.mockResolvedValue(0);
+		dashboardRepo.listSpendWithoutProgressSchemes.mockResolvedValue([]);
+		dashboardRepo.countAtRiskSchemes.mockResolvedValue(0);
+		dashboardRepo.listAtRiskSchemes.mockResolvedValue([]);
+	}
+
+	test('queries all three detectors scoped by the actor\'s division, with the fixed thresholds and list limit', async () => {
+		stubAnomalyDefaults();
+
+		await dashboardService.getAnomalies(actor);
+
+		expect(dashboardRepo.countNoRecentVisitSchemes).toHaveBeenCalledWith(1, 6);
+		expect(dashboardRepo.listNoRecentVisitSchemes).toHaveBeenCalledWith(1, 6, 50);
+		expect(dashboardRepo.countSpendWithoutProgressSchemes).toHaveBeenCalledWith(1, 50, 10);
+		expect(dashboardRepo.listSpendWithoutProgressSchemes).toHaveBeenCalledWith(1, 50, 10, 50);
+		expect(dashboardRepo.countAtRiskSchemes).toHaveBeenCalledWith(1, 20);
+		expect(dashboardRepo.listAtRiskSchemes).toHaveBeenCalledWith(1, 20, 50);
+	});
+
+	test('throws 400 when the actor has no division assigned, before querying any detector', async () => {
+		stubAnomalyDefaults();
+
+		await expect(dashboardService.getAnomalies({ id: 'x', divisionId: null })).rejects.toMatchObject({ statusCode: 400 });
+		expect(dashboardRepo.countNoRecentVisitSchemes).not.toHaveBeenCalled();
+		expect(dashboardRepo.countSpendWithoutProgressSchemes).not.toHaveBeenCalled();
+		expect(dashboardRepo.countAtRiskSchemes).not.toHaveBeenCalled();
+	});
+
+	test('returns the thresholds alongside each detector\'s total count and capped row list', async () => {
+		dashboardRepo.countNoRecentVisitSchemes.mockResolvedValue(42);
+		dashboardRepo.listNoRecentVisitSchemes.mockResolvedValue([{ id: 1, uid: 'X-1', lastVisitDate: null }]);
+		dashboardRepo.countSpendWithoutProgressSchemes.mockResolvedValue(3);
+		dashboardRepo.listSpendWithoutProgressSchemes.mockResolvedValue([{ id: 2, uid: 'X-2', physicalProgressPct: 5, financialProgressPct: 80 }]);
+		dashboardRepo.countAtRiskSchemes.mockResolvedValue(7);
+		dashboardRepo.listAtRiskSchemes.mockResolvedValue([{ id: 3, uid: 'X-3', isOverdue: true, expectedProgressPct: 80, physicalProgressPct: 20 }]);
+
+		const result = await dashboardService.getAnomalies(actor);
+
+		expect(result).toEqual({
+			noVisitThresholdMonths: 6,
+			spendWithoutProgressThresholds: { financialMinPct: 50, physicalMaxPct: 10 },
+			riskGapThresholdPct: 20,
+			noRecentVisit: { total: 42, rows: [{ id: 1, uid: 'X-1', lastVisitDate: null }] },
+			spendWithoutProgress: { total: 3, rows: [{ id: 2, uid: 'X-2', physicalProgressPct: 5, financialProgressPct: 80 }] },
+			atRiskOfMissingTarget: { total: 7, rows: [{ id: 3, uid: 'X-3', isOverdue: true, expectedProgressPct: 80, physicalProgressPct: 20 }] },
+		});
+	});
+
+	test('a query.limit override is passed through to all three detectors\' list calls instead of the 50 default', async () => {
+		stubAnomalyDefaults();
+
+		await dashboardService.getAnomalies(actor, { limit: 200 });
+
+		expect(dashboardRepo.listNoRecentVisitSchemes).toHaveBeenCalledWith(1, 6, 200);
+		expect(dashboardRepo.listSpendWithoutProgressSchemes).toHaveBeenCalledWith(1, 50, 10, 200);
+		expect(dashboardRepo.listAtRiskSchemes).toHaveBeenCalledWith(1, 20, 200);
+	});
+
+	test('the three detectors are independent — an empty result from one or two doesn\'t suppress rows from the others', async () => {
+		dashboardRepo.countNoRecentVisitSchemes.mockResolvedValue(0);
+		dashboardRepo.listNoRecentVisitSchemes.mockResolvedValue([]);
+		dashboardRepo.countSpendWithoutProgressSchemes.mockResolvedValue(1);
+		dashboardRepo.listSpendWithoutProgressSchemes.mockResolvedValue([{ id: 9, uid: 'X-9' }]);
+		dashboardRepo.countAtRiskSchemes.mockResolvedValue(0);
+		dashboardRepo.listAtRiskSchemes.mockResolvedValue([]);
+
+		const result = await dashboardService.getAnomalies(actor);
+
+		expect(result.noRecentVisit).toEqual({ total: 0, rows: [] });
+		expect(result.spendWithoutProgress).toEqual({ total: 1, rows: [{ id: 9, uid: 'X-9' }] });
+		expect(result.atRiskOfMissingTarget).toEqual({ total: 0, rows: [] });
 	});
 });

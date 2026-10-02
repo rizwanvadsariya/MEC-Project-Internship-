@@ -220,6 +220,21 @@ function escalateOverdueIssues(divisionId) {
 	}, { trigger: 'overdueEscalation', divisionId });
 }
 
+/**
+ * Trigger: automated digest report (Step 32). Unlike every other trigger in
+ * this file, the recipient and body are already fully resolved by the
+ * caller (digest.service.js, which already knows exactly which RD/DG and
+ * what to say) — there's no team/visit/issue lookup to do here, so this is
+ * a thin pass-through to dispatch() rather than its own runInBackground-
+ * wrapped trigger. digest.service.js's own caller is already running inside
+ * a background task (dashboard.service.getDivisionSummary's fire-and-forget
+ * digest check), so wrapping again here would just nest two background
+ * tasks for no benefit.
+ */
+async function notifyDigest(userId, { title, body, divisionId }) {
+	await dispatch([userId], { title, body, relatedType: 'DIVISION_DIGEST', relatedId: String(divisionId) });
+}
+
 module.exports = {
 	registerPushToken,
 	removePushToken,
@@ -231,4 +246,5 @@ module.exports = {
 	notifyIssueOwnerAssigned,
 	notifyCriticalIssueFiled,
 	escalateOverdueIssues,
+	notifyDigest,
 };
