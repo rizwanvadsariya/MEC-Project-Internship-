@@ -615,7 +615,12 @@
     "couldNotStartEnrollment": "داخلا شروع نه ٿي سگهي.",
     "enterValidCode": "پنهنجي تصديقي ايپ مان 6 عددن جو ڪوڊ داخل ڪريو.",
     "verificationFailed": "تصديق ناڪام ٿي.",
-    "couldNotRemove": "ٻه مرحلا تصديق هٽائي نه سگهجي."
+    "copySetupKey": "سيٽ اپ ڪنجي ڪاپي ڪريو",
+    "copySetupLink": "سيٽ اپ لنڪ ڪاپي ڪريو",
+    "setupLinkHint": "جيڪڏهن توهان جي ايپ ڪنجي بدران لنڪ يا URL گهري ته سيٽ اپ لنڪ استعمال ڪريو.",
+    "copied": "ڪاپي ٿي ويو ✓",
+    "couldNotCopy": "clipboard تي ڪاپي نه ٿي سگهي.",
+    "couldNotRemove":"ٻه مرحلا تصديق هٽائي نه سگهجي."
   },
   "languageSettings": {
     "title": "ٻولي",

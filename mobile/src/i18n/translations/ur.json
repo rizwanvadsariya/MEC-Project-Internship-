@@ -614,7 +614,12 @@
     "couldNotStartEnrollment": "اندراج شروع نہیں ہو سکا۔",
     "enterValidCode": "اپنی توثیقی ایپ سے 6 ہندسوں کا کوڈ درج کریں۔",
     "verificationFailed": "تصدیق ناکام ہو گئی۔",
-    "couldNotRemove": "دو مرحلہ توثیق ہٹائی نہیں جا سکی۔"
+    "copySetupKey": "سیٹ اپ کلید کاپی کریں",
+    "copySetupLink": "سیٹ اپ لنک کاپی کریں",
+    "setupLinkHint": "اگر آپ کی ایپ کلید کے بجائے لنک یا URL مانگے تو سیٹ اپ لنک استعمال کریں۔",
+    "copied": "کاپی ہو گیا ✓",
+    "couldNotCopy": "کلپ بورڈ پر کاپی نہیں ہو سکا۔",
+    "couldNotRemove":"دو مرحلہ توثیق ہٹائی نہیں جا سکی۔"
   },
   "languageSettings": {
     "title": "زبان",

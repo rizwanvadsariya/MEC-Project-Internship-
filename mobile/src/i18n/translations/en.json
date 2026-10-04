@@ -615,7 +615,12 @@
     "couldNotStartEnrollment": "Could not start enrollment.",
     "enterValidCode": "Enter the 6-digit code from your authenticator app.",
     "verificationFailed": "Verification failed.",
-    "couldNotRemove": "Could not remove two-factor authentication."
+    "couldNotRemove": "Could not remove two-factor authentication.",
+    "copySetupKey": "Copy setup key",
+    "copySetupLink": "Copy setup link",
+    "setupLinkHint": "Use the setup link if your app asks for a link or URL instead of a key.",
+    "copied": "Copied ✓",
+    "couldNotCopy": "Could not copy to clipboard."
   },
   "languageSettings": {
     "title": "Language",

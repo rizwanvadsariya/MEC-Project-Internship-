@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '../../auth/useAuth';
 import * as mfaApi from '../../api/mfa.api';
 import { ApiClientError } from '../../api/client';
@@ -26,6 +27,7 @@ export default function SecuritySettingsScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<'copiedSecret' | 'copiedLink' | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -44,14 +46,30 @@ export default function SecuritySettingsScreen() {
     };
   }, [accessToken]);
 
+  const copyText = async (value: string, key: 'copiedSecret' | 'copiedLink') => {
+    try {
+      await Clipboard.setStringAsync(value);
+      setCopied(key);
+      setTimeout(() => setCopied((current) => (current === key ? null : current)), 2000);
+    } catch {
+      setError(t('security.couldNotCopy'));
+    }
+  };
+
   const startEnroll = async () => {
     if (!accessToken) return;
     setError(null);
     setBusy(true);
     try {
+      // Abandoned (never-verified) enrollments block a new one with the same
+      // friendly name, so clear them out first. Verified factors are untouched.
+      const { all } = await mfaApi.listFactors(accessToken);
+      for (const f of all.filter((f) => f.status !== 'verified')) await mfaApi.unenroll(accessToken, f.id);
+
       const factor = await mfaApi.enroll(accessToken);
       setFactorId(factor.id);
-      setSecret(factor.totp.secret);
+      // Strip any whitespace so a copied key pastes cleanly into an authenticator app.
+      setSecret(factor.totp.secret.replace(/\s/g, ''));
       setUri(factor.totp.uri);
       setStage('enrolling');
     } catch (e) {
@@ -133,7 +151,22 @@ export default function SecuritySettingsScreen() {
           <View style={styles.secretBox}>
             <Text selectable style={styles.secretText}>{secret}</Text>
           </View>
-          {uri ? <Text selectable style={styles.uriText}>{uri}</Text> : null}
+          <Pressable style={styles.copyButton} onPress={() => copyText(secret, 'copiedSecret')}>
+            <Text style={styles.copyButtonText}>
+              {copied === 'copiedSecret' ? t('security.copied') : t('security.copySetupKey')}
+            </Text>
+          </Pressable>
+
+          {uri ? (
+            <>
+              <Pressable style={styles.copyButton} onPress={() => copyText(uri, 'copiedLink')}>
+                <Text style={styles.copyButtonText}>
+                  {copied === 'copiedLink' ? t('security.copied') : t('security.copySetupLink')}
+                </Text>
+              </Pressable>
+              <Text style={styles.uriHint}>{t('security.setupLinkHint')}</Text>
+            </>
+          ) : null}
 
           <Text style={styles.label}>{t('security.enterCodeLabel')}</Text>
           <TextInput
@@ -180,7 +213,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   secretText: { color: colors.textPrimary, fontSize: 16, fontFamily: 'monospace', letterSpacing: 1 },
-  uriText: { color: colors.textSecondary, fontSize: 10, marginBottom: spacing.md },
+  copyButton: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  copyButtonText: { color: colors.primary, fontWeight: typography.weight.medium, fontSize: typography.size.sm },
+  uriHint: { color: colors.textSecondary, fontSize: typography.size.sm, marginBottom: spacing.md },
   label: { color: colors.textSecondary, fontSize: typography.size.sm, marginTop: spacing.sm, marginBottom: spacing.xs + 2 },
   codeInput: {
     backgroundColor: colors.surface,
