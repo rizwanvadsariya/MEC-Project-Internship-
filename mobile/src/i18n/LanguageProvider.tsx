@@ -19,10 +19,16 @@ import i18next, { detectDeviceLanguage } from './index';
 import { loadLanguage, saveLanguage } from './languageStorage';
 import { isRtlLanguage, type SupportedLanguage } from './languages';
 
+/** The text direction the native layer actually applied when this JS bundle
+ *  started. forceRTL() only changes the direction on the next app launch, so
+ *  any language whose direction differs from this needs a restart to show. */
+const LAUNCH_RTL = I18nManager.isRTL;
+
 type LanguageContextValue = {
   isLoading: boolean;
   language: SupportedLanguage;
   isRTL: boolean;
+  restartNeeded: boolean;
   setLanguage: (language: SupportedLanguage) => Promise<void>;
 };
 
@@ -44,14 +50,21 @@ export function LanguageProvider({ children }: PropsWithChildren) {
   }, []);
 
   const setLanguage = async (next: SupportedLanguage) => {
-    await i18next.changeLanguage(next);
+    // Persist first, so the choice survives the restart that a direction change needs.
     await saveLanguage(next);
+    await i18next.changeLanguage(next);
     applyRtlForLanguage(next);
     setLanguageState(next);
   };
 
   const value = useMemo(
-    () => ({ isLoading, language, isRTL: isRtlLanguage(language), setLanguage }),
+    () => ({
+      isLoading,
+      language,
+      isRTL: isRtlLanguage(language),
+      restartNeeded: isRtlLanguage(language) !== LAUNCH_RTL,
+      setLanguage,
+    }),
     [isLoading, language],
   );
 
@@ -61,7 +74,7 @@ export function LanguageProvider({ children }: PropsWithChildren) {
 function applyRtlForLanguage(language: SupportedLanguage) {
   const shouldBeRtl = isRtlLanguage(language);
   I18nManager.allowRTL(shouldBeRtl);
-  if (I18nManager.isRTL !== shouldBeRtl) I18nManager.forceRTL(shouldBeRtl);
+  I18nManager.forceRTL(shouldBeRtl);
 }
 
 export function useLanguageContext(): LanguageContextValue {

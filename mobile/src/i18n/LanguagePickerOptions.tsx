@@ -21,7 +21,7 @@ const LANGUAGE_LABEL_KEY: Record<SupportedLanguage, string> = {
 
 export default function LanguagePickerOptions({ onLanguageChosen }: { onLanguageChosen?: (language: SupportedLanguage) => void }) {
   const { t } = useTranslation();
-  const { language, setLanguage } = useLanguage();
+  const { language, restartNeeded, setLanguage } = useLanguage();
   const [switching, setSwitching] = useState<SupportedLanguage | null>(null);
 
   const choose = async (next: SupportedLanguage) => {
@@ -54,6 +54,7 @@ export default function LanguagePickerOptions({ onLanguageChosen }: { onLanguage
           </Pressable>
         );
       })}
+      {restartNeeded ? <Text style={styles.restartNotice}>{t('languageSettings.restartNotice')}</Text> : null}
     </View>
   );
 }
@@ -74,4 +75,5 @@ const styles = StyleSheet.create({
   optionText: { color: colors.textPrimary, fontSize: typography.size.md, fontWeight: typography.weight.medium },
   optionTextSelected: { color: colors.primaryDark, fontWeight: typography.weight.bold },
   checkmark: { color: colors.primary, fontSize: typography.size.lg, fontWeight: typography.weight.bold },
+  restartNotice: { color: colors.warning, fontSize: typography.size.sm, marginTop: spacing.sm, lineHeight: typography.lineHeight.md },
 });

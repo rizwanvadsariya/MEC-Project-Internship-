@@ -13,6 +13,18 @@ const { config } = require('../config');
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_BYTES = 10 * 1024 * 1024;
 
+/** The client-declared MIME type is untrusted, so check the file's leading
+ *  bytes against the format it claims to be before anything is stored. */
+function matchesImageSignature(buffer, mimetype) {
+	if (!buffer || buffer.length < 12) return false;
+	switch (mimetype) {
+		case 'image/jpeg': return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+		case 'image/png': return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+		case 'image/webp': return buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+		default: return false;
+	}
+}
+
 async function upload(actor, siteVisitId, file, metadata = {}) {
 	const context = await photoRepo.findVisitContext(siteVisitId, actor);
 	if (!context) throw ApiError.notFound('Site visit not found');
@@ -21,6 +33,7 @@ async function upload(actor, siteVisitId, file, metadata = {}) {
 	if (!file) throw ApiError.badRequest('A photo file is required');
 	if (!ALLOWED_TYPES.has(file.mimetype)) throw ApiError.badRequest('Only JPEG, PNG, and WebP photos are supported');
 	if (file.size > MAX_BYTES) throw ApiError.badRequest('Photo must be 10 MB or smaller');
+	if (!matchesImageSignature(file.buffer, file.mimetype)) throw ApiError.badRequest('File content does not match a supported photo type');
 
 	const extension = file.mimetype.split('/')[1].replace('jpeg', 'jpg');
 	const storagePath = `${siteVisitId}/${actor.id}/${crypto.randomUUID()}.${extension}`;

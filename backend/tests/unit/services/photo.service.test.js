@@ -25,7 +25,8 @@ const storage = require('../../../src/lib/storage');
 const photoService = require('../../../src/services/photo.service');
 
 const actor = { id: 'meo-1', role: 'MEO', divisionId: 1 };
-const file = { mimetype: 'image/png', size: 100, buffer: Buffer.from('png') };
+const PNG_HEADER = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+const file = { mimetype: 'image/png', size: 100, buffer: PNG_HEADER };
 
 beforeEach(() => {
 	jest.clearAllMocks();

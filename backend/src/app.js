@@ -27,6 +27,15 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.get('/auth/accept-invite', (_req, res) => {
+  // This page is served before helmet runs, so it needs its own headers. The
+  // invite token is in the URL, so no-referrer keeps it out of Referer headers,
+  // and frame-ancestors/DENY stops the password form from being framed.
+  res.set({
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+  });
   res.type('html').send(authInvitePage);
 });
 

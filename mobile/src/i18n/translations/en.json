@@ -627,7 +627,8 @@
     "subtitle": "Choose the language used throughout the app.",
     "english": "English",
     "urdu": "اردو",
-    "sindhi": "سنڌي"
+    "sindhi": "سنڌي",
+    "restartNotice": "Close and reopen the app to apply the new text direction. Your language choice is saved."
   },
   "errors": {
     "INVALID_CREDENTIALS": "Incorrect email or password.",

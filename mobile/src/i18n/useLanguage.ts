@@ -3,6 +3,6 @@
 import { useLanguageContext } from './LanguageProvider';
 
 export function useLanguage() {
-  const { isLoading, language, isRTL, setLanguage } = useLanguageContext();
-  return { isLoading, language, isRTL, setLanguage };
+  const { isLoading, language, isRTL, restartNeeded, setLanguage } = useLanguageContext();
+  return { isLoading, language, isRTL, restartNeeded, setLanguage };
 }
